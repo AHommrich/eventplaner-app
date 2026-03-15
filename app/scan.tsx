@@ -8,6 +8,7 @@ import {
   FlatList,
   TextInput,
   Alert,
+  StyleSheet,
 } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { useRouter } from 'expo-router';
@@ -41,16 +42,13 @@ export default function ScanScreen() {
   const [showDevInput, setShowDevInput] = useState(false);
 
   useEffect(() => {
-    if (!permission?.granted) {
-      requestPermission();
-    }
+    if (!permission?.granted) requestPermission();
   }, []);
 
   async function handleQrCode(data: string) {
     if (scanned || loading) return;
     setScanned(true);
     setLoading(true);
-
     try {
       const token = data.split('/').pop();
       if (!token) throw new Error('Ungültiger QR-Code');
@@ -66,11 +64,9 @@ export default function ScanScreen() {
   async function loginWithToken(token: string) {
     const response = await api.get<ApiResponse>(`/api/auth/qr/${token}`);
     const { type, family_name, guests: apiGuests } = response.data;
-
     setResponseType(type);
     setFamilyName(family_name);
     setGuests(apiGuests);
-
     if (type === 'solo' && apiGuests.length === 1) {
       await persistAndNavigate(apiGuests[0], type, family_name);
     } else {
@@ -96,102 +92,95 @@ export default function ScanScreen() {
     router.replace('/home');
   }
 
-  // Dev-Modus: manuelle Token-Eingabe
-  const devInput = __DEV__ && (
-    <View className="absolute bottom-8 left-0 right-0 px-6">
-      {showDevInput ? (
-        <View className="bg-white rounded-lg p-4 shadow">
-          <Text className="text-xs text-muted mb-2">Dev: Token eingeben</Text>
-          <TextInput
-            className="border border-muted rounded px-3 py-2 text-primary mb-3"
-            placeholder="QR-Token..."
-            value={devToken}
-            onChangeText={setDevToken}
-            autoCapitalize="none"
-          />
-          <TouchableOpacity
-            onPress={async () => {
-              setShowDevInput(false);
-              setLoading(true);
-              try {
-                await loginWithToken(devToken.trim());
-              } catch (e: any) {
-                Alert.alert('Fehler', e?.response?.data?.message ?? 'Ungültiger Token.');
-                setScanned(false);
-              } finally {
-                setLoading(false);
-              }
-            }}
-            className="bg-primary rounded py-2 items-center"
-          >
-            <Text className="text-white text-sm">Einloggen</Text>
-          </TouchableOpacity>
-        </View>
-      ) : (
-        <TouchableOpacity
-          onPress={() => setShowDevInput(true)}
-          className="bg-black/50 rounded py-2 items-center"
-        >
-          <Text className="text-white text-xs">DEV: Token manuell eingeben</Text>
-        </TouchableOpacity>
-      )}
-    </View>
-  );
-
-  if (!permission) return <View className="flex-1 bg-background" />;
+  if (!permission) return <View style={styles.container} />;
 
   if (!permission.granted) {
     return (
-      <View className="flex-1 bg-background items-center justify-center px-8">
-        <Text className="text-primary text-center text-base mb-6">
+      <View style={styles.container}>
+        <Text style={styles.permissionText}>
           Kamera-Zugriff benötigt um den QR-Code zu scannen.
         </Text>
-        <TouchableOpacity
-          onPress={requestPermission}
-          className="bg-primary px-8 py-4 rounded-lg"
-        >
-          <Text className="text-secondary font-semibold">Zugriff erlauben</Text>
+        <TouchableOpacity style={styles.button} onPress={requestPermission}>
+          <Text style={styles.buttonText}>Zugriff erlauben</Text>
         </TouchableOpacity>
       </View>
     );
   }
 
   return (
-    <View className="flex-1">
+    <View style={{ flex: 1 }}>
       <CameraView
-        className="flex-1"
+        style={{ flex: 1 }}
         facing="back"
         barcodeScannerSettings={{ barcodeTypes: ['qr'] }}
         onBarcodeScanned={({ data }) => handleQrCode(data)}
       />
 
       {loading && (
-        <View className="absolute inset-0 bg-black/60 items-center justify-center">
+        <View style={styles.loadingOverlay}>
           <ActivityIndicator size="large" color={theme.colors.secondary} />
         </View>
       )}
 
-      {devInput}
+      {/* Dev-Modus: manuelle Token-Eingabe */}
+      {__DEV__ && (
+        <View style={styles.devContainer}>
+          {showDevInput ? (
+            <View style={styles.devInputBox}>
+              <Text style={styles.devLabel}>Dev: Token eingeben</Text>
+              <TextInput
+                style={styles.devInput}
+                placeholder="QR-Token..."
+                value={devToken}
+                onChangeText={setDevToken}
+                autoCapitalize="none"
+              />
+              <TouchableOpacity
+                style={styles.devButton}
+                onPress={async () => {
+                  setShowDevInput(false);
+                  setLoading(true);
+                  try {
+                    await loginWithToken(devToken.trim());
+                  } catch (e: any) {
+                    Alert.alert('Fehler', e?.response?.data?.message ?? 'Ungültiger Token.');
+                    setScanned(false);
+                  } finally {
+                    setLoading(false);
+                  }
+                }}
+              >
+                <Text style={styles.devButtonText}>Einloggen</Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <TouchableOpacity
+              style={styles.devToggle}
+              onPress={() => setShowDevInput(true)}
+            >
+              <Text style={styles.devToggleText}>DEV: Token manuell eingeben</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+      )}
 
       {/* Gastauswahl für Familien */}
       <Modal visible={showPicker} transparent animationType="slide">
-        <View className="flex-1 bg-black/50 justify-end">
-          <View className="bg-surface rounded-t-2xl px-6 pt-6 pb-10">
-            <Text className="text-xl font-bold text-primary text-center mb-2">
+        <View style={styles.modalBackdrop}>
+          <View style={styles.modalSheet}>
+            <Text style={styles.modalTitle}>
               {familyName ? `Familie ${familyName}` : 'Wer bist du?'}
             </Text>
-            <Text className="text-sm text-muted text-center mb-6">
-              Bitte wähle deinen Namen aus.
-            </Text>
+            <Text style={styles.modalSubtitle}>Bitte wähle deinen Namen aus.</Text>
             <FlatList
               data={guests}
               keyExtractor={(item) => String(item.guest_id)}
               renderItem={({ item }) => (
                 <TouchableOpacity
+                  style={styles.guestRow}
                   onPress={() => persistAndNavigate(item, responseType, familyName)}
-                  className="py-4 border-b border-gray-100"
                 >
-                  <Text className="text-base text-primary text-center">
+                  <Text style={styles.guestName}>
                     {item.firstname} {item.lastname}
                   </Text>
                 </TouchableOpacity>
@@ -203,3 +192,117 @@ export default function ScanScreen() {
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: theme.colors.background,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: theme.spacing.xl,
+  },
+  permissionText: {
+    color: theme.colors.primary,
+    textAlign: 'center',
+    fontSize: 16,
+    marginBottom: theme.spacing.lg,
+  },
+  button: {
+    backgroundColor: theme.colors.primary,
+    paddingHorizontal: theme.spacing.xl,
+    paddingVertical: theme.spacing.md,
+    borderRadius: theme.borderRadius.md,
+  },
+  buttonText: {
+    color: theme.colors.secondary,
+    fontWeight: '600',
+  },
+  loadingOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  devContainer: {
+    position: 'absolute',
+    bottom: 32,
+    left: 0,
+    right: 0,
+    paddingHorizontal: theme.spacing.lg,
+  },
+  devInputBox: {
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.borderRadius.md,
+    padding: theme.spacing.md,
+  },
+  devLabel: {
+    fontSize: 12,
+    color: theme.colors.muted,
+    marginBottom: theme.spacing.sm,
+  },
+  devInput: {
+    borderWidth: 1,
+    borderColor: theme.colors.muted,
+    borderRadius: theme.borderRadius.sm,
+    paddingHorizontal: theme.spacing.sm,
+    paddingVertical: theme.spacing.sm,
+    color: theme.colors.primary,
+    marginBottom: theme.spacing.sm,
+  },
+  devButton: {
+    backgroundColor: theme.colors.primary,
+    borderRadius: theme.borderRadius.sm,
+    paddingVertical: theme.spacing.sm,
+    alignItems: 'center',
+  },
+  devButtonText: {
+    color: theme.colors.secondary,
+    fontSize: 14,
+  },
+  devToggle: {
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    borderRadius: theme.borderRadius.sm,
+    paddingVertical: theme.spacing.sm,
+    alignItems: 'center',
+  },
+  devToggleText: {
+    color: theme.colors.secondary,
+    fontSize: 12,
+  },
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalSheet: {
+    backgroundColor: theme.colors.surface,
+    borderTopLeftRadius: theme.borderRadius.lg,
+    borderTopRightRadius: theme.borderRadius.lg,
+    paddingHorizontal: theme.spacing.lg,
+    paddingTop: theme.spacing.lg,
+    paddingBottom: theme.spacing.xxl,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: theme.colors.primary,
+    textAlign: 'center',
+    marginBottom: theme.spacing.xs,
+  },
+  modalSubtitle: {
+    fontSize: 14,
+    color: theme.colors.muted,
+    textAlign: 'center',
+    marginBottom: theme.spacing.lg,
+  },
+  guestRow: {
+    paddingVertical: theme.spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+  },
+  guestName: {
+    fontSize: 16,
+    color: theme.colors.primary,
+    textAlign: 'center',
+  },
+});

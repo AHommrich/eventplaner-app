@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
-import { View, Text, TouchableOpacity } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import { getSession, clearSession, GuestSession } from '../lib/auth';
+import { theme } from '../constants/theme';
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -16,27 +17,52 @@ export default function HomeScreen() {
     router.replace('/');
   }
 
-  const greeting = session?.type === 'family' && session.familyName
-    ? `Familie ${session.familyName}`
-    : session?.firstname ?? '';
+  const greeting = session?.firstname ?? '';
 
   return (
-    <View className="flex-1 bg-background items-center justify-center px-8">
-      <Text className="text-3xl font-bold text-primary text-center mb-4">
-        Willkommen, {greeting}!
-      </Text>
-      <Text className="text-base text-muted text-center mb-16">
-        Du bist eingeloggt.
-      </Text>
+    <View style={styles.container}>
+      <Text style={styles.title}>Willkommen, {greeting}!</Text>
+      <Text style={styles.subtitle}>Du bist eingeloggt.</Text>
 
       {/* Placeholder für zukünftige Features */}
 
-      <TouchableOpacity
-        onPress={handleLogout}
-        className="border border-primary px-8 py-3 rounded-lg"
-      >
-        <Text className="text-primary font-semibold">Ausloggen</Text>
+      <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+        <Text style={styles.logoutText}>Ausloggen</Text>
       </TouchableOpacity>
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: theme.colors.background,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: theme.spacing.xl,
+  },
+  title: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: theme.colors.primary,
+    textAlign: 'center',
+    marginBottom: theme.spacing.sm,
+  },
+  subtitle: {
+    fontSize: 16,
+    color: theme.colors.muted,
+    textAlign: 'center',
+    marginBottom: theme.spacing.xxl,
+  },
+  logoutButton: {
+    borderWidth: 1,
+    borderColor: theme.colors.primary,
+    paddingHorizontal: theme.spacing.xl,
+    paddingVertical: theme.spacing.sm + 4,
+    borderRadius: theme.borderRadius.md,
+  },
+  logoutText: {
+    color: theme.colors.primary,
+    fontWeight: '600',
+  },
+});
