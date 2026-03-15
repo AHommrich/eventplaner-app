@@ -1,8 +1,7 @@
 import { useEffect, useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
 import { getSession } from '../lib/auth';
-import { theme } from '../constants/theme';
 
 export default function WelcomeScreen() {
   const router = useRouter();
@@ -11,57 +10,31 @@ export default function WelcomeScreen() {
   useEffect(() => {
     getSession().then((session) => {
       if (session) {
-        router.replace('/home');
+        router.replace('/(tabs)/home');
       } else {
         setChecking(false);
       }
     });
   }, []);
 
-  if (checking) return <View style={{ flex: 1, backgroundColor: theme.colors.background }} />;
+  if (checking) return <View className="flex-1 bg-background" />;
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>André & Tabea</Text>
-      <Text style={styles.subtitle}>Willkommen zu unserer Hochzeit</Text>
-      <TouchableOpacity style={styles.button} onPress={() => router.push('/scan')}>
-        <Text style={styles.buttonText}>QR-Code scannen</Text>
+    <View className="flex-1 bg-background items-center justify-center px-8">
+      <Text className="text-4xl font-bold text-primary text-center mb-3">
+        André & Tabea
+      </Text>
+      <Text className="text-base text-muted text-center mb-16">
+        Willkommen zu unserer Hochzeit
+      </Text>
+      <TouchableOpacity
+        className="bg-primary w-full py-4 rounded-lg items-center"
+        onPress={() => router.push('/scan')}
+      >
+        <Text className="text-white text-base font-semibold">
+          QR-Code scannen
+        </Text>
       </TouchableOpacity>
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: theme.colors.background,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: theme.spacing.xl,
-  },
-  title: {
-    fontSize: 36,
-    fontWeight: 'bold',
-    color: theme.colors.primary,
-    textAlign: 'center',
-    marginBottom: theme.spacing.sm,
-  },
-  subtitle: {
-    fontSize: 16,
-    color: theme.colors.muted,
-    textAlign: 'center',
-    marginBottom: theme.spacing.xxl,
-  },
-  button: {
-    backgroundColor: theme.colors.primary,
-    width: '100%',
-    paddingVertical: theme.spacing.md,
-    borderRadius: theme.borderRadius.md,
-    alignItems: 'center',
-  },
-  buttonText: {
-    color: theme.colors.secondary,
-    fontSize: 16,
-    fontWeight: '600',
-  },
-});
