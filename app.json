@@ -2,6 +2,7 @@
   "expo": {
     "name": "eventplaner-app",
     "slug": "eventplaner-app",
+    "scheme": "eventplaner",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
