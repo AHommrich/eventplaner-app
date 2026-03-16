@@ -11,9 +11,6 @@ import {
   StyleSheet,
 } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
-import * as ImagePicker from 'expo-image-picker';
-import { Ionicons } from '@expo/vector-icons';
-import { QrFromImageView } from '../lib/QrFromImage';
 import { useRouter } from 'expo-router';
 import api from '../lib/api';
 import { saveSession, GuestSession } from '../lib/auth';
@@ -47,7 +44,6 @@ export default function ScanScreen() {
   const [showPicker, setShowPicker] = useState(false);
   const [devToken, setDevToken] = useState('');
   const [showDevInput, setShowDevInput] = useState(false);
-  const [qrDecoder, setQrDecoder] = useState<((uri: string) => Promise<string | null>) | null>(null);
 
   useEffect(() => {
     if (!permission?.granted) requestPermission();
@@ -58,40 +54,9 @@ export default function ScanScreen() {
     setScanned(true);
     setLoading(true);
     try {
-      const token = data.split('/').pop();
+      const token = data.split('/').filter(Boolean).pop();
       if (!token) throw new Error(t('scan.invalidQr'));
       await loginWithToken(token);
-    } catch (e: any) {
-      Alert.alert(t('common.error'), e?.response?.data?.message ?? t('scan.invalidQrMessage'));
-      setScanned(false);
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  async function handlePickImage() {
-    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!permission.granted) {
-      Alert.alert(t('common.accessDenied'), t('photos.libraryPermission'));
-      return;
-    }
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'],
-      quality: 1,
-    });
-    if (result.canceled) return;
-    if (!qrDecoder) {
-      Alert.alert(t('common.error'), t('scan.decoderNotReady'));
-      return;
-    }
-    setLoading(true);
-    try {
-      const data = await qrDecoder(result.assets[0].uri);
-      if (!data) {
-        Alert.alert(t('common.error'), t('scan.noQrInImage'));
-        return;
-      }
-      await handleQrCode(data);
     } catch (e: any) {
       Alert.alert(t('common.error'), e?.response?.data?.message ?? t('scan.invalidQrMessage'));
       setScanned(false);
@@ -162,14 +127,6 @@ export default function ScanScreen() {
         </View>
       )}
 
-      {/* Galerie-Button — QR aus Bild lesen */}
-      {!loading && (
-        <TouchableOpacity style={styles.galleryButton} onPress={handlePickImage}>
-          <Ionicons name="image-outline" size={28} color="#fff" />
-          <Text style={styles.galleryButtonText}>{t('scan.fromGallery')}</Text>
-        </TouchableOpacity>
-      )}
-
       {/* Dev-Modus: manuelle Token-Eingabe */}
       {__DEV__ && (
         <View style={styles.devContainer}>
@@ -211,9 +168,6 @@ export default function ScanScreen() {
           )}
         </View>
       )}
-
-      {/* Unsichtbarer QR-Decoder für Galerie-Bilder */}
-      <QrFromImageView onReady={(fn) => setQrDecoder(() => fn)} />
 
       {/* Gastauswahl für Familien */}
       <Modal visible={showPicker} transparent animationType="slide">
@@ -303,23 +257,6 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.6)',
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  galleryButton: {
-    position: 'absolute',
-    bottom: 48,
-    left: theme.spacing.lg,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    paddingHorizontal: theme.spacing.md,
-    paddingVertical: theme.spacing.sm,
-    borderRadius: theme.borderRadius.full,
-  },
-  galleryButtonText: {
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: '600',
   },
   devContainer: {
     position: 'absolute',

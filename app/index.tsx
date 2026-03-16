@@ -1,14 +1,32 @@
 import { useEffect, useState } from 'react';
-import { View, Text, TouchableOpacity } from 'react-native';
+import { View, Text, TouchableOpacity, Alert, StyleSheet, Modal, FlatList } from 'react-native';
+import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
-import { getSession } from '../lib/auth';
+import * as ImagePicker from 'expo-image-picker';
+import * as FileSystem from 'expo-file-system/legacy';
+import { Ionicons } from '@expo/vector-icons';
+import { getSession, saveSession, GuestSession } from '../lib/auth';
 import { fetchGuestMe, isFullAccess, isDeclinedFlow } from '../lib/guest';
 import { useLanguage } from '../lib/LanguageContext';
+import { QrFromImageView } from '../lib/QrFromImage';
+import api from '../lib/api';
+import { useEventTheme } from '../lib/EventThemeContext';
+import { theme } from '../constants/theme';
+
+type ApiGuest = { guest_id: number; firstname: string; lastname: string; token: string };
+type ApiResponse = { type: 'solo' | 'family'; family_name: string | null; guests: ApiGuest[] };
 
 export default function WelcomeScreen() {
   const router = useRouter();
   const { t } = useLanguage();
+  const { loadTheme } = useEventTheme();
   const [checking, setChecking] = useState(true);
+  const [loading, setLoading] = useState(false);
+  const [qrDecoder, setQrDecoder] = useState<((uri: string) => Promise<string | null>) | null>(null);
+  const [familyGuests, setFamilyGuests] = useState<ApiGuest[]>([]);
+  const [familyName, setFamilyName] = useState<string | null>(null);
+  const [responseType, setResponseType] = useState<'solo' | 'family'>('solo');
+  const [showFamilyPicker, setShowFamilyPicker] = useState(false);
 
   useEffect(() => {
     getSession().then(async (session) => {
@@ -32,24 +50,212 @@ export default function WelcomeScreen() {
     });
   }, []);
 
-  if (checking) return <View className="flex-1 bg-background" />;
+  async function handlePickImage() {
+    const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!perm.granted) {
+      Alert.alert(t('common.accessDenied'), t('photos.libraryPermission'));
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 1 });
+    if (result.canceled) return;
+    if (!qrDecoder) {
+      Alert.alert(t('common.error'), t('scan.decoderNotReady'));
+      return;
+    }
+    setLoading(true);
+    try {
+      const asset = result.assets[0];
+      const base64 = await FileSystem.readAsStringAsync(asset.uri, { encoding: 'base64' as any });
+      const mimeType = asset.mimeType ?? 'image/jpeg';
+      const dataUri = `data:${mimeType};base64,${base64}`;
+      const data = await qrDecoder(dataUri);
+      if (!data) {
+        Alert.alert(t('common.error'), t('scan.noQrInImage'));
+        return;
+      }
+      const token = data.split('/').filter(Boolean).pop();
+      if (!token) throw new Error(t('scan.invalidQr'));
+      const response = await api.get<ApiResponse>(`/api/auth/qr/${token}`);
+      const { type, family_name, guests } = response.data;
+      if (guests.length === 1) {
+        const g = guests[0];
+        const session: GuestSession = {
+          token: g.token, guestId: g.guest_id, firstname: g.firstname,
+          lastname: g.lastname, type, familyName: family_name,
+        };
+        await saveSession(session);
+        await loadTheme();
+        router.replace('/rsvp');
+      } else {
+        setFamilyGuests(guests);
+        setFamilyName(family_name);
+        setResponseType(type);
+        setShowFamilyPicker(true);
+      }
+    } catch (e: any) {
+      Alert.alert(t('common.error'), e?.response?.data?.message ?? t('scan.invalidQrMessage'));
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function persistAndNavigate(guest: ApiGuest) {
+    const session: GuestSession = {
+      token: guest.token, guestId: guest.guest_id,
+      firstname: guest.firstname, lastname: guest.lastname,
+      type: responseType, familyName,
+    };
+    await saveSession(session);
+    await loadTheme();
+    setShowFamilyPicker(false);
+    router.replace('/rsvp');
+  }
 
   return (
-    <View className="flex-1 bg-background items-center justify-center px-8">
-      <Text className="text-4xl font-bold text-primary text-center mb-3">
-        André & Tabea
-      </Text>
-      <Text className="text-base text-muted text-center mb-16">
-        {t('welcome.subtitle')}
-      </Text>
-      <TouchableOpacity
-        className="bg-primary w-full py-4 rounded-lg items-center"
-        onPress={() => router.push('/scan')}
-      >
-        <Text className="text-white text-base font-semibold">
-          {t('welcome.scanButton')}
-        </Text>
-      </TouchableOpacity>
+    <View style={styles.bg}>
+      <Image
+        source={require('../assets/house_party.jpg')}
+        style={StyleSheet.absoluteFill}
+        contentFit="cover"
+        cachePolicy="memory"
+      />
+      <View style={styles.overlay}>
+        {!checking && (
+          <View style={styles.content}>
+            <Text style={styles.title}>{t('welcome.title')}</Text>
+            <Text style={styles.subtitle}>{t('welcome.subtitle')}</Text>
+
+            <TouchableOpacity
+              style={styles.scanButton}
+              onPress={() => router.push('/scan')}
+              disabled={loading}
+            >
+              <Text style={styles.scanButtonText}>{t('welcome.scanButton')}</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.galleryButton}
+              onPress={handlePickImage}
+              disabled={loading}
+            >
+              <Ionicons name="image-outline" size={18} color="#fff" />
+              <Text style={styles.galleryButtonText}>{t('scan.fromGallery')}</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+      </View>
+
+      <QrFromImageView onReady={(fn) => setQrDecoder(() => fn)} />
+
+      <Modal visible={showFamilyPicker} transparent animationType="slide">
+        <View style={styles.modalBackdrop}>
+          <View style={styles.modalSheet}>
+            <Text style={styles.modalTitle}>
+              {familyName ? t('scan.familyTitle', { name: familyName }) : t('scan.whoAreYou')}
+            </Text>
+            <Text style={styles.modalSubtitle}>{t('scan.chooseName')}</Text>
+            <FlatList
+              data={familyGuests}
+              keyExtractor={(item) => String(item.guest_id)}
+              renderItem={({ item }) => (
+                <TouchableOpacity style={styles.guestRow} onPress={() => persistAndNavigate(item)}>
+                  <Text style={styles.guestName}>{item.firstname} {item.lastname}</Text>
+                </TouchableOpacity>
+              )}
+            />
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  bg: {
+    flex: 1,
+    backgroundColor: '#000',
+  },
+  overlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.58)',
+    justifyContent: 'flex-end',
+    paddingBottom: 64,
+    paddingHorizontal: 28,
+  },
+  content: {
+    width: '100%',
+  },
+  title: {
+    fontSize: 34,
+    fontWeight: 'bold',
+    color: '#fff',
+    marginBottom: 12,
+  },
+  subtitle: {
+    fontSize: 15,
+    color: 'rgba(255,255,255,0.8)',
+    lineHeight: 22,
+    marginBottom: 40,
+  },
+  scanButton: {
+    backgroundColor: '#fff',
+    width: '100%',
+    paddingVertical: 16,
+    borderRadius: theme.borderRadius.md,
+    alignItems: 'center',
+  },
+  scanButtonText: {
+    color: theme.colors.primary,
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  galleryButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    marginTop: 14,
+    paddingVertical: 12,
+  },
+  galleryButtonText: {
+    color: '#fff',
+    fontSize: 15,
+    fontWeight: '500',
+  },
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalSheet: {
+    backgroundColor: theme.colors.surface,
+    borderTopLeftRadius: theme.borderRadius.lg,
+    borderTopRightRadius: theme.borderRadius.lg,
+    paddingHorizontal: theme.spacing.lg,
+    paddingTop: theme.spacing.lg,
+    paddingBottom: theme.spacing.xxl,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: theme.colors.primary,
+    textAlign: 'center',
+    marginBottom: theme.spacing.xs,
+  },
+  modalSubtitle: {
+    fontSize: 14,
+    color: theme.colors.muted,
+    textAlign: 'center',
+    marginBottom: theme.spacing.lg,
+  },
+  guestRow: {
+    paddingVertical: theme.spacing.md,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+  },
+  guestName: {
+    fontSize: 16,
+    color: theme.colors.primary,
+    textAlign: 'center',
+  },
+});

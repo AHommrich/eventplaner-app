@@ -10,6 +10,7 @@ const en = {
     home: 'Home',
     photos: 'Photos',
     rsvp: 'RSVP',
+    drinks: 'Drinks',
     settings: 'Settings',
   },
   rsvp: {
@@ -42,7 +43,8 @@ const en = {
     logout: 'Log out',
   },
   welcome: {
-    subtitle: 'Welcome to our wedding',
+    title: 'The App for Your Event',
+    subtitle: 'Use the QR code from your invitation to log in.',
     scanButton: 'Scan QR code',
   },
   scan: {
@@ -81,6 +83,18 @@ invalidQr: 'Invalid QR code',
     language: 'Language',
     german: 'German',
     english: 'English',
+  },
+  drinks: {
+    trackTab: 'Track',
+    statsTab: 'Statistics',
+    myStats: 'My Balance',
+    eventTotal: 'Event Total',
+    leaderboard: 'Leaderboard',
+    noData: 'Nothing logged yet.',
+  },
+  blocked: {
+    title: 'Access restricted',
+    message: 'Your app access has been deactivated. We automatically check every 10 seconds whether your access has been restored.',
   },
   photos: {
     empty: 'No photos yet',

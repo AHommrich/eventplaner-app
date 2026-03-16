@@ -17,12 +17,14 @@ window.addEventListener('message', async (e) => {
     img.crossOrigin = 'anonymous';
     img.onload = () => {
       const canvas = document.createElement('canvas');
-      canvas.width = img.width;
-      canvas.height = img.height;
+      const MAX = 1024;
+      const scale = Math.min(MAX / img.width, MAX / img.height, 1);
+      canvas.width = Math.round(img.width * scale);
+      canvas.height = Math.round(img.height * scale);
       const ctx = canvas.getContext('2d');
-      ctx.drawImage(img, 0, 0);
-      const d = ctx.getImageData(0, 0, img.width, img.height);
-      const result = jsQR(d.data, d.width, d.height);
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      const d = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      const result = jsQR(d.data, d.width, d.height, { inversionAttempts: 'attemptBoth' });
       window.ReactNativeWebView.postMessage(JSON.stringify({ ok: true, data: result ? result.data : null }));
     };
     img.onerror = () => window.ReactNativeWebView.postMessage(JSON.stringify({ ok: false }));
