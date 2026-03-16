@@ -11,9 +11,9 @@ import {
   StyleSheet,
 } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
-import { BarCodeScanner } from 'expo-barcode-scanner';
 import * as ImagePicker from 'expo-image-picker';
 import { Ionicons } from '@expo/vector-icons';
+import { QrFromImageView } from '../lib/QrFromImage';
 import { useRouter } from 'expo-router';
 import api from '../lib/api';
 import { saveSession, GuestSession } from '../lib/auth';
@@ -47,6 +47,7 @@ export default function ScanScreen() {
   const [showPicker, setShowPicker] = useState(false);
   const [devToken, setDevToken] = useState('');
   const [showDevInput, setShowDevInput] = useState(false);
+  const [qrDecoder, setQrDecoder] = useState<((uri: string) => Promise<string | null>) | null>(null);
 
   useEffect(() => {
     if (!permission?.granted) requestPermission();
@@ -79,14 +80,18 @@ export default function ScanScreen() {
       quality: 1,
     });
     if (result.canceled) return;
+    if (!qrDecoder) {
+      Alert.alert(t('common.error'), t('scan.decoderNotReady'));
+      return;
+    }
     setLoading(true);
     try {
-      const scans = await BarCodeScanner.scanFromURLAsync(result.assets[0].uri, ['qr']);
-      if (!scans.length) {
+      const data = await qrDecoder(result.assets[0].uri);
+      if (!data) {
         Alert.alert(t('common.error'), t('scan.noQrInImage'));
         return;
       }
-      await handleQrCode(scans[0].data);
+      await handleQrCode(data);
     } catch (e: any) {
       Alert.alert(t('common.error'), e?.response?.data?.message ?? t('scan.invalidQrMessage'));
       setScanned(false);
@@ -206,6 +211,9 @@ export default function ScanScreen() {
           )}
         </View>
       )}
+
+      {/* Unsichtbarer QR-Decoder für Galerie-Bilder */}
+      <QrFromImageView onReady={(fn) => setQrDecoder(() => fn)} />
 
       {/* Gastauswahl für Familien */}
       <Modal visible={showPicker} transparent animationType="slide">
