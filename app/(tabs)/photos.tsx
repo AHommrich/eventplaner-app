@@ -18,6 +18,7 @@ import { Ionicons } from '@expo/vector-icons';
 import api from '../../lib/api';
 import { theme } from '../../constants/theme';
 import { useLanguage } from '../../lib/LanguageContext';
+import { useEventTheme } from '../../lib/EventThemeContext';
 
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
 
@@ -54,6 +55,7 @@ const POLL_INTERVAL = 30_000;
 
 export default function PhotosScreen() {
   const { t } = useLanguage();
+  const { colors } = useEventTheme();
   const [photos, setPhotos] = useState<Photo[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
@@ -146,14 +148,14 @@ export default function PhotosScreen() {
 
   if (loading) {
     return (
-      <View className="flex-1 bg-background items-center justify-center" style={{ paddingTop: insets.top }}>
+      <View style={{ flex: 1, backgroundColor: colors.background, alignItems: 'center', justifyContent: 'center', paddingTop: insets.top }}>
         <ActivityIndicator color={theme.colors.accent} />
       </View>
     );
   }
 
   return (
-    <View className="flex-1 bg-background" style={{ paddingTop: insets.top }}>
+    <View style={{ flex: 1, backgroundColor: colors.background, paddingTop: insets.top }}>
       <FlatList
         data={photos}
         keyExtractor={(item) => String(item.id)}

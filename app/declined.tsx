@@ -4,6 +4,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useLanguage } from '../lib/LanguageContext';
+import { useEventTheme } from '../lib/EventThemeContext';
 import { clearSession } from '../lib/auth';
 import {
   fetchGuestMe,
@@ -27,6 +28,7 @@ function formatDeadline(iso: string, locale: string): string {
 export default function DeclinedScreen() {
   const router = useRouter();
   const { t, language } = useLanguage();
+  const { colors } = useEventTheme();
 
   const [status, setStatus] = useState<RsvpStatus>(null);
   const [deadline, setDeadline] = useState<string | null>(null);
@@ -107,7 +109,7 @@ export default function DeclinedScreen() {
 
   if (loading) {
     return (
-      <View style={{ flex: 1, backgroundColor: theme.colors.background, alignItems: 'center', justifyContent: 'center' }}>
+      <View style={{ flex: 1, backgroundColor: colors.background, alignItems: 'center', justifyContent: 'center' }}>
         <ActivityIndicator color={theme.colors.accent} />
       </View>
     );
@@ -120,11 +122,11 @@ export default function DeclinedScreen() {
   const deadlineFormatted = deadline ? formatDeadline(deadline, language) : null;
 
   return (
-    <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
+    <View style={{ flex: 1, backgroundColor: colors.background }}>
     <ScrollView
       style={{ flex: 1 }}
       contentContainerStyle={{ flexGrow: 1, padding: theme.spacing.lg, justifyContent: 'center' }}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={theme.colors.primary} />}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={colors.primary} />}
     >
       <View style={{ alignItems: 'center', marginBottom: theme.spacing.xl }}>
         <Ionicons
@@ -138,7 +140,7 @@ export default function DeclinedScreen() {
         style={{
           fontSize: 24,
           fontWeight: 'bold',
-          color: theme.colors.primary,
+          color: colors.primary,
           textAlign: 'center',
           marginBottom: theme.spacing.md,
         }}
@@ -176,7 +178,7 @@ export default function DeclinedScreen() {
           disabled={revoking}
           style={{
             borderWidth: 1,
-            borderColor: theme.colors.primary,
+            borderColor: colors.primary,
             borderRadius: theme.borderRadius.md,
             paddingVertical: theme.spacing.md,
             alignItems: 'center',
@@ -184,9 +186,9 @@ export default function DeclinedScreen() {
           }}
         >
           {revoking ? (
-            <ActivityIndicator color={theme.colors.primary} />
+            <ActivityIndicator color={colors.primary} />
           ) : (
-            <Text style={{ color: theme.colors.primary, fontWeight: '600' }}>
+            <Text style={{ color: colors.primary, fontWeight: '600' }}>
               {t('declined.revokeButton')}
             </Text>
           )}
@@ -216,7 +218,7 @@ export default function DeclinedScreen() {
           position: 'absolute',
           top: insets.top + 12,
           alignSelf: 'center',
-          backgroundColor: theme.colors.primary,
+          backgroundColor: colors.primary,
           paddingHorizontal: 16,
           paddingVertical: 8,
           borderRadius: theme.borderRadius.full,

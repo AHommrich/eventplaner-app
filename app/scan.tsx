@@ -16,6 +16,7 @@ import api from '../lib/api';
 import { saveSession, GuestSession } from '../lib/auth';
 import { theme } from '../constants/theme';
 import { useLanguage, Language } from '../lib/LanguageContext';
+import { useEventTheme } from '../lib/EventThemeContext';
 
 type ApiGuest = {
   guest_id: number;
@@ -33,6 +34,7 @@ type ApiResponse = {
 export default function ScanScreen() {
   const router = useRouter();
   const { t, language, setLanguage, needsLanguagePick } = useLanguage();
+  const { loadTheme } = useEventTheme();
   const [permission, requestPermission] = useCameraPermissions();
   const [scanned, setScanned] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -90,6 +92,7 @@ export default function ScanScreen() {
       familyName: famName,
     };
     await saveSession(session);
+    await loadTheme();
     setShowPicker(false);
     router.replace('/');
   }

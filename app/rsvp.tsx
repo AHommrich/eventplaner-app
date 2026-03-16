@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useLanguage } from '../lib/LanguageContext';
+import { useEventTheme } from '../lib/EventThemeContext';
 import {
   fetchGuestMe,
   fetchEventInfo,
@@ -28,6 +29,7 @@ function formatDeadline(iso: string, locale: string): string {
 export default function RsvpScreen() {
   const router = useRouter();
   const { t, language } = useLanguage();
+  const { colors } = useEventTheme();
 
   const [guest, setGuest] = useState<GuestMe | null>(null);
   const [deadline, setDeadline] = useState<string | null>(null);
@@ -78,7 +80,7 @@ export default function RsvpScreen() {
 
   if (loading) {
     return (
-      <View style={{ flex: 1, backgroundColor: theme.colors.background, alignItems: 'center', justifyContent: 'center' }}>
+      <View style={{ flex: 1, backgroundColor: colors.background, alignItems: 'center', justifyContent: 'center' }}>
         <ActivityIndicator color={theme.colors.accent} />
       </View>
     );
@@ -94,14 +96,14 @@ export default function RsvpScreen() {
 
   return (
     <ScrollView
-      style={{ flex: 1, backgroundColor: theme.colors.background }}
+      style={{ flex: 1, backgroundColor: colors.background }}
       contentContainerStyle={{ padding: theme.spacing.lg, paddingBottom: 48 }}
     >
       <Text
         style={{
           fontSize: 28,
           fontWeight: 'bold',
-          color: theme.colors.primary,
+          color: colors.primary,
           marginBottom: theme.spacing.sm,
           marginTop: theme.spacing.xl,
         }}
@@ -123,7 +125,7 @@ export default function RsvpScreen() {
           marginBottom: theme.spacing.md,
         }}
       >
-        <Text style={{ fontSize: 16, fontWeight: '600', color: theme.colors.primary, marginBottom: theme.spacing.md }}>
+        <Text style={{ fontSize: 16, fontWeight: '600', color: colors.primary, marginBottom: theme.spacing.md }}>
           {guest.firstname} {guest.lastname}
         </Text>
         {savingOwn ? (
@@ -138,7 +140,7 @@ export default function RsvpScreen() {
                 paddingVertical: theme.spacing.md,
                 borderRadius: theme.borderRadius.md,
                 alignItems: 'center',
-                backgroundColor: ownAccepted ? theme.colors.sage : theme.colors.background,
+                backgroundColor: ownAccepted ? theme.colors.sage : colors.background,
                 borderWidth: 1,
                 borderColor: ownAccepted ? theme.colors.sage : theme.colors.muted,
                 opacity: ownSet && !ownAccepted ? 0.4 : 1,
@@ -156,7 +158,7 @@ export default function RsvpScreen() {
                 paddingVertical: theme.spacing.md,
                 borderRadius: theme.borderRadius.md,
                 alignItems: 'center',
-                backgroundColor: ownDeclined ? theme.colors.error : theme.colors.background,
+                backgroundColor: ownDeclined ? theme.colors.error : colors.background,
                 borderWidth: 1,
                 borderColor: ownDeclined ? theme.colors.error : theme.colors.muted,
                 opacity: ownSet && !ownDeclined ? 0.4 : 1,
@@ -175,7 +177,7 @@ export default function RsvpScreen() {
         <TouchableOpacity
           onPress={handleContinue}
           style={{
-            backgroundColor: theme.colors.primary,
+            backgroundColor: colors.primary,
             borderRadius: theme.borderRadius.md,
             paddingVertical: theme.spacing.md,
             alignItems: 'center',

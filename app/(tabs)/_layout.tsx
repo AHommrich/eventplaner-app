@@ -3,10 +3,12 @@ import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { theme } from '../../constants/theme';
 import { useLanguage } from '../../lib/LanguageContext';
+import { useEventTheme } from '../../lib/EventThemeContext';
 import { fetchGuestMe, RsvpStatus } from '../../lib/guest';
 
 export default function TabLayout() {
   const { t } = useLanguage();
+  const { colors } = useEventTheme();
   const [rsvpStatus, setRsvpStatus] = useState<RsvpStatus>('accepted_pending');
 
   useEffect(() => {
@@ -21,7 +23,7 @@ export default function TabLayout() {
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: theme.colors.primary,
+        tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: theme.colors.muted,
         tabBarStyle: {
           backgroundColor: theme.colors.surface,
