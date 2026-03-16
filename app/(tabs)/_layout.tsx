@@ -8,7 +8,7 @@ import { fetchGuestMe, RsvpStatus } from '../../lib/guest';
 
 export default function TabLayout() {
   const { t } = useLanguage();
-  const { colors } = useEventTheme();
+  const { colors, eventInfo } = useEventTheme();
   const [rsvpStatus, setRsvpStatus] = useState<RsvpStatus>('accepted_pending');
 
   useEffect(() => {
@@ -18,6 +18,7 @@ export default function TabLayout() {
   }, []);
 
   const showRsvpTab = rsvpStatus === 'accepted_pending';
+  const hasCover = !!eventInfo?.cover_image_url;
 
   return (
     <Tabs
@@ -27,7 +28,8 @@ export default function TabLayout() {
         tabBarInactiveTintColor: theme.colors.muted,
         tabBarStyle: {
           backgroundColor: colors.background,
-          borderTopColor: '#e5e5e5',
+          borderTopColor: colors.primary,
+          borderTopWidth: 1,
         },
       }}
     >
@@ -35,6 +37,11 @@ export default function TabLayout() {
         name="home"
         options={{
           title: t('tabs.home'),
+          tabBarActiveTintColor: hasCover ? colors.homeText : colors.primary,
+          tabBarInactiveTintColor: hasCover ? 'rgba(255,255,255,0.55)' : theme.colors.muted,
+          tabBarStyle: hasCover
+            ? { position: 'absolute', backgroundColor: 'transparent', borderTopWidth: 0, elevation: 0, shadowOpacity: 0 }
+            : { backgroundColor: colors.background, borderTopColor: colors.primary, borderTopWidth: 1 },
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="home-outline" size={size} color={color} />
           ),

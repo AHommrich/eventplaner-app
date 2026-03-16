@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { View, Text, ImageBackground, ScrollView, RefreshControl, StyleSheet } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import { getSession, GuestSession } from '../../lib/auth';
 import { useLanguage } from '../../lib/LanguageContext';
 import { useEventTheme } from '../../lib/EventThemeContext';
@@ -36,6 +37,7 @@ export default function HomeScreen() {
   const hasCover = !!eventInfo?.cover_image_url;
   const textColor = hasCover ? colors.homeText : colors.primary;
   const eventDate = eventInfo?.date ? formatEventDate(eventInfo.date, language) : null;
+  const tabBarHeight = useBottomTabBarHeight();
 
   const refreshControl = (
     <RefreshControl
@@ -48,7 +50,7 @@ export default function HomeScreen() {
   const content = (
     <ScrollView
       style={styles.scroll}
-      contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + theme.spacing.xl }]}
+      contentContainerStyle={[styles.content, { paddingBottom: (hasCover ? tabBarHeight : insets.bottom) + theme.spacing.xl }]}
       refreshControl={refreshControl}
     >
       {session && (
