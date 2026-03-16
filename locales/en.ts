@@ -23,6 +23,7 @@ const en = {
     groupSubtitle: 'You can reply on behalf of your group.',
     setByMe: 'Set by you',
     setBy: 'Set by %{name}',
+    setByOrganizer: 'Set by the organizer',
     saving: 'Saving…',
     deadlinePassed: 'The RSVP deadline has passed.',
     declineConfirmTitle: 'Really decline?',

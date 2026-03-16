@@ -279,7 +279,7 @@ export default function RsvpTabScreen() {
             const setByLabel = member.rsvp_set_by
               ? member.rsvp_set_by.guest_id === guest.guest_id
                 ? t('rsvp.setByMe')
-                : t('rsvp.setBy', { name: member.rsvp_set_by.firstname })
+                : member.rsvp_set_by.firstname ? t('rsvp.setBy', { name: member.rsvp_set_by.firstname }) : t('rsvp.setByOrganizer')
               : null;
             const memberFullName = `${member.firstname} ${member.lastname}`;
 
