@@ -11,6 +11,7 @@ import {
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLanguage } from '../../lib/LanguageContext';
+import { useEventTheme } from '../../lib/EventThemeContext';
 import {
   fetchGuestMe,
   fetchEventInfo,
@@ -58,6 +59,7 @@ function StatusBadge({ status, t }: { status: RsvpStatus; t: (k: string) => stri
 export default function RsvpTabScreen() {
   const router = useRouter();
   const { t, language } = useLanguage();
+  const { colors } = useEventTheme();
   const insets = useSafeAreaInsets();
 
   const [guest, setGuest] = useState<GuestMe | null>(null);
@@ -168,7 +170,7 @@ export default function RsvpTabScreen() {
 
   if (loading) {
     return (
-      <View style={{ flex: 1, backgroundColor: theme.colors.background, alignItems: 'center', justifyContent: 'center' }}>
+      <View style={{ flex: 1, backgroundColor: colors.background, alignItems: 'center', justifyContent: 'center' }}>
         <ActivityIndicator color={theme.colors.accent} />
       </View>
     );
@@ -181,11 +183,11 @@ export default function RsvpTabScreen() {
   const deadlineFormatted = deadline ? formatDeadline(deadline, language) : null;
 
   return (
-    <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
+    <View style={{ flex: 1, backgroundColor: colors.background }}>
       <ScrollView
         style={{ flex: 1 }}
         contentContainerStyle={{ padding: theme.spacing.lg, paddingTop: insets.top + theme.spacing.md, paddingBottom: 48 }}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={theme.colors.primary} />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={colors.primary} />}
       >
       {deadlineFormatted && (
         <Text style={{ fontSize: 13, color: theme.colors.muted, marginBottom: theme.spacing.lg }}>
@@ -203,7 +205,7 @@ export default function RsvpTabScreen() {
         }}
       >
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: theme.spacing.md }}>
-          <Text style={{ fontSize: 16, fontWeight: '600', color: theme.colors.primary }}>
+          <Text style={{ fontSize: 16, fontWeight: '600', color: colors.primary }}>
             {guest.firstname} {guest.lastname}
           </Text>
           <StatusBadge status={guest.rsvp_status} t={t} />
@@ -224,7 +226,7 @@ export default function RsvpTabScreen() {
                 paddingVertical: theme.spacing.sm,
                 borderRadius: theme.borderRadius.md,
                 alignItems: 'center',
-                backgroundColor: ownAccepted ? theme.colors.sage : theme.colors.background,
+                backgroundColor: ownAccepted ? theme.colors.sage : colors.background,
                 borderWidth: 1,
                 borderColor: ownAccepted ? theme.colors.sage : theme.colors.muted,
               }}
@@ -240,7 +242,7 @@ export default function RsvpTabScreen() {
                 paddingVertical: theme.spacing.sm,
                 borderRadius: theme.borderRadius.md,
                 alignItems: 'center',
-                backgroundColor: ownDeclined ? theme.colors.error : theme.colors.background,
+                backgroundColor: ownDeclined ? theme.colors.error : colors.background,
                 borderWidth: 1,
                 borderColor: ownDeclined ? theme.colors.error : theme.colors.muted,
               }}
@@ -262,7 +264,7 @@ export default function RsvpTabScreen() {
             padding: theme.spacing.md,
           }}
         >
-          <Text style={{ fontSize: 16, fontWeight: '600', color: theme.colors.primary, marginBottom: 4 }}>
+          <Text style={{ fontSize: 16, fontWeight: '600', color: colors.primary, marginBottom: 4 }}>
             {t('rsvp.groupTitle')}
           </Text>
           <Text style={{ fontSize: 13, color: theme.colors.muted, marginBottom: theme.spacing.md }}>
@@ -289,7 +291,7 @@ export default function RsvpTabScreen() {
                 style={{ paddingVertical: theme.spacing.md, borderBottomWidth: 1, borderBottomColor: '#f0f0f0' }}
               >
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <Text style={{ fontSize: 15, fontWeight: '600', color: theme.colors.primary }}>
+                  <Text style={{ fontSize: 15, fontWeight: '600', color: colors.primary }}>
                     {memberFullName}
                   </Text>
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
@@ -316,7 +318,7 @@ export default function RsvpTabScreen() {
                           paddingVertical: theme.spacing.sm,
                           borderRadius: theme.borderRadius.md,
                           alignItems: 'center',
-                          backgroundColor: mAccepted ? theme.colors.sage : theme.colors.background,
+                          backgroundColor: mAccepted ? theme.colors.sage : colors.background,
                           borderWidth: 1,
                           borderColor: mAccepted ? theme.colors.sage : theme.colors.muted,
                         }}
@@ -332,7 +334,7 @@ export default function RsvpTabScreen() {
                           paddingVertical: theme.spacing.sm,
                           borderRadius: theme.borderRadius.md,
                           alignItems: 'center',
-                          backgroundColor: mDeclined ? theme.colors.error : theme.colors.background,
+                          backgroundColor: mDeclined ? theme.colors.error : colors.background,
                           borderWidth: 1,
                           borderColor: mDeclined ? theme.colors.error : theme.colors.muted,
                         }}
@@ -357,7 +359,7 @@ export default function RsvpTabScreen() {
           position: 'absolute',
           top: insets.top + 12,
           alignSelf: 'center',
-          backgroundColor: theme.colors.primary,
+          backgroundColor: colors.primary,
           paddingHorizontal: 16,
           paddingVertical: 8,
           borderRadius: theme.borderRadius.full,

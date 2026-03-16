@@ -31,6 +31,14 @@ export type EventInfo = {
   name: string;
   date: string;
   rsvp_deadline: string;
+  cover_image_url: string | null;
+  venue_name: string | null;
+  venue_address: string | null;
+  dresscode: string | null;
+  schedule: string | null;
+  color_primary: string | null;
+  color_secondary: string | null;
+  color_home_text: string | null;
 };
 
 export function isFullAccess(status: RsvpStatus): boolean {

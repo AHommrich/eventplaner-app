@@ -3,11 +3,13 @@ import { View, Text, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
 import { getSession, clearSession, GuestSession } from '../../lib/auth';
 import { useLanguage, Language } from '../../lib/LanguageContext';
+import { useEventTheme } from '../../lib/EventThemeContext';
 import { theme } from '../../constants/theme';
 
 export default function SettingsScreen() {
   const router = useRouter();
   const { t, language, setLanguage } = useLanguage();
+  const { colors } = useEventTheme();
   const [session, setSession] = useState<GuestSession | null>(null);
 
   useEffect(() => {
@@ -20,15 +22,15 @@ export default function SettingsScreen() {
   }
 
   return (
-    <View className="flex-1 bg-background p-6 justify-center">
+    <View style={{ flex: 1, backgroundColor: colors.background, padding: theme.spacing.lg, justifyContent: 'center' }}>
       {session && (
-        <View className="bg-white rounded-xl p-4 mb-8">
-          <Text className="text-xs text-muted mb-1">{t('settings.loggedInAs')}</Text>
-          <Text className="text-base font-semibold text-primary">
+        <View style={{ backgroundColor: '#fff', borderRadius: theme.borderRadius.lg, padding: theme.spacing.md, marginBottom: theme.spacing.xl }}>
+          <Text style={{ fontSize: 12, color: theme.colors.muted, marginBottom: 4 }}>{t('settings.loggedInAs')}</Text>
+          <Text style={{ fontSize: 16, fontWeight: '600', color: colors.primary }}>
             {session.firstname} {session.lastname}
           </Text>
           {session.familyName && (
-            <Text className="text-sm text-muted mt-0.5">
+            <Text style={{ fontSize: 14, color: theme.colors.muted, marginTop: 2 }}>
               {t('settings.family', { name: session.familyName })}
             </Text>
           )}
@@ -36,8 +38,8 @@ export default function SettingsScreen() {
       )}
 
       {/* Language switcher */}
-      <View className="bg-white rounded-xl p-4 mb-4">
-        <Text className="text-xs text-muted mb-3">{t('settings.language')}</Text>
+      <View style={{ backgroundColor: '#fff', borderRadius: theme.borderRadius.lg, padding: theme.spacing.md, marginBottom: theme.spacing.md }}>
+        <Text style={{ fontSize: 12, color: theme.colors.muted, marginBottom: theme.spacing.sm }}>{t('settings.language')}</Text>
         <View style={{ flexDirection: 'row', gap: 8 }}>
           {(['de', 'en'] as Language[]).map((lang) => (
             <TouchableOpacity
@@ -48,13 +50,13 @@ export default function SettingsScreen() {
                 paddingVertical: 10,
                 borderRadius: theme.borderRadius.md,
                 alignItems: 'center',
-                backgroundColor: language === lang ? theme.colors.primary : theme.colors.background,
+                backgroundColor: language === lang ? colors.primary : colors.background,
               }}
             >
               <Text
                 style={{
                   fontWeight: '600',
-                  color: language === lang ? theme.colors.secondary : theme.colors.muted,
+                  color: language === lang ? '#fff' : theme.colors.muted,
                 }}
               >
                 {lang === 'de' ? t('settings.german') : t('settings.english')}
@@ -65,10 +67,10 @@ export default function SettingsScreen() {
       </View>
 
       <TouchableOpacity
-        className="border border-error py-4 rounded-xl items-center"
         onPress={handleLogout}
+        style={{ borderWidth: 1, borderColor: theme.colors.error, paddingVertical: theme.spacing.md, borderRadius: theme.borderRadius.lg, alignItems: 'center' }}
       >
-        <Text className="text-error font-semibold">{t('settings.logout')}</Text>
+        <Text style={{ color: theme.colors.error, fontWeight: '600' }}>{t('settings.logout')}</Text>
       </TouchableOpacity>
     </View>
   );
