@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { View, Text, ImageBackground, StyleSheet } from 'react-native';
+import { View, Text, ImageBackground, ScrollView, RefreshControl, StyleSheet } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getSession, GuestSession } from '../../lib/auth';
@@ -21,17 +21,36 @@ export default function HomeScreen() {
   const { eventInfo, colors } = useEventTheme();
   const insets = useSafeAreaInsets();
   const [session, setSession] = useState<GuestSession | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
     getSession().then(setSession);
   }, []);
 
+  async function handleRefresh() {
+    setRefreshing(true);
+    await loadTheme();
+    setRefreshing(false);
+  }
+
   const hasCover = !!eventInfo?.cover_image_url;
   const textColor = hasCover ? colors.homeText : colors.primary;
   const eventDate = eventInfo?.date ? formatEventDate(eventInfo.date, language) : null;
 
+  const refreshControl = (
+    <RefreshControl
+      refreshing={refreshing}
+      onRefresh={handleRefresh}
+      tintColor={hasCover ? '#fff' : colors.primary}
+    />
+  );
+
   const content = (
-    <View style={[styles.content, { paddingBottom: insets.bottom + theme.spacing.xl }]}>
+    <ScrollView
+      style={styles.scroll}
+      contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + theme.spacing.xl }]}
+      refreshControl={refreshControl}
+    >
       {session && (
         <Text style={[styles.welcome, { color: textColor }]}>
           {t('home.welcome', { name: session.firstname })}
@@ -46,7 +65,7 @@ export default function HomeScreen() {
       {eventInfo?.venue_name && (
         <Text style={[styles.meta, { color: textColor }]}>{eventInfo.venue_name}</Text>
       )}
-    </View>
+    </ScrollView>
   );
 
   if (hasCover) {
@@ -78,7 +97,12 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'flex-end',
   },
+  scroll: {
+    flex: 1,
+  },
   content: {
+    flexGrow: 1,
+    justifyContent: 'flex-end',
     paddingHorizontal: theme.spacing.lg,
   },
   welcome: {
