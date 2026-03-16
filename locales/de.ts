@@ -23,6 +23,7 @@ const de = {
     continue: "Weiter",
     fromGallery: "Aus Galerie",
     noQrInImage: "Kein QR-Code im Bild gefunden.",
+    decoderNotReady: "Bitte kurz warten und erneut versuchen.",
     familyTitle: "Familie %{name}",
     whoAreYou: "Wer bist du?",
     chooseName: "Bitte wähle deinen Namen aus.",
