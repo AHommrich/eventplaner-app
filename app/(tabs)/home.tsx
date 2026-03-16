@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { View, Text, ImageBackground, ScrollView, RefreshControl, StyleSheet } from 'react-native';
+import { useFocusEffect } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
@@ -44,6 +45,11 @@ export default function HomeScreen() {
   useEffect(() => {
     getSession().then(setSession);
   }, []);
+
+  // Fallback: wenn eventInfo noch nicht geladen (z.B. App-Start ohne Cover-Fetch)
+  useFocusEffect(useCallback(() => {
+    if (!eventInfo) loadTheme();
+  }, [eventInfo]));
 
   useEffect(() => {
     if (!eventInfo?.date) return;
