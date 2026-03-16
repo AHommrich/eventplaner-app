@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
 import { getSession } from '../lib/auth';
+import { fetchGuestMe, isFullAccess, isDeclinedFlow } from '../lib/guest';
 import { useLanguage } from '../lib/LanguageContext';
 
 export default function WelcomeScreen() {
@@ -10,10 +11,22 @@ export default function WelcomeScreen() {
   const [checking, setChecking] = useState(true);
 
   useEffect(() => {
-    getSession().then((session) => {
-      if (session) {
-        router.replace('/(tabs)/home');
-      } else {
+    getSession().then(async (session) => {
+      if (!session) {
+        setChecking(false);
+        return;
+      }
+      try {
+        const guest = await fetchGuestMe();
+        if (guest.rsvp_status === null) {
+          router.replace('/rsvp');
+        } else if (isFullAccess(guest.rsvp_status)) {
+          router.replace('/(tabs)/home');
+        } else if (isDeclinedFlow(guest.rsvp_status)) {
+          router.replace('/declined');
+        }
+      } catch {
+        // API nicht erreichbar — trotzdem zeigen
         setChecking(false);
       }
     });
