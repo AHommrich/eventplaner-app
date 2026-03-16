@@ -210,7 +210,7 @@ export default function PhotosScreen() {
           width: 56,
           height: 56,
           borderRadius: 28,
-          backgroundColor: uploading ? theme.colors.muted : theme.colors.accent,
+          backgroundColor: uploading ? theme.colors.muted : colors.primary,
           alignItems: 'center',
           justifyContent: 'center',
           shadowColor: '#000',
