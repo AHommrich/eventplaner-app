@@ -37,8 +37,8 @@ export function EventThemeProvider({ children }: { children: ReactNode }) {
     try {
       const info = await fetchEventInfo();
       setEventInfo(info);
-    } catch {
-      // silent — Fallback-Farben bleiben aktiv
+    } catch (e) {
+      console.warn('[EventTheme] fetchEventInfo failed:', e);
     }
   }
 
