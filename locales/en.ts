@@ -63,6 +63,13 @@ invalidQr: 'Invalid QR code',
   home: {
     welcome: 'Welcome, %{name}!',
     loggedIn: 'You are logged in.',
+    countdownPrefix: 'In',
+    countdownDays: 'd',
+    countdownHours: 'h',
+    countdownMinutes: 'm',
+    countdownSeconds: 's',
+    countdownToday: "Today is the big day! 🎉",
+    countdownPast: 'What a beautiful day it was.',
   },
   settings: {
     loggedInAs: 'Logged in as',

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { View, Text, ImageBackground, ScrollView, RefreshControl, StyleSheet } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -17,16 +17,40 @@ function formatEventDate(iso: string, locale: string): string {
   });
 }
 
+type CountdownParts = { days: number; hours: number; minutes: number; seconds: number } | 'today' | 'past';
+
+function calcCountdown(iso: string): CountdownParts {
+  const diff = new Date(iso).getTime() - Date.now();
+  if (diff <= 0 && diff > -86_400_000) return 'today';
+  if (diff <= -86_400_000) return 'past';
+  const totalSec = Math.floor(diff / 1000);
+  const days = Math.floor(totalSec / 86400);
+  const hours = Math.floor((totalSec % 86400) / 3600);
+  const minutes = Math.floor((totalSec % 3600) / 60);
+  const seconds = totalSec % 60;
+  return { days, hours, minutes, seconds };
+}
+
 export default function HomeScreen() {
   const { t, language } = useLanguage();
   const { eventInfo, colors, loadTheme } = useEventTheme();
   const insets = useSafeAreaInsets();
+  const tabBarHeight = useBottomTabBarHeight();
   const [session, setSession] = useState<GuestSession | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [countdown, setCountdown] = useState<CountdownParts | null>(null);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
     getSession().then(setSession);
   }, []);
+
+  useEffect(() => {
+    if (!eventInfo?.date) return;
+    setCountdown(calcCountdown(eventInfo.date));
+    intervalRef.current = setInterval(() => setCountdown(calcCountdown(eventInfo.date)), 1000);
+    return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
+  }, [eventInfo?.date]);
 
   async function handleRefresh() {
     setRefreshing(true);
@@ -36,22 +60,38 @@ export default function HomeScreen() {
 
   const hasCover = !!eventInfo?.cover_image_url;
   const textColor = hasCover ? colors.homeText : colors.primary;
+  const pillBg = hasCover ? 'rgba(0,0,0,0.35)' : colors.primary;
+  const pillText = hasCover ? colors.homeText : '#fff';
   const eventDate = eventInfo?.date ? formatEventDate(eventInfo.date, language) : null;
-  const tabBarHeight = useBottomTabBarHeight();
 
-  const refreshControl = (
-    <RefreshControl
-      refreshing={refreshing}
-      onRefresh={handleRefresh}
-      tintColor={hasCover ? '#fff' : colors.primary}
-    />
-  );
+  function renderCountdown() {
+    if (!countdown) return null;
+    let label: string;
+    if (countdown === 'today') {
+      label = t('home.countdownToday');
+    } else if (countdown === 'past') {
+      label = t('home.countdownPast');
+    } else {
+      const { days, hours, minutes, seconds } = countdown;
+      const p = t('home.countdownPrefix');
+      const d = t('home.countdownDays');
+      const h = t('home.countdownHours');
+      const m = t('home.countdownMinutes');
+      const s = t('home.countdownSeconds');
+      label = `${p} ${days}${d} ${hours}${h} ${minutes}${m} ${seconds}${s}`;
+    }
+    return (
+      <View style={[styles.pill, { backgroundColor: pillBg }]}>
+        <Text style={[styles.pillText, { color: pillText }]}>{label}</Text>
+      </View>
+    );
+  }
 
   const content = (
     <ScrollView
       style={styles.scroll}
       contentContainerStyle={[styles.content, { paddingBottom: (hasCover ? tabBarHeight : insets.bottom) + theme.spacing.xl }]}
-      refreshControl={refreshControl}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={hasCover ? '#fff' : colors.primary} />}
     >
       {session && (
         <Text style={[styles.welcome, { color: textColor }]}>
@@ -67,6 +107,7 @@ export default function HomeScreen() {
       {eventInfo?.venue_name && (
         <Text style={[styles.meta, { color: textColor }]}>{eventInfo.venue_name}</Text>
       )}
+      {renderCountdown()}
     </ScrollView>
   );
 
@@ -121,5 +162,16 @@ const styles = StyleSheet.create({
     fontSize: 15,
     opacity: 0.85,
     marginBottom: 2,
+  },
+  pill: {
+    alignSelf: 'flex-start',
+    marginTop: theme.spacing.md,
+    paddingHorizontal: theme.spacing.md,
+    paddingVertical: theme.spacing.sm,
+    borderRadius: theme.borderRadius.full,
+  },
+  pillText: {
+    fontSize: 14,
+    fontWeight: '600',
   },
 });
