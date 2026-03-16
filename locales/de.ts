@@ -7,7 +7,8 @@ const de = {
     refreshed: "Aktualisiert",
   },
   welcome: {
-    subtitle: "Willkommen zu unserer Hochzeit",
+    title: "Herzlich willkommen",
+    subtitle: "Nutze den QR-Code aus deiner Einladung, um dich einzuloggen.",
     scanButton: "QR-Code scannen",
   },
   scan: {
@@ -51,6 +52,7 @@ const de = {
     home: "Home",
     photos: "Fotos",
     rsvp: "Zusage",
+    drinks: "Getränke",
     settings: "Einstellungen",
   },
   rsvp: {
@@ -86,6 +88,18 @@ const de = {
     revocationPending:
       "Deine Anfrage zur Rücknahme wird geprüft. Du wirst benachrichtigt sobald sie freigegeben wurde.",
     logout: "Ausloggen",
+  },
+  drinks: {
+    trackTab: "Tracken",
+    statsTab: "Statistiken",
+    myStats: "Meine Bilanz",
+    eventTotal: "Event-Gesamt",
+    leaderboard: "Rangliste",
+    noData: "Noch nichts eingetragen.",
+  },
+  blocked: {
+    title: "Zugang gesperrt",
+    message: "Dein App-Zugang wurde deaktiviert. Wir prüfen automatisch alle 10 Sekunden, ob dein Zugang wiederhergestellt wurde.",
   },
   photos: {
     empty: "Noch keine Fotos",

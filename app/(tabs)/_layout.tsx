@@ -5,16 +5,22 @@ import { theme } from '../../constants/theme';
 import { useLanguage } from '../../lib/LanguageContext';
 import { useEventTheme } from '../../lib/EventThemeContext';
 import { fetchGuestMe, RsvpStatus } from '../../lib/guest';
+import api from '../../lib/api';
 
 export default function TabLayout() {
   const { t } = useLanguage();
   const { colors, eventInfo } = useEventTheme();
   const [rsvpStatus, setRsvpStatus] = useState<RsvpStatus>('accepted_pending');
+  const [showDrinksTab, setShowDrinksTab] = useState(true);
 
   useEffect(() => {
     fetchGuestMe()
       .then((g) => setRsvpStatus(g.rsvp_status))
       .catch(() => {});
+
+    api.get('/api/drinks').catch((e) => {
+      if (e?.response?.data?.code === 'drinks_blocked') setShowDrinksTab(false);
+    });
   }, []);
 
   const showRsvpTab = rsvpStatus === 'accepted_pending';
@@ -63,6 +69,16 @@ export default function TabLayout() {
           title: t('tabs.photos'),
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="images-outline" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="drinks"
+        options={{
+          title: t('tabs.drinks'),
+          href: showDrinksTab ? undefined : null,
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="beer-outline" size={size} color={color} />
           ),
         }}
       />

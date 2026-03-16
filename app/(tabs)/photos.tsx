@@ -4,13 +4,13 @@ import {
   Alert,
   Dimensions,
   FlatList,
-  Image,
   Modal,
   Pressable,
   ScrollView,
   Text,
   View,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
 import * as ImageManipulator from 'expo-image-manipulator';
@@ -33,9 +33,10 @@ function ZoomableImage({ uri }: { uri: string }) {
       style={{ width: SCREEN_W, height: SCREEN_H * 0.8 }}
     >
       <Image
-        source={{ uri }}
+        source={uri}
         style={{ width: SCREEN_W, height: SCREEN_H * 0.8 }}
-        resizeMode="contain"
+        contentFit="contain"
+        cachePolicy="disk"
       />
     </ScrollView>
   );
@@ -173,9 +174,11 @@ export default function PhotosScreen() {
         renderItem={({ item }) => (
           <Pressable onPress={() => setSelected(item)}>
             <Image
-              source={{ uri: item.url }}
+              source={item.url}
               style={{ width: TILE_SIZE, height: TILE_SIZE, borderRadius: 2 }}
-              resizeMode="cover"
+              contentFit="cover"
+              cachePolicy="disk"
+              recyclingKey={String(item.id)}
             />
           </Pressable>
         )}
