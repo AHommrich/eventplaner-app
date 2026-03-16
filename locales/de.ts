@@ -28,6 +28,13 @@ const de = {
   home: {
     welcome: "Willkommen, %{name}!",
     loggedIn: "Du bist eingeloggt.",
+    countdownPrefix: "Noch",
+    countdownDays: "T",
+    countdownHours: "Std",
+    countdownMinutes: "Min",
+    countdownSeconds: "Sek",
+    countdownToday: "Heute ist der große Tag! 🎉",
+    countdownPast: "Es war ein wunderschöner Tag.",
   },
   settings: {
     loggedInAs: "Eingeloggt als",
