@@ -1,12 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { View, Text, ImageBackground, ScrollView, RefreshControl, StyleSheet } from 'react-native';
-import { useFocusEffect } from 'expo-router';
+import { View, Text, ImageBackground, ScrollView, RefreshControl, ActivityIndicator, StyleSheet } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useFocusEffect } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import { getSession, GuestSession } from '../../lib/auth';
 import { useLanguage } from '../../lib/LanguageContext';
 import { useEventTheme } from '../../lib/EventThemeContext';
+import { fetchEventInfo, EventInfo } from '../../lib/guest';
 import { theme } from '../../constants/theme';
 
 function formatEventDate(iso: string, locale: string): string {
@@ -34,33 +35,47 @@ function calcCountdown(iso: string): CountdownParts {
 
 export default function HomeScreen() {
   const { t, language } = useLanguage();
-  const { eventInfo, colors, loadTheme } = useEventTheme();
+  const { colors, loadTheme } = useEventTheme();
   const insets = useSafeAreaInsets();
   const tabBarHeight = useBottomTabBarHeight();
   const [session, setSession] = useState<GuestSession | null>(null);
+  const [eventInfo, setEventInfo] = useState<EventInfo | null>(null);
+  const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [countdown, setCountdown] = useState<CountdownParts | null>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  async function loadData() {
+    try {
+      const info = await fetchEventInfo();
+      setEventInfo(info);
+      // Auch Context updaten damit Tab-Bar Farben/Cover stimmen
+      await loadTheme();
+    } catch (e) {
+      console.warn('[Home] fetchEventInfo failed:', e);
+    } finally {
+      setLoading(false);
+    }
+  }
 
   useEffect(() => {
     getSession().then(setSession);
   }, []);
 
-  // Fallback: wenn eventInfo noch nicht geladen (z.B. App-Start ohne Cover-Fetch)
   useFocusEffect(useCallback(() => {
-    if (!eventInfo) loadTheme();
-  }, [eventInfo]));
+    loadData();
+  }, []));
 
   useEffect(() => {
     if (!eventInfo?.date) return;
     setCountdown(calcCountdown(eventInfo.date));
-    intervalRef.current = setInterval(() => setCountdown(calcCountdown(eventInfo.date)), 1000);
+    intervalRef.current = setInterval(() => setCountdown(calcCountdown(eventInfo!.date)), 1000);
     return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
   }, [eventInfo?.date]);
 
   async function handleRefresh() {
     setRefreshing(true);
-    await loadTheme();
+    await loadData();
     setRefreshing(false);
   }
 
@@ -87,8 +102,18 @@ export default function HomeScreen() {
       label = `${p} ${days}${d} ${hours}${h} ${minutes}${m} ${seconds}${s}`;
     }
     return (
-      <View style={[styles.pill, { backgroundColor: pillBg }]}>
-        <Text style={[styles.pillText, { color: pillText }]}>{label}</Text>
+      <View style={styles.pillRow}>
+        <View style={[styles.pill, { backgroundColor: pillBg }]}>
+          <Text style={[styles.pillText, { color: pillText }]}>{label}</Text>
+        </View>
+      </View>
+    );
+  }
+
+  if (loading) {
+    return (
+      <View style={[styles.container, { backgroundColor: colors.background, justifyContent: 'center', alignItems: 'center' }]}>
+        <ActivityIndicator color={colors.primary} />
       </View>
     );
   }
@@ -151,27 +176,33 @@ const styles = StyleSheet.create({
   },
   content: {
     flexGrow: 1,
-    justifyContent: 'flex-end',
+    justifyContent: 'center',
+    alignItems: 'center',
     paddingHorizontal: theme.spacing.lg,
   },
   welcome: {
     fontSize: 15,
     opacity: 0.85,
     marginBottom: theme.spacing.xs,
+    textAlign: 'center',
   },
   title: {
     fontSize: 32,
     fontWeight: 'bold',
     marginBottom: theme.spacing.sm,
+    textAlign: 'center',
   },
   meta: {
     fontSize: 15,
     opacity: 0.85,
     marginBottom: 2,
+    textAlign: 'center',
+  },
+  pillRow: {
+    marginTop: theme.spacing.md,
+    alignItems: 'center',
   },
   pill: {
-    alignSelf: 'flex-start',
-    marginTop: theme.spacing.md,
     paddingHorizontal: theme.spacing.md,
     paddingVertical: theme.spacing.sm,
     borderRadius: theme.borderRadius.full,
