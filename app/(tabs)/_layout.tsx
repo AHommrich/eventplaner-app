@@ -26,7 +26,7 @@ export default function TabLayout() {
         tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: theme.colors.muted,
         tabBarStyle: {
-          backgroundColor: theme.colors.surface,
+          backgroundColor: colors.background,
           borderTopColor: '#e5e5e5',
         },
       }}

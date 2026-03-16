@@ -226,7 +226,7 @@ export default function RsvpTabScreen() {
                 paddingVertical: theme.spacing.sm,
                 borderRadius: theme.borderRadius.md,
                 alignItems: 'center',
-                backgroundColor: ownAccepted ? theme.colors.sage : colors.background,
+                backgroundColor: ownAccepted ? theme.colors.sage : theme.colors.surface,
                 borderWidth: 1,
                 borderColor: ownAccepted ? theme.colors.sage : theme.colors.muted,
               }}
@@ -242,7 +242,7 @@ export default function RsvpTabScreen() {
                 paddingVertical: theme.spacing.sm,
                 borderRadius: theme.borderRadius.md,
                 alignItems: 'center',
-                backgroundColor: ownDeclined ? theme.colors.error : colors.background,
+                backgroundColor: ownDeclined ? theme.colors.error : theme.colors.surface,
                 borderWidth: 1,
                 borderColor: ownDeclined ? theme.colors.error : theme.colors.muted,
               }}
@@ -318,7 +318,7 @@ export default function RsvpTabScreen() {
                           paddingVertical: theme.spacing.sm,
                           borderRadius: theme.borderRadius.md,
                           alignItems: 'center',
-                          backgroundColor: mAccepted ? theme.colors.sage : colors.background,
+                          backgroundColor: mAccepted ? theme.colors.sage : theme.colors.surface,
                           borderWidth: 1,
                           borderColor: mAccepted ? theme.colors.sage : theme.colors.muted,
                         }}
@@ -334,7 +334,7 @@ export default function RsvpTabScreen() {
                           paddingVertical: theme.spacing.sm,
                           borderRadius: theme.borderRadius.md,
                           alignItems: 'center',
-                          backgroundColor: mDeclined ? theme.colors.error : colors.background,
+                          backgroundColor: mDeclined ? theme.colors.error : theme.colors.surface,
                           borderWidth: 1,
                           borderColor: mDeclined ? theme.colors.error : theme.colors.muted,
                         }}
