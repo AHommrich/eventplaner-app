@@ -131,6 +131,11 @@ export default function HomeScreen() {
           API Fehler: {loadError}
         </Text>
       )}
+      {__DEV__ && eventInfo && (
+        <Text style={{ color: textColor, fontSize: 9, opacity: 0.6, marginBottom: 8, textAlign: 'center' }}>
+          {JSON.stringify(eventInfo)}
+        </Text>
+      )}
       {session && (
         <Text style={[styles.welcome, { color: textColor }]}>
           {t('home.welcome', { name: session.firstname })}
