@@ -61,11 +61,13 @@ Staging-Tokens funktionieren NICHT auf Production (separate Datenbanken).
 | `/api/auth/logout` | DELETE | Logout (Bearer) |
 | `/api/photos` | GET | Fotos laden |
 | `/api/photos` | POST | Foto hochladen (multipart/form-data) |
+| `/api/guest/me` | GET | Eingeloggten Gast + Gruppe laden |
+| `/api/event/info` | GET | Event-Infos + RSVP-Deadline |
+| `/api/guest/rsvp` | POST | Eigene RSVP setzen `{ attending: bool }` |
+| `/api/guest/{id}/rsvp` | POST | RSVP für Gruppenmitglied setzen |
+| `/api/guest/rsvp/revoke` | POST | Rücknahme einer Absage beantragen |
 
 ### Geplante Endpoints (noch nicht gebaut)
-- `GET /api/guest/me`
-- `POST /api/guest/rsvp`
-- `GET /api/event/info`
 - `GET /api/event/menu`
 - `POST /api/guest/menu`
 
@@ -75,9 +77,13 @@ Staging-Tokens funktionieren NICHT auf Production (separate Datenbanken).
 3. Bottom-Sheet öffnet sich immer:
    - `guests.length === 1` (Solo): Sprachauswahl + "Weiter"-Button
    - `guests.length > 1` (Familie): Titel + Namensliste + Sprachauswahl unten
-4. Session in SecureStore speichern → navigate to `/(tabs)/home`
-5. Tokens laufen nie ab (bis Logout)
-6. Sprachauswahl wird in SecureStore unter `app_language` gespeichert (Standard: `de`)
+4. Session in SecureStore speichern → navigate to `/` (index entscheidet weiter)
+5. `index.tsx` prüft `rsvp_status` via `GET /api/guest/me`:
+   - `null` → `/rsvp` (Onboarding-RSVP)
+   - `accepted_pending` / `accepted` → `/(tabs)/home`
+   - declined/revocation → `/declined`
+6. Tokens laufen nie ab (bis Logout)
+7. Sprachauswahl wird in SecureStore unter `app_language` gespeichert (Standard: `de`)
 
 ---
 
@@ -86,17 +92,21 @@ Staging-Tokens funktionieren NICHT auf Production (separate Datenbanken).
 ```
 app/
   _layout.tsx          Root-Stack, LanguageProvider
-  index.tsx            Welcome/Redirect (prüft Session)
+  index.tsx            Welcome/Redirect — prüft Session + rsvp_status, leitet weiter
   scan.tsx             QR-Scanner + DEV-Token-Input
+  rsvp.tsx             Onboarding-RSVP (direkt nach erstem Login, vor Tab-Nav)
+  declined.tsx         Abgesagt-Screen (Rücknahme beantragen oder Logout)
   (tabs)/
-    _layout.tsx        Bottom Tab Bar
+    _layout.tsx        Bottom Tab Bar — blendet RSVP-Tab aus wenn accepted
     home.tsx           Begrüßungsscreen
+    rsvp.tsx           RSVP-Tab (sichtbar nur bei accepted_pending)
     photos.tsx         Fotogalerie + Upload + Auto-Refresh (30s)
     settings.tsx       Logout + Sprachauswahl
 
 lib/
   api.ts               Axios-Instanz, Bearer-Interceptor
   auth.ts              saveSession / getSession / clearSession
+  guest.ts             fetchGuestMe / fetchEventInfo / postRsvp / postGroupRsvp / postRevoke + Typen
   i18n.ts              i18n-js Setup (de/en, Fallback: de)
   LanguageContext.tsx  useLanguage() Hook, Persistenz via SecureStore
 
@@ -123,6 +133,8 @@ const { t } = useLanguage();
 import api from '../../lib/api';
 const res = await api.get('/api/...');
 ```
+
+**RSVP-Logik** — Absagen immer mit `Alert.alert` Bestätigungsdialog absichern (eigene Absage = Zugriffsverlust, Gruppenabsage = Zugriffsverlust für das Mitglied). Translations: `rsvp.declineConfirmTitle/Own/Member/Button`.
 
 **Design** — immer `constants/theme.ts` oder Tailwind-Klassen aus `tailwind.config.js`, nie hardcodierte Farben/Werte.
 
