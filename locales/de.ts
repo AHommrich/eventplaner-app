@@ -54,6 +54,7 @@ const de = {
     groupSubtitle: "Du kannst für deine Gruppe antworten.",
     setByMe: "Von dir gesetzt",
     setBy: "Gesetzt von %{name}",
+    setByOrganizer: "Vom Veranstalter gesetzt",
     saving: "Wird gespeichert…",
     deadlinePassed: "Die Anmeldefrist ist abgelaufen.",
     declineConfirmTitle: "Wirklich absagen?",
