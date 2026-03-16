@@ -8,6 +8,8 @@ export default function RootLayout() {
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="index" />
         <Stack.Screen name="scan" />
+        <Stack.Screen name="rsvp" />
+        <Stack.Screen name="declined" />
         <Stack.Screen name="(tabs)" />
       </Stack>
     </LanguageProvider>

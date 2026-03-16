@@ -1,10 +1,21 @@
+import { useEffect, useState } from 'react';
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { theme } from '../../constants/theme';
 import { useLanguage } from '../../lib/LanguageContext';
+import { fetchGuestMe, RsvpStatus } from '../../lib/guest';
 
 export default function TabLayout() {
   const { t } = useLanguage();
+  const [rsvpStatus, setRsvpStatus] = useState<RsvpStatus>('accepted_pending');
+
+  useEffect(() => {
+    fetchGuestMe()
+      .then((g) => setRsvpStatus(g.rsvp_status))
+      .catch(() => {});
+  }, []);
+
+  const showRsvpTab = rsvpStatus === 'accepted_pending';
 
   return (
     <Tabs
@@ -24,6 +35,16 @@ export default function TabLayout() {
           title: t('tabs.home'),
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="home-outline" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="rsvp"
+        options={{
+          title: t('tabs.rsvp'),
+          href: showRsvpTab ? undefined : null,
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="checkmark-circle-outline" size={size} color={color} />
           ),
         }}
       />

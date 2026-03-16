@@ -91,7 +91,7 @@ export default function ScanScreen() {
     };
     await saveSession(session);
     setShowPicker(false);
-    router.replace('/(tabs)/home');
+    router.replace('/');
   }
 
   if (!permission) return <View style={styles.container} />;
