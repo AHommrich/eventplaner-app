@@ -15,6 +15,7 @@ import { useRouter } from 'expo-router';
 import api from '../lib/api';
 import { saveSession, GuestSession } from '../lib/auth';
 import { theme } from '../constants/theme';
+import { useLanguage, Language } from '../lib/LanguageContext';
 
 type ApiGuest = {
   guest_id: number;
@@ -31,6 +32,7 @@ type ApiResponse = {
 
 export default function ScanScreen() {
   const router = useRouter();
+  const { t, language, setLanguage, needsLanguagePick } = useLanguage();
   const [permission, requestPermission] = useCameraPermissions();
   const [scanned, setScanned] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -51,10 +53,10 @@ export default function ScanScreen() {
     setLoading(true);
     try {
       const token = data.split('/').pop();
-      if (!token) throw new Error('Ungültiger QR-Code');
+      if (!token) throw new Error(t('scan.invalidQr'));
       await loginWithToken(token);
     } catch (e: any) {
-      Alert.alert('Fehler', e?.response?.data?.message ?? 'Ungültiger QR-Code.');
+      Alert.alert(t('common.error'), e?.response?.data?.message ?? t('scan.invalidQrMessage'));
       setScanned(false);
     } finally {
       setLoading(false);
@@ -67,7 +69,7 @@ export default function ScanScreen() {
     setResponseType(type);
     setFamilyName(family_name);
     setGuests(apiGuests);
-    if (type === 'solo' && apiGuests.length === 1) {
+    if (type === 'solo' && !needsLanguagePick) {
       await persistAndNavigate(apiGuests[0], type, family_name);
     } else {
       setShowPicker(true);
@@ -98,10 +100,10 @@ export default function ScanScreen() {
     return (
       <View style={styles.container}>
         <Text style={styles.permissionText}>
-          Kamera-Zugriff benötigt um den QR-Code zu scannen.
+          {t('scan.cameraPermissionText')}
         </Text>
         <TouchableOpacity style={styles.button} onPress={requestPermission}>
-          <Text style={styles.buttonText}>Zugriff erlauben</Text>
+          <Text style={styles.buttonText}>{t('scan.allowAccess')}</Text>
         </TouchableOpacity>
       </View>
     );
@@ -127,10 +129,10 @@ export default function ScanScreen() {
         <View style={styles.devContainer}>
           {showDevInput ? (
             <View style={styles.devInputBox}>
-              <Text style={styles.devLabel}>Dev: Token eingeben</Text>
+              <Text style={styles.devLabel}>{t('scan.devLabel')}</Text>
               <TextInput
                 style={styles.devInput}
-                placeholder="QR-Token..."
+                placeholder={t('scan.devPlaceholder')}
                 value={devToken}
                 onChangeText={setDevToken}
                 autoCapitalize="none"
@@ -143,14 +145,14 @@ export default function ScanScreen() {
                   try {
                     await loginWithToken(devToken.trim());
                   } catch (e: any) {
-                    Alert.alert('Fehler', e?.response?.data?.message ?? 'Ungültiger Token.');
+                    Alert.alert(t('common.error'), e?.response?.data?.message ?? t('scan.invalidTokenMessage'));
                     setScanned(false);
                   } finally {
                     setLoading(false);
                   }
                 }}
               >
-                <Text style={styles.devButtonText}>Einloggen</Text>
+                <Text style={styles.devButtonText}>{t('scan.devLogin')}</Text>
               </TouchableOpacity>
             </View>
           ) : (
@@ -158,7 +160,7 @@ export default function ScanScreen() {
               style={styles.devToggle}
               onPress={() => setShowDevInput(true)}
             >
-              <Text style={styles.devToggleText}>DEV: Token manuell eingeben</Text>
+              <Text style={styles.devToggleText}>{t('scan.devToggle')}</Text>
             </TouchableOpacity>
           )}
         </View>
@@ -168,24 +170,54 @@ export default function ScanScreen() {
       <Modal visible={showPicker} transparent animationType="slide">
         <View style={styles.modalBackdrop}>
           <View style={styles.modalSheet}>
-            <Text style={styles.modalTitle}>
-              {familyName ? `Familie ${familyName}` : 'Wer bist du?'}
-            </Text>
-            <Text style={styles.modalSubtitle}>Bitte wähle deinen Namen aus.</Text>
-            <FlatList
-              data={guests}
-              keyExtractor={(item) => String(item.guest_id)}
-              renderItem={({ item }) => (
-                <TouchableOpacity
-                  style={styles.guestRow}
-                  onPress={() => persistAndNavigate(item, responseType, familyName)}
-                >
-                  <Text style={styles.guestName}>
-                    {item.firstname} {item.lastname}
-                  </Text>
-                </TouchableOpacity>
-              )}
-            />
+            {guests.length > 1 && (
+              <>
+                <Text style={styles.modalTitle}>
+                  {familyName ? t('scan.familyTitle', { name: familyName }) : t('scan.whoAreYou')}
+                </Text>
+                <Text style={styles.modalSubtitle}>{t('scan.chooseName')}</Text>
+                <FlatList
+                  data={guests}
+                  keyExtractor={(item) => String(item.guest_id)}
+                  renderItem={({ item }) => (
+                    <TouchableOpacity
+                      style={styles.guestRow}
+                      onPress={() => persistAndNavigate(item, responseType, familyName)}
+                    >
+                      <Text style={styles.guestName}>
+                        {item.firstname} {item.lastname}
+                      </Text>
+                    </TouchableOpacity>
+                  )}
+                />
+              </>
+            )}
+
+            {guests.length === 1 && (
+              <TouchableOpacity
+                style={styles.continueButton}
+                onPress={() => persistAndNavigate(guests[0], responseType, familyName)}
+              >
+                <Text style={styles.continueButtonText}>{t('scan.continue')}</Text>
+              </TouchableOpacity>
+            )}
+
+            {/* Sprachauswahl — nur wenn Sprache nicht automatisch erkannt */}
+            {needsLanguagePick && (
+              <View style={styles.langRow}>
+                {(['de', 'en'] as Language[]).map((lang) => (
+                  <TouchableOpacity
+                    key={lang}
+                    style={[styles.langButton, language === lang && styles.langButtonActive]}
+                    onPress={() => setLanguage(lang)}
+                  >
+                    <Text style={[styles.langButtonText, language === lang && styles.langButtonTextActive]}>
+                      {lang === 'de' ? '🇩🇪  Deutsch' : '🇬🇧  English'}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
           </View>
         </View>
       </Modal>
@@ -294,6 +326,46 @@ const styles = StyleSheet.create({
     color: theme.colors.muted,
     textAlign: 'center',
     marginBottom: theme.spacing.lg,
+  },
+  continueButton: {
+    backgroundColor: theme.colors.primary,
+    borderRadius: theme.borderRadius.md,
+    paddingVertical: theme.spacing.md,
+    alignItems: 'center',
+    marginTop: theme.spacing.md,
+  },
+  continueButtonText: {
+    color: theme.colors.secondary,
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  langRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginTop: theme.spacing.lg,
+    paddingTop: theme.spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: '#f0f0f0',
+  },
+  langButton: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: theme.colors.muted,
+    borderRadius: theme.borderRadius.md,
+    paddingVertical: theme.spacing.sm,
+    alignItems: 'center',
+  },
+  langButtonActive: {
+    backgroundColor: theme.colors.primary,
+    borderColor: theme.colors.primary,
+  },
+  langButtonText: {
+    color: theme.colors.muted,
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  langButtonTextActive: {
+    color: theme.colors.secondary,
   },
   guestRow: {
     paddingVertical: theme.spacing.md,

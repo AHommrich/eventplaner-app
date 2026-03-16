@@ -2,9 +2,11 @@ import { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
 import { getSession } from '../lib/auth';
+import { useLanguage } from '../lib/LanguageContext';
 
 export default function WelcomeScreen() {
   const router = useRouter();
+  const { t } = useLanguage();
   const [checking, setChecking] = useState(true);
 
   useEffect(() => {
@@ -25,14 +27,14 @@ export default function WelcomeScreen() {
         André & Tabea
       </Text>
       <Text className="text-base text-muted text-center mb-16">
-        Willkommen zu unserer Hochzeit
+        {t('welcome.subtitle')}
       </Text>
       <TouchableOpacity
         className="bg-primary w-full py-4 rounded-lg items-center"
         onPress={() => router.push('/scan')}
       >
         <Text className="text-white text-base font-semibold">
-          QR-Code scannen
+          {t('welcome.scanButton')}
         </Text>
       </TouchableOpacity>
     </View>
