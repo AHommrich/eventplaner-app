@@ -21,6 +21,8 @@ const de = {
     devLogin: "Einloggen",
     devToggle: "DEV: Token manuell eingeben",
     continue: "Weiter",
+    fromGallery: "Aus Galerie",
+    noQrInImage: "Kein QR-Code im Bild gefunden.",
     familyTitle: "Familie %{name}",
     whoAreYou: "Wer bist du?",
     chooseName: "Bitte wähle deinen Namen aus.",

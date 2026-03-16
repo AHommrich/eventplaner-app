@@ -11,6 +11,9 @@ import {
   StyleSheet,
 } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
+import { BarCodeScanner } from 'expo-barcode-scanner';
+import * as ImagePicker from 'expo-image-picker';
+import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import api from '../lib/api';
 import { saveSession, GuestSession } from '../lib/auth';
@@ -57,6 +60,33 @@ export default function ScanScreen() {
       const token = data.split('/').pop();
       if (!token) throw new Error(t('scan.invalidQr'));
       await loginWithToken(token);
+    } catch (e: any) {
+      Alert.alert(t('common.error'), e?.response?.data?.message ?? t('scan.invalidQrMessage'));
+      setScanned(false);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handlePickImage() {
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permission.granted) {
+      Alert.alert(t('common.accessDenied'), t('photos.libraryPermission'));
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      quality: 1,
+    });
+    if (result.canceled) return;
+    setLoading(true);
+    try {
+      const scans = await BarCodeScanner.scanFromURLAsync(result.assets[0].uri, ['qr']);
+      if (!scans.length) {
+        Alert.alert(t('common.error'), t('scan.noQrInImage'));
+        return;
+      }
+      await handleQrCode(scans[0].data);
     } catch (e: any) {
       Alert.alert(t('common.error'), e?.response?.data?.message ?? t('scan.invalidQrMessage'));
       setScanned(false);
@@ -125,6 +155,14 @@ export default function ScanScreen() {
         <View style={styles.loadingOverlay}>
           <ActivityIndicator size="large" color={theme.colors.secondary} />
         </View>
+      )}
+
+      {/* Galerie-Button — QR aus Bild lesen */}
+      {!loading && (
+        <TouchableOpacity style={styles.galleryButton} onPress={handlePickImage}>
+          <Ionicons name="image-outline" size={28} color="#fff" />
+          <Text style={styles.galleryButtonText}>{t('scan.fromGallery')}</Text>
+        </TouchableOpacity>
       )}
 
       {/* Dev-Modus: manuelle Token-Eingabe */}
@@ -257,6 +295,23 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.6)',
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  galleryButton: {
+    position: 'absolute',
+    bottom: 48,
+    left: theme.spacing.lg,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    paddingHorizontal: theme.spacing.md,
+    paddingVertical: theme.spacing.sm,
+    borderRadius: theme.borderRadius.full,
+  },
+  galleryButtonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600',
   },
   devContainer: {
     position: 'absolute',
