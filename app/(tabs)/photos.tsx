@@ -17,6 +17,7 @@ import * as ImageManipulator from 'expo-image-manipulator';
 import { Ionicons } from '@expo/vector-icons';
 import api from '../../lib/api';
 import { theme } from '../../constants/theme';
+import { useLanguage } from '../../lib/LanguageContext';
 
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
 
@@ -52,6 +53,7 @@ const TILE_SIZE = (Dimensions.get('window').width - GAP * (COLUMNS + 1)) / COLUM
 const POLL_INTERVAL = 30_000;
 
 export default function PhotosScreen() {
+  const { t } = useLanguage();
   const [photos, setPhotos] = useState<Photo[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
@@ -98,8 +100,8 @@ export default function PhotosScreen() {
       });
       setPhotos((prev) => [res.data, ...prev]);
     } catch (e: any) {
-      const msg = e?.response?.data?.message ?? e?.message ?? 'Unbekannter Fehler';
-      Alert.alert('Fehler', msg);
+      const msg = e?.response?.data?.message ?? e?.message ?? t('common.unknownError');
+      Alert.alert(t('common.error'), msg);
     } finally {
       setUploading(false);
     }
@@ -108,7 +110,7 @@ export default function PhotosScreen() {
   async function handleUpload() {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permission.granted) {
-      Alert.alert('Zugriff verweigert', 'Bitte erlaube den Zugriff auf deine Fotos in den Einstellungen.');
+      Alert.alert(t('common.accessDenied'), t('photos.libraryPermission'));
       return;
     }
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -123,7 +125,7 @@ export default function PhotosScreen() {
   async function handleCamera() {
     const permission = await ImagePicker.requestCameraPermissionsAsync();
     if (!permission.granted) {
-      Alert.alert('Zugriff verweigert', 'Bitte erlaube den Zugriff auf die Kamera in den Einstellungen.');
+      Alert.alert(t('common.accessDenied'), t('photos.cameraPermission'));
       return;
     }
     const result = await ImagePicker.launchCameraAsync({
@@ -135,10 +137,10 @@ export default function PhotosScreen() {
   }
 
   function showUploadOptions() {
-    Alert.alert('Foto hinzufügen', '', [
-      { text: 'Kamera', onPress: handleCamera },
-      { text: 'Aus Bibliothek', onPress: handleUpload },
-      { text: 'Abbrechen', style: 'cancel' },
+    Alert.alert(t('photos.addPhoto'), '', [
+      { text: t('photos.camera'), onPress: handleCamera },
+      { text: t('photos.fromLibrary'), onPress: handleUpload },
+      { text: t('common.cancel'), style: 'cancel' },
     ]);
   }
 
@@ -162,8 +164,8 @@ export default function PhotosScreen() {
         ListEmptyComponent={
           <View className="flex-1 items-center justify-center mt-32">
             <Ionicons name="images-outline" size={48} color={theme.colors.muted} />
-            <Text className="text-muted mt-3 text-base">Noch keine Fotos</Text>
-            <Text className="text-muted text-sm">Sei der Erste!</Text>
+            <Text className="text-muted mt-3 text-base">{t('photos.empty')}</Text>
+            <Text className="text-muted text-sm">{t('photos.beFirst')}</Text>
           </View>
         }
         renderItem={({ item }) => (
