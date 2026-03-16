@@ -18,7 +18,7 @@ function formatEventDate(iso: string, locale: string): string {
 
 export default function HomeScreen() {
   const { t, language } = useLanguage();
-  const { eventInfo, colors } = useEventTheme();
+  const { eventInfo, colors, loadTheme } = useEventTheme();
   const insets = useSafeAreaInsets();
   const [session, setSession] = useState<GuestSession | null>(null);
   const [refreshing, setRefreshing] = useState(false);
