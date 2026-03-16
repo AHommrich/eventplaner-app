@@ -17,6 +17,8 @@ const en = {
     subtitle: 'Please reply by %{deadline}.',
     accept: 'Accept',
     decline: 'Decline',
+    statusAccepted: 'Accepted',
+    statusDeclined: 'Declined',
     groupTitle: 'Your group',
     groupSubtitle: 'You can reply on behalf of your group.',
     setByMe: 'Set by you',

@@ -50,7 +50,7 @@ function StatusBadge({ status, t }: { status: RsvpStatus; t: (k: string) => stri
       }}
     >
       <Text style={{ color: '#fff', fontSize: 12, fontWeight: '600' }}>
-        {accepted ? t('rsvp.accept') : t('rsvp.decline')}
+        {accepted ? t('rsvp.statusAccepted') : t('rsvp.statusDeclined')}
       </Text>
     </View>
   );
@@ -242,12 +242,12 @@ export default function RsvpTabScreen() {
                 paddingVertical: theme.spacing.sm,
                 borderRadius: theme.borderRadius.md,
                 alignItems: 'center',
-                backgroundColor: ownDeclined ? theme.colors.error : theme.colors.surface,
+                backgroundColor: theme.colors.error,
                 borderWidth: 1,
-                borderColor: ownDeclined ? theme.colors.error : theme.colors.muted,
+                borderColor: theme.colors.error,
               }}
             >
-              <Text style={{ fontWeight: '600', color: ownDeclined ? '#fff' : theme.colors.muted, fontSize: 14 }}>
+              <Text style={{ fontWeight: '600', color: '#fff', fontSize: 14 }}>
                 {t('rsvp.decline')}
               </Text>
             </TouchableOpacity>
@@ -334,12 +334,12 @@ export default function RsvpTabScreen() {
                           paddingVertical: theme.spacing.sm,
                           borderRadius: theme.borderRadius.md,
                           alignItems: 'center',
-                          backgroundColor: mDeclined ? theme.colors.error : theme.colors.surface,
+                          backgroundColor: theme.colors.error,
                           borderWidth: 1,
-                          borderColor: mDeclined ? theme.colors.error : theme.colors.muted,
+                          borderColor: theme.colors.error,
                         }}
                       >
-                        <Text style={{ fontWeight: '600', color: mDeclined ? '#fff' : theme.colors.muted, fontSize: 14 }}>
+                        <Text style={{ fontWeight: '600', color: '#fff', fontSize: 14 }}>
                           {t('rsvp.decline')}
                         </Text>
                       </TouchableOpacity>

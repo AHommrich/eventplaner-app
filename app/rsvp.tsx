@@ -158,13 +158,13 @@ export default function RsvpScreen() {
                 paddingVertical: theme.spacing.md,
                 borderRadius: theme.borderRadius.md,
                 alignItems: 'center',
-                backgroundColor: ownDeclined ? theme.colors.error : theme.colors.surface,
+                backgroundColor: theme.colors.error,
                 borderWidth: 1,
-                borderColor: ownDeclined ? theme.colors.error : theme.colors.muted,
+                borderColor: theme.colors.error,
                 opacity: ownSet && !ownDeclined ? 0.4 : 1,
               }}
             >
-              <Text style={{ fontWeight: '700', color: ownDeclined ? '#fff' : theme.colors.muted }}>
+              <Text style={{ fontWeight: '700', color: '#fff' }}>
                 {t('rsvp.decline')}
               </Text>
             </TouchableOpacity>
