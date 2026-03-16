@@ -42,17 +42,19 @@ export default function HomeScreen() {
   const [eventInfo, setEventInfo] = useState<EventInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [countdown, setCountdown] = useState<CountdownParts | null>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   async function loadData() {
     try {
       const info = await fetchEventInfo();
+      console.log('[Home] eventInfo:', JSON.stringify(info));
       setEventInfo(info);
-      // Auch Context updaten damit Tab-Bar Farben/Cover stimmen
       await loadTheme();
-    } catch (e) {
-      console.warn('[Home] fetchEventInfo failed:', e);
+    } catch (e: any) {
+      console.warn('[Home] fetchEventInfo failed:', e?.response?.status, e?.message);
+      setLoadError(`${e?.response?.status ?? ''} ${e?.message ?? e}`);
     } finally {
       setLoading(false);
     }
@@ -124,6 +126,11 @@ export default function HomeScreen() {
       contentContainerStyle={[styles.content, { paddingBottom: (hasCover ? tabBarHeight : insets.bottom) + theme.spacing.xl }]}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={hasCover ? '#fff' : colors.primary} />}
     >
+      {loadError && (
+        <Text style={{ color: 'red', fontSize: 11, marginBottom: 8, textAlign: 'center' }}>
+          API Fehler: {loadError}
+        </Text>
+      )}
       {session && (
         <Text style={[styles.welcome, { color: textColor }]}>
           {t('home.welcome', { name: session.firstname })}
@@ -137,6 +144,12 @@ export default function HomeScreen() {
       )}
       {eventInfo?.venue_name && (
         <Text style={[styles.meta, { color: textColor }]}>{eventInfo.venue_name}</Text>
+      )}
+      {eventInfo?.venue_address && (
+        <Text style={[styles.meta, { color: textColor }]}>{eventInfo.venue_address}</Text>
+      )}
+      {eventInfo?.dresscode && (
+        <Text style={[styles.meta, { color: textColor, opacity: 0.7 }]}>{eventInfo.dresscode}</Text>
       )}
       {renderCountdown()}
     </ScrollView>
