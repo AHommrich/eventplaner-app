@@ -86,6 +86,7 @@ export default function DrinksScreen() {
   const [myStatsExpanded, setMyStatsExpanded] = useState(false);
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
   const [search, setSearch] = useState('');
+  const [selectedGroup, setSelectedGroup] = useState<string | null>(null);
   const [toast, setToast] = useState<ToastData | null>(null);
   const [gameEnded, setGameEnded] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -173,15 +174,16 @@ export default function DrinksScreen() {
 
   // ── Log drink ──────────────────────────────────────────────────────────────
 
-  async function handleLog() {
-    if (!selected || logging || cooldown > 0 || gameEnded) return;
+  async function handleLog(drink: Drink) {
+    if (logging || cooldown > 0 || gameEnded) return;
     setLogging(true);
     try {
-      const res = await api.post<LogResponse>('/api/drinks/log', { drink_id: selected.id });
+      const res = await api.post<LogResponse>('/api/drinks/log', { drink_id: drink.id });
       const data = res.data;
       setCooldown(60);
       showToast({ points: data.final_points, bingePenalty: data.binge_penalty });
       setSelected(null);
+      setSelectedGroup(null);
       loadStats();
     } catch (e: any) {
       const code = e?.response?.data?.code;
@@ -202,38 +204,134 @@ export default function DrinksScreen() {
     toastTimer.current = setTimeout(() => setToast(null), 3000);
   }
 
-  // ── Drink card (grid) ──────────────────────────────────────────────────────
+  // ── Drink grouping helpers ─────────────────────────────────────────────────
 
-  function renderDrinkCard(drink: Drink) {
+  function extractBaseName(displayName: string): string {
+    return displayName.replace(/\s+\d[\d,.]*\s*(?:l|cl|ml)$/i, '').trim() || displayName;
+  }
+
+  function formatSize(amountLiter: number): string {
+    if (amountLiter < 0.1) return `${Math.round(amountLiter * 100)} cl`;
+    const str = amountLiter.toFixed(2).replace('.', ',').replace(/0+$/, '').replace(/,$/, '');
+    return `${str} l`;
+  }
+
+  type DrinkGroup = { baseName: string; drinks: Drink[] };
+
+  function buildGroups(drinkList: Drink[]): DrinkGroup[] {
+    const order: string[] = [];
+    const map: Record<string, DrinkGroup> = {};
+    for (const drink of drinkList) {
+      const baseName = extractBaseName(drink.display_name);
+      if (!map[baseName]) { order.push(baseName); map[baseName] = { baseName, drinks: [] }; }
+      map[baseName].drinks.push(drink);
+    }
+    return order.map((k) => map[k]);
+  }
+
+  // ── Drink row renderer ─────────────────────────────────────────────────────
+
+  function renderGroup(group: DrinkGroup) {
+    const { baseName, drinks: gDrinks } = group;
+    const isMulti = gDrinks.length > 1;
+    const disabled = gameEnded || cooldown > 0;
+
+    if (isMulti) {
+      const isExpanded = selectedGroup === baseName;
+      return (
+        <TouchableOpacity
+          key={baseName}
+          style={[
+            styles.drinkRow,
+            { backgroundColor: colors.card, borderColor: isExpanded ? colors.accent : colors.accent + '40' },
+            isExpanded && { backgroundColor: colors.accent + '08' },
+            disabled && !isExpanded && { opacity: 0.45 },
+          ]}
+          onPress={() => {
+            if (disabled) return;
+            setSelected(null);
+            setSelectedGroup(isExpanded ? null : baseName);
+          }}
+          activeOpacity={0.75}
+          disabled={disabled && !isExpanded}
+        >
+          {isExpanded ? (
+            <View style={styles.sizeButtonRow}>
+              {gDrinks.map((drink) => (
+                <TouchableOpacity
+                  key={drink.id}
+                  style={[styles.sizeButton, { backgroundColor: colors.accent }]}
+                  onPress={() => handleLog(drink)}
+                  disabled={logging}
+                  activeOpacity={0.8}
+                >
+                  {logging
+                    ? <ActivityIndicator color={colors.onAccent} size="small" />
+                    : <Text style={styles.sizeButtonText}>{formatSize(drink.amount_liter)}?</Text>
+                  }
+                </TouchableOpacity>
+              ))}
+            </View>
+          ) : (
+            <>
+              <Text style={[styles.drinkName, { color: colors.accent }]}>{baseName}</Text>
+              <View style={{ flexDirection: 'row', gap: theme.spacing.xs }}>
+                {gDrinks.map((d) => {
+                  const pos = d.points >= 0;
+                  return (
+                    <View key={d.id} style={[styles.pointsBadge, { backgroundColor: pos ? colors.accent + '18' : '#00000010' }]}>
+                      <Text style={[styles.pointsText, { color: pos ? colors.accent : theme.colors.muted }]}>
+                        {pos ? `+${d.points}` : `${d.points}`}
+                      </Text>
+                    </View>
+                  );
+                })}
+              </View>
+            </>
+          )}
+        </TouchableOpacity>
+      );
+    }
+
+    // Single size
+    const drink = gDrinks[0];
     const isSelected = selected?.id === drink.id;
     const positive = drink.points >= 0;
-    const disabled = gameEnded || cooldown > 0;
     return (
       <TouchableOpacity
         key={drink.id}
         style={[
           styles.drinkRow,
-          { borderColor: isSelected ? colors.primary : '#e8e3de' },
-          isSelected && { backgroundColor: colors.primary },
+          { backgroundColor: colors.card, borderColor: isSelected ? colors.accent : colors.accent + '40' },
           disabled && !isSelected && { opacity: 0.45 },
         ]}
-        onPress={() => isSelected ? handleLog() : setSelected(drink)}
+        onPress={() => {
+          setSelectedGroup(null);
+          isSelected ? handleLog(drink) : setSelected(drink);
+        }}
         activeOpacity={0.75}
         disabled={disabled && !isSelected}
       >
         {isSelected ? (
-          <View style={styles.drinkCardConfirm}>
-            {logging
-              ? <ActivityIndicator color="#fff" size="small" />
-              : <Text style={styles.drinkCardConfirmText}>+1?</Text>
-            }
+          <View style={styles.sizeButtonRow}>
+            <TouchableOpacity
+              style={[styles.sizeButton, { backgroundColor: colors.accent }]}
+              onPress={() => handleLog(drink)}
+              disabled={logging}
+              activeOpacity={0.8}
+            >
+              {logging
+                ? <ActivityIndicator color={colors.onAccent} size="small" />
+                : <Text style={styles.sizeButtonText}>+1?</Text>
+              }
+            </TouchableOpacity>
           </View>
         ) : (
           <>
-            <Text style={[styles.drinkName, { color: colors.primary }]}>{drink.display_name}</Text>
-            <View style={[styles.pointsBadge, { backgroundColor: positive ? colors.primary + '18' : '#00000010' }]}>
-              <Text style={[styles.pointsText, { color: positive ? colors.primary : theme.colors.muted }]}>
-                {positive ? `+${drink.points}` : `${drink.points}`} Pts
+            <Text style={[styles.drinkName, { color: colors.accent }]}>{baseName}</Text>
+            <View style={[styles.pointsBadge, { backgroundColor: positive ? colors.accent + '18' : '#00000010' }]}>
+              <Text style={[styles.pointsText, { color: positive ? colors.accent : theme.colors.muted }]}>
+                {positive ? `+${drink.points}` : `${drink.points}`}
               </Text>
             </View>
           </>
@@ -247,7 +345,7 @@ export default function DrinksScreen() {
   if (loading) {
     return (
       <View style={[styles.container, { backgroundColor: colors.background, justifyContent: 'center', alignItems: 'center' }]}>
-        <ActivityIndicator color={colors.primary} />
+        <ActivityIndicator color={colors.accent} />
       </View>
     );
   }
@@ -257,7 +355,7 @@ export default function DrinksScreen() {
 
       {/* Toast */}
       {toast && (
-        <View style={[styles.toast, { backgroundColor: colors.primary, top: insets.top + theme.spacing.sm }]}>
+        <View style={[styles.toast, { backgroundColor: colors.accent, top: insets.top + theme.spacing.sm }]}>
           <Text style={styles.toastPoints}>
             {toast.points >= 0
               ? t('drinks.pointsEarned', { points: toast.points })
@@ -270,20 +368,20 @@ export default function DrinksScreen() {
       )}
 
       {/* Toggle */}
-      <View style={[styles.toggleRow, { borderColor: colors.primary }]}>
+      <View style={[styles.toggleRow, { borderColor: colors.accent }]}>
         <TouchableOpacity
-          style={[styles.toggleBtn, view === 'log' && { backgroundColor: colors.primary }]}
+          style={[styles.toggleBtn, view === 'log' && { backgroundColor: colors.accent }]}
           onPress={() => setView('log')}
         >
-          <Text style={[styles.toggleText, { color: view === 'log' ? '#fff' : colors.primary }]}>
+          <Text style={[styles.toggleText, { color: view === 'log' ? colors.onAccent : colors.accent }]}>
             {t('drinks.logTab')}
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
-          style={[styles.toggleBtn, view === 'leaderboard' && { backgroundColor: colors.primary }]}
+          style={[styles.toggleBtn, view === 'leaderboard' && { backgroundColor: colors.accent }]}
           onPress={() => { setView('leaderboard'); loadStats(); }}
         >
-          <Text style={[styles.toggleText, { color: view === 'leaderboard' ? '#fff' : colors.primary }]}>
+          <Text style={[styles.toggleText, { color: view === 'leaderboard' ? colors.onAccent : colors.accent }]}>
             {t('drinks.leaderboardTab')}
           </Text>
         </TouchableOpacity>
@@ -296,9 +394,9 @@ export default function DrinksScreen() {
 
             {/* Streak / Penalty Banner */}
             {(stats && (stats.current_streak > 0 || stats.binge_penalty)) && (
-              <View style={[styles.banner, { borderColor: colors.primary }]}>
+              <View style={[styles.banner, { borderColor: colors.accent }]}>
                 {stats.current_streak > 0 && (
-                  <Text style={[styles.bannerText, { color: colors.primary }]}>
+                  <Text style={[styles.bannerText, { color: colors.accent }]}>
                     {t('drinks.streak', { n: stats.current_streak })}
                     {stats.current_streak >= 2 && !stats.binge_penalty && (
                       <Text style={styles.bannerSub}>
@@ -308,7 +406,7 @@ export default function DrinksScreen() {
                   </Text>
                 )}
                 {stats.binge_penalty && (
-                  <Text style={[styles.bannerWarn, { color: colors.primary }]}>
+                  <Text style={[styles.bannerWarn, { color: colors.accent }]}>
                     {t('drinks.bingeActive')}
                   </Text>
                 )}
@@ -317,8 +415,8 @@ export default function DrinksScreen() {
 
             {/* Game End Info */}
             {endTime && (
-              <View style={[styles.gameEndBadge, { backgroundColor: gameEnded ? theme.colors.error + '22' : colors.primary + '18' }]}>
-                <Text style={[styles.gameEndText, { color: gameEnded ? theme.colors.error : colors.primary }]}>
+              <View style={[styles.gameEndBadge, { backgroundColor: gameEnded ? theme.colors.error + '22' : colors.accent + '18' }]}>
+                <Text style={[styles.gameEndText, { color: gameEnded ? theme.colors.error : colors.accent }]}>
                   {gameEnded
                     ? t('drinks.gameEnded')
                     : t('drinks.endsAt', { time: formatEndTime(endTime) })}
@@ -327,10 +425,10 @@ export default function DrinksScreen() {
             )}
 
             {/* Suche */}
-            <View style={[styles.searchRow, { borderColor: colors.primary + '40' }]}>
-              <Ionicons name="search-outline" size={16} color={colors.primary} style={{ marginRight: 6 }} />
+            <View style={[styles.searchRow, { backgroundColor: colors.card, borderColor: colors.accent + '40' }]}>
+              <Ionicons name="search-outline" size={16} color={colors.accent} style={{ marginRight: 6 }} />
               <TextInput
-                style={[styles.searchInput, { color: colors.primary }]}
+                style={[styles.searchInput, { color: colors.accent }]}
                 placeholder={t('drinks.searchPlaceholder')}
                 placeholderTextColor={theme.colors.muted}
                 value={search}
@@ -357,7 +455,7 @@ export default function DrinksScreen() {
                     </Text>
                   );
                 }
-                return results.map(renderDrinkCard);
+                return buildGroups(results).map(renderGroup);
               })()
             ) : (
               // Akkordeon nach Kategorie
@@ -377,7 +475,7 @@ export default function DrinksScreen() {
                   return (
                     <View key={cat}>
                       <TouchableOpacity
-                        style={[styles.categoryRow, { borderColor: colors.primary + '40' }]}
+                        style={[styles.categoryRow, { backgroundColor: colors.card, borderColor: colors.accent + '40' }]}
                         onPress={() => {
                           setExpandedCategories((prev) => {
                             const next = new Set(prev);
@@ -388,10 +486,10 @@ export default function DrinksScreen() {
                         }}
                         activeOpacity={0.7}
                       >
-                        <Text style={[styles.categoryHeader, { color: colors.primary }]}>{label}</Text>
-                        <Ionicons name={isOpen ? 'chevron-up' : 'chevron-down'} size={16} color={colors.primary} />
+                        <Text style={[styles.categoryHeader, { color: colors.accent }]}>{label}</Text>
+                        <Ionicons name={isOpen ? 'chevron-up' : 'chevron-down'} size={16} color={colors.accent} />
                       </TouchableOpacity>
-                      {isOpen && catDrinks.map(renderDrinkCard)}
+                      {isOpen && buildGroups(catDrinks).map(renderGroup)}
                     </View>
                   );
                 });
@@ -401,9 +499,9 @@ export default function DrinksScreen() {
 
           {/* Cooldown direkt über der Navbar */}
           {cooldown > 0 && (
-            <View style={[styles.bottomAction, { borderColor: colors.primary, borderWidth: 1, backgroundColor: colors.background, marginBottom: theme.spacing.sm }]}>
-              <Ionicons name="time-outline" size={18} color={colors.primary} />
-              <Text style={[styles.cooldownText, { color: colors.primary }]}>
+            <View style={[styles.bottomAction, { borderColor: colors.accent, borderWidth: 1, backgroundColor: colors.background, marginBottom: theme.spacing.sm }]}>
+              <Ionicons name="time-outline" size={18} color={colors.accent} />
+              <Text style={[styles.cooldownText, { color: colors.accent }]}>
                 {t('drinks.cooldown', { s: cooldown })}
               </Text>
             </View>
@@ -422,10 +520,10 @@ export default function DrinksScreen() {
             <>
               {/* Header */}
               <View style={styles.tableHeader}>
-                <Text style={[styles.tableHeaderCell, { width: 40, color: colors.primary }]}>{t('drinks.rank')}</Text>
-                <Text style={[styles.tableHeaderCell, { flex: 1, color: colors.primary }]}>Name</Text>
-                <Text style={[styles.tableHeaderCell, { width: 52, textAlign: 'right', color: colors.primary }]}>🍺</Text>
-                <Text style={[styles.tableHeaderCell, { width: 64, textAlign: 'right', color: colors.primary }]}>Pts</Text>
+                <Text style={[styles.tableHeaderCell, { width: 40, color: colors.accent }]}>{t('drinks.rank')}</Text>
+                <Text style={[styles.tableHeaderCell, { flex: 1, color: colors.accent }]}>Name</Text>
+                <Text style={[styles.tableHeaderCell, { width: 52, textAlign: 'right', color: colors.accent }]}>🍺</Text>
+                <Text style={[styles.tableHeaderCell, { width: 64, textAlign: 'right', color: colors.accent }]}>Pts</Text>
               </View>
 
               {stats.guest_totals.map((g, i) => {
@@ -437,7 +535,7 @@ export default function DrinksScreen() {
                     key={g.guest_id}
                     style={[
                       styles.tableRow,
-                      isMe && { backgroundColor: colors.primary + '15' },
+                      isMe && { backgroundColor: colors.accent + '15' },
                       i < 3 && { borderLeftWidth: 3, borderLeftColor: medalColor ?? 'transparent' },
                     ]}
                   >
@@ -445,7 +543,7 @@ export default function DrinksScreen() {
                       {medal ?? `#${i + 1}`}
                     </Text>
                     <Text
-                      style={[styles.nameCell, { flex: 1, color: colors.primary }, isMe && { fontWeight: '700' }]}
+                      style={[styles.nameCell, { flex: 1, color: colors.accent }, isMe && { fontWeight: '700' }]}
                       numberOfLines={1}
                     >
                       {g.firstname} {g.lastname}
@@ -454,7 +552,7 @@ export default function DrinksScreen() {
                     <Text
                       style={[
                         styles.dataCell,
-                        { width: 64, color: g.points_total >= 0 ? colors.primary : theme.colors.muted, fontWeight: '600' },
+                        { width: 64, color: g.points_total >= 0 ? colors.accent : theme.colors.muted, fontWeight: '600' },
                       ]}
                     >
                       {g.points_total}
@@ -474,11 +572,11 @@ export default function DrinksScreen() {
                 style={styles.myDrinksHeader}
                 onPress={() => setMyStatsExpanded((v) => !v)}
               >
-                <Text style={[styles.myDrinksTitle, { color: colors.primary }]}>{t('drinks.myDrinks')}</Text>
+                <Text style={[styles.myDrinksTitle, { color: colors.accent }]}>{t('drinks.myDrinks')}</Text>
                 <Ionicons
                   name={myStatsExpanded ? 'chevron-up' : 'chevron-down'}
                   size={18}
-                  color={colors.primary}
+                  color={colors.accent}
                 />
               </Pressable>
 
@@ -490,11 +588,11 @@ export default function DrinksScreen() {
                 ) : (
                   stats.my_stats.map((item) => (
                     <View key={item.drink_id} style={styles.myStatRow}>
-                      <Text style={[styles.myStatName, { color: colors.primary }]} numberOfLines={1}>
+                      <Text style={[styles.myStatName, { color: colors.accent }]} numberOfLines={1}>
                         {item.display_name}
                       </Text>
                       <Text style={[styles.myStatCount, { color: theme.colors.muted }]}>{item.count}×</Text>
-                      <Text style={[styles.myStatPoints, { color: item.points_total >= 0 ? colors.primary : theme.colors.muted }]}>
+                      <Text style={[styles.myStatPoints, { color: item.points_total >= 0 ? colors.accent : theme.colors.muted }]}>
                         {item.points_total >= 0 ? `+${item.points_total}` : `${item.points_total}`} Pts
                       </Text>
                     </View>
@@ -604,7 +702,6 @@ const styles = StyleSheet.create({
     borderRadius: theme.borderRadius.md,
     paddingHorizontal: theme.spacing.md,
     paddingVertical: theme.spacing.sm,
-    backgroundColor: '#fff',
   },
   searchInput: {
     flex: 1,
@@ -624,7 +721,6 @@ const styles = StyleSheet.create({
     aspectRatio: 1,
     borderRadius: theme.borderRadius.md,
     borderWidth: 1.5,
-    backgroundColor: '#fff',
     padding: theme.spacing.md,
     justifyContent: 'space-between',
   },
@@ -653,7 +749,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: theme.spacing.md,
     borderWidth: 1,
     borderRadius: theme.borderRadius.md,
-    backgroundColor: '#fff',
   },
   categoryHeader: {
     fontSize: 14,
@@ -668,7 +763,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: theme.spacing.md,
     borderRadius: theme.borderRadius.md,
     borderWidth: 1.5,
-    backgroundColor: '#fff',
   },
   drinkName: {
     flex: 1,
@@ -683,6 +777,25 @@ const styles = StyleSheet.create({
   pointsText: {
     fontSize: 13,
     fontWeight: '600',
+  },
+
+  // Size buttons (multi-size groups)
+  sizeButtonRow: {
+    flex: 1,
+    flexDirection: 'row',
+    gap: theme.spacing.xs,
+  },
+  sizeButton: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: theme.spacing.sm,
+    borderRadius: theme.borderRadius.sm,
+  },
+  sizeButtonText: {
+    color: '#fff',
+    fontSize: 15,
+    fontWeight: '700',
   },
 
   // Bottom action (Log-Button + Cooldown)

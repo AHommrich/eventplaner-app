@@ -24,9 +24,9 @@ export default function SettingsScreen() {
   return (
     <View style={{ flex: 1, backgroundColor: colors.background, padding: theme.spacing.lg, justifyContent: 'center' }}>
       {session && (
-        <View style={{ backgroundColor: '#fff', borderRadius: theme.borderRadius.lg, padding: theme.spacing.md, marginBottom: theme.spacing.xl }}>
+        <View style={{ backgroundColor: colors.card, borderRadius: theme.borderRadius.lg, padding: theme.spacing.md, marginBottom: theme.spacing.xl }}>
           <Text style={{ fontSize: 12, color: theme.colors.muted, marginBottom: 4 }}>{t('settings.loggedInAs')}</Text>
-          <Text style={{ fontSize: 16, fontWeight: '600', color: colors.primary }}>
+          <Text style={{ fontSize: 16, fontWeight: '600', color: colors.accent }}>
             {session.firstname} {session.lastname}
           </Text>
           {session.familyName && (
@@ -38,7 +38,7 @@ export default function SettingsScreen() {
       )}
 
       {/* Language switcher */}
-      <View style={{ backgroundColor: '#fff', borderRadius: theme.borderRadius.lg, padding: theme.spacing.md, marginBottom: theme.spacing.md }}>
+      <View style={{ backgroundColor: colors.card, borderRadius: theme.borderRadius.lg, padding: theme.spacing.md, marginBottom: theme.spacing.md }}>
         <Text style={{ fontSize: 12, color: theme.colors.muted, marginBottom: theme.spacing.sm }}>{t('settings.language')}</Text>
         <View style={{ flexDirection: 'row', gap: 8 }}>
           {(['de', 'en'] as Language[]).map((lang) => (
@@ -50,13 +50,13 @@ export default function SettingsScreen() {
                 paddingVertical: 10,
                 borderRadius: theme.borderRadius.md,
                 alignItems: 'center',
-                backgroundColor: language === lang ? colors.primary : colors.background,
+                backgroundColor: language === lang ? colors.accent : colors.background,
               }}
             >
               <Text
                 style={{
                   fontWeight: '600',
-                  color: language === lang ? '#fff' : theme.colors.muted,
+                  color: language === lang ? colors.onAccent : theme.colors.muted,
                 }}
               >
                 {lang === 'de' ? t('settings.german') : t('settings.english')}

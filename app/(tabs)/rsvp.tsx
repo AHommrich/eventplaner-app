@@ -171,7 +171,7 @@ export default function RsvpTabScreen() {
   if (loading) {
     return (
       <View style={{ flex: 1, backgroundColor: colors.background, alignItems: 'center', justifyContent: 'center' }}>
-        <ActivityIndicator color={theme.colors.accent} />
+        <ActivityIndicator color={theme.colors.primary} />
       </View>
     );
   }
@@ -187,7 +187,7 @@ export default function RsvpTabScreen() {
       <ScrollView
         style={{ flex: 1 }}
         contentContainerStyle={{ padding: theme.spacing.lg, paddingTop: insets.top + theme.spacing.md, paddingBottom: 48 }}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={colors.primary} />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={colors.accent} />}
       >
       {deadlineFormatted && (
         <Text style={{ fontSize: 13, color: theme.colors.muted, marginBottom: theme.spacing.lg }}>
@@ -205,7 +205,7 @@ export default function RsvpTabScreen() {
         }}
       >
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: theme.spacing.md }}>
-          <Text style={{ fontSize: 16, fontWeight: '600', color: colors.primary }}>
+          <Text style={{ fontSize: 16, fontWeight: '600', color: colors.accent }}>
             {guest.firstname} {guest.lastname}
           </Text>
           <StatusBadge status={guest.rsvp_status} t={t} />
@@ -216,7 +216,7 @@ export default function RsvpTabScreen() {
             {t('rsvp.deadlinePassed')}
           </Text>
         ) : savingOwn ? (
-          <ActivityIndicator color={theme.colors.accent} style={{ alignSelf: 'flex-start' }} />
+          <ActivityIndicator color={theme.colors.primary} style={{ alignSelf: 'flex-start' }} />
         ) : (
           <View style={{ flexDirection: 'row', gap: 8 }}>
             <TouchableOpacity
@@ -264,7 +264,7 @@ export default function RsvpTabScreen() {
             padding: theme.spacing.md,
           }}
         >
-          <Text style={{ fontSize: 16, fontWeight: '600', color: colors.primary, marginBottom: 4 }}>
+          <Text style={{ fontSize: 16, fontWeight: '600', color: colors.accent, marginBottom: 4 }}>
             {t('rsvp.groupTitle')}
           </Text>
           <Text style={{ fontSize: 13, color: theme.colors.muted, marginBottom: theme.spacing.md }}>
@@ -291,7 +291,7 @@ export default function RsvpTabScreen() {
                 style={{ paddingVertical: theme.spacing.md, borderBottomWidth: 1, borderBottomColor: '#f0f0f0' }}
               >
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <Text style={{ fontSize: 15, fontWeight: '600', color: colors.primary }}>
+                  <Text style={{ fontSize: 15, fontWeight: '600', color: colors.accent }}>
                     {memberFullName}
                   </Text>
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
@@ -308,7 +308,7 @@ export default function RsvpTabScreen() {
                 )}
                 {isExpanded && (
                   isSaving ? (
-                    <ActivityIndicator color={theme.colors.accent} style={{ alignSelf: 'flex-start', marginTop: theme.spacing.sm }} />
+                    <ActivityIndicator color={theme.colors.primary} style={{ alignSelf: 'flex-start', marginTop: theme.spacing.sm }} />
                   ) : (
                     <View style={{ flexDirection: 'row', gap: 8, marginTop: theme.spacing.sm }}>
                       <TouchableOpacity
@@ -359,7 +359,7 @@ export default function RsvpTabScreen() {
           position: 'absolute',
           top: insets.top + 12,
           alignSelf: 'center',
-          backgroundColor: colors.primary,
+          backgroundColor: colors.accent,
           paddingHorizontal: 16,
           paddingVertical: 8,
           borderRadius: theme.borderRadius.full,

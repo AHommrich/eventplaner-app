@@ -81,7 +81,7 @@ export default function RsvpScreen() {
   if (loading) {
     return (
       <View style={{ flex: 1, backgroundColor: colors.background, alignItems: 'center', justifyContent: 'center' }}>
-        <ActivityIndicator color={theme.colors.accent} />
+        <ActivityIndicator color={theme.colors.primary} />
       </View>
     );
   }
@@ -103,7 +103,7 @@ export default function RsvpScreen() {
         style={{
           fontSize: 28,
           fontWeight: 'bold',
-          color: colors.primary,
+          color: colors.accent,
           marginBottom: theme.spacing.sm,
           marginTop: theme.spacing.xl,
         }}
@@ -125,11 +125,11 @@ export default function RsvpScreen() {
           marginBottom: theme.spacing.md,
         }}
       >
-        <Text style={{ fontSize: 16, fontWeight: '600', color: colors.primary, marginBottom: theme.spacing.md }}>
+        <Text style={{ fontSize: 16, fontWeight: '600', color: colors.accent, marginBottom: theme.spacing.md }}>
           {guest.firstname} {guest.lastname}
         </Text>
         {savingOwn ? (
-          <ActivityIndicator color={theme.colors.accent} style={{ alignSelf: 'flex-start' }} />
+          <ActivityIndicator color={theme.colors.primary} style={{ alignSelf: 'flex-start' }} />
         ) : (
           <View style={{ flexDirection: 'row', gap: 8 }}>
             <TouchableOpacity
@@ -177,7 +177,7 @@ export default function RsvpScreen() {
         <TouchableOpacity
           onPress={handleContinue}
           style={{
-            backgroundColor: colors.primary,
+            backgroundColor: colors.accent,
             borderRadius: theme.borderRadius.md,
             paddingVertical: theme.spacing.md,
             alignItems: 'center',
