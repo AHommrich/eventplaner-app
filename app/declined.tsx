@@ -110,7 +110,7 @@ export default function DeclinedScreen() {
   if (loading) {
     return (
       <View style={{ flex: 1, backgroundColor: colors.background, alignItems: 'center', justifyContent: 'center' }}>
-        <ActivityIndicator color={theme.colors.accent} />
+        <ActivityIndicator color={theme.colors.primary} />
       </View>
     );
   }
@@ -126,7 +126,7 @@ export default function DeclinedScreen() {
     <ScrollView
       style={{ flex: 1 }}
       contentContainerStyle={{ flexGrow: 1, padding: theme.spacing.lg, justifyContent: 'center' }}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={colors.primary} />}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={colors.accent} />}
     >
       <View style={{ alignItems: 'center', marginBottom: theme.spacing.xl }}>
         <Ionicons
@@ -140,7 +140,7 @@ export default function DeclinedScreen() {
         style={{
           fontSize: 24,
           fontWeight: 'bold',
-          color: colors.primary,
+          color: colors.accent,
           textAlign: 'center',
           marginBottom: theme.spacing.md,
         }}
@@ -178,7 +178,7 @@ export default function DeclinedScreen() {
           disabled={revoking}
           style={{
             borderWidth: 1,
-            borderColor: colors.primary,
+            borderColor: colors.accent,
             borderRadius: theme.borderRadius.md,
             paddingVertical: theme.spacing.md,
             alignItems: 'center',
@@ -186,9 +186,9 @@ export default function DeclinedScreen() {
           }}
         >
           {revoking ? (
-            <ActivityIndicator color={colors.primary} />
+            <ActivityIndicator color={colors.accent} />
           ) : (
-            <Text style={{ color: colors.primary, fontWeight: '600' }}>
+            <Text style={{ color: colors.accent, fontWeight: '600' }}>
               {t('declined.revokeButton')}
             </Text>
           )}
@@ -218,7 +218,7 @@ export default function DeclinedScreen() {
           position: 'absolute',
           top: insets.top + 12,
           alignSelf: 'center',
-          backgroundColor: colors.primary,
+          backgroundColor: colors.accent,
           paddingHorizontal: 16,
           paddingVertical: 8,
           borderRadius: theme.borderRadius.full,

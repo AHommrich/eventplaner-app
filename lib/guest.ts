@@ -36,9 +36,14 @@ export type EventInfo = {
   venue_address: string | null;
   dresscode: string | null;
   schedule: string | null;
+  // neue Theme-Felder
+  color_accent: string | null;
+  color_background: string | null;
+  color_card: string | null;
+  color_home_text: string | null;
+  // alte Felder (Übergangszeit, können ignoriert werden)
   color_primary: string | null;
   color_secondary: string | null;
-  color_home_text: string | null;
   drink_game_enabled: boolean;
   drink_game_end_time: string | null;
 };

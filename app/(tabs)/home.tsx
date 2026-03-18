@@ -81,8 +81,8 @@ export default function HomeScreen() {
   }
 
   const hasCover = !!eventInfo?.cover_image_url;
-  const textColor = hasCover ? colors.homeText : colors.primary;
-  const pillBg = hasCover ? 'rgba(0,0,0,0.35)' : colors.primary;
+  const textColor = hasCover ? colors.homeText : colors.accent;
+  const pillBg = hasCover ? 'rgba(0,0,0,0.35)' : colors.accent;
   const pillText = hasCover ? colors.homeText : '#fff';
   const eventDate = eventInfo?.date ? formatEventDate(eventInfo.date, language) : null;
 
@@ -114,7 +114,7 @@ export default function HomeScreen() {
   if (loading) {
     return (
       <View style={[styles.container, { backgroundColor: colors.background, justifyContent: 'center', alignItems: 'center' }]}>
-        <ActivityIndicator color={colors.primary} />
+        <ActivityIndicator color={colors.accent} />
       </View>
     );
   }
@@ -123,7 +123,7 @@ export default function HomeScreen() {
     <ScrollView
       style={styles.scroll}
       contentContainerStyle={[styles.content, { paddingBottom: (hasCover ? tabBarHeight : insets.bottom) + theme.spacing.xl }]}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={hasCover ? '#fff' : colors.primary} />}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={hasCover ? '#fff' : colors.accent} />}
     >
       {loadError && (
         <Text style={{ color: 'red', fontSize: 11, marginBottom: 8, textAlign: 'center' }}>

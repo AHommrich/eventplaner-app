@@ -150,7 +150,7 @@ export default function PhotosScreen() {
   if (loading) {
     return (
       <View style={{ flex: 1, backgroundColor: colors.background, alignItems: 'center', justifyContent: 'center', paddingTop: insets.top }}>
-        <ActivityIndicator color={theme.colors.accent} />
+        <ActivityIndicator color={theme.colors.primary} />
       </View>
     );
   }
@@ -213,7 +213,7 @@ export default function PhotosScreen() {
           width: 56,
           height: 56,
           borderRadius: 28,
-          backgroundColor: uploading ? theme.colors.muted : colors.primary,
+          backgroundColor: uploading ? theme.colors.muted : colors.accent,
           alignItems: 'center',
           justifyContent: 'center',
           shadowColor: '#000',
