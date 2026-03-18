@@ -6,14 +6,14 @@ import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system/legacy';
 import { Ionicons } from '@expo/vector-icons';
 import { getSession, saveSession, GuestSession } from '../lib/auth';
-import { fetchGuestMe, isFullAccess, isDeclinedFlow } from '../lib/guest';
+import { fetchGuestMe, isFullAccess, isDeclinedFlow, RsvpStatus } from '../lib/guest';
 import { useLanguage } from '../lib/LanguageContext';
 import { QrFromImageView } from '../lib/QrFromImage';
 import api from '../lib/api';
 import { useEventTheme } from '../lib/EventThemeContext';
 import { theme } from '../constants/theme';
 
-type ApiGuest = { guest_id: number; firstname: string; lastname: string; token: string };
+type ApiGuest = { guest_id: number; firstname: string; lastname: string; token: string | null; is_active: boolean };
 type ApiResponse = { type: 'solo' | 'family'; family_name: string | null; guests: ApiGuest[] };
 
 export default function WelcomeScreen() {
@@ -27,6 +27,7 @@ export default function WelcomeScreen() {
   const [familyName, setFamilyName] = useState<string | null>(null);
   const [responseType, setResponseType] = useState<'solo' | 'family'>('solo');
   const [showFamilyPicker, setShowFamilyPicker] = useState(false);
+  const [qrToken, setQrToken] = useState<string | null>(null);
 
   useEffect(() => {
     getSession().then(async (session) => {
@@ -77,16 +78,18 @@ export default function WelcomeScreen() {
       if (!token) throw new Error(t('scan.invalidQr'));
       const response = await api.get<ApiResponse>(`/api/auth/qr/${token}`);
       const { type, family_name, guests } = response.data;
-      if (guests.length === 1) {
+      if (type === 'solo' && guests[0]?.token) {
         const g = guests[0];
         const session: GuestSession = {
-          token: g.token, guestId: g.guest_id, firstname: g.firstname,
+          token: g.token!, guestId: g.guest_id, firstname: g.firstname,
           lastname: g.lastname, type, familyName: family_name,
         };
         await saveSession(session);
         await loadTheme();
-        router.replace('/rsvp');
+        const me = await fetchGuestMe();
+        navigateByStatus(me.rsvp_status);
       } else {
+        setQrToken(token);
         setFamilyGuests(guests);
         setFamilyName(family_name);
         setResponseType(type);
@@ -99,16 +102,44 @@ export default function WelcomeScreen() {
     }
   }
 
-  async function persistAndNavigate(guest: ApiGuest) {
-    const session: GuestSession = {
-      token: guest.token, guestId: guest.guest_id,
-      firstname: guest.firstname, lastname: guest.lastname,
-      type: responseType, familyName,
-    };
-    await saveSession(session);
-    await loadTheme();
-    setShowFamilyPicker(false);
-    router.replace('/rsvp');
+  async function navigateByStatus(status: RsvpStatus | null) {
+    if (status === null) {
+      router.replace('/rsvp');
+    } else if (isFullAccess(status)) {
+      router.replace('/(tabs)/home');
+    } else if (isDeclinedFlow(status)) {
+      router.replace('/declined');
+    } else {
+      router.replace('/rsvp');
+    }
+  }
+
+  async function selectFamilyGuest(guest: ApiGuest) {
+    if (guest.is_active || !qrToken) return;
+    setLoading(true);
+    try {
+      type SelectResponse = { guest_id: number; firstname: string; lastname: string; token: string };
+      const res = await api.post<SelectResponse>(`/api/auth/qr/${qrToken}/select`, { guest_id: guest.guest_id });
+      const { token, firstname, lastname } = res.data;
+      const session: GuestSession = {
+        token, guestId: guest.guest_id, firstname, lastname,
+        type: responseType, familyName,
+      };
+      await saveSession(session);
+      await loadTheme();
+      setShowFamilyPicker(false);
+      const me = await fetchGuestMe();
+      navigateByStatus(me.rsvp_status);
+    } catch (e: any) {
+      if (e?.response?.status === 409) {
+        Alert.alert(t('common.error'), t('scan.alreadyLoggedIn'));
+        setFamilyGuests((prev) => prev.map((g) => g.guest_id === guest.guest_id ? { ...g, is_active: true } : g));
+      } else {
+        Alert.alert(t('common.error'), e?.response?.data?.message ?? t('scan.invalidQrMessage'));
+      }
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
@@ -158,8 +189,19 @@ export default function WelcomeScreen() {
               data={familyGuests}
               keyExtractor={(item) => String(item.guest_id)}
               renderItem={({ item }) => (
-                <TouchableOpacity style={styles.guestRow} onPress={() => persistAndNavigate(item)}>
-                  <Text style={styles.guestName}>{item.firstname} {item.lastname}</Text>
+                <TouchableOpacity
+                  style={[styles.guestRow, item.is_active && { opacity: 0.4 }]}
+                  onPress={() => selectFamilyGuest(item)}
+                  activeOpacity={item.is_active ? 1 : 0.7}
+                >
+                  <Text style={[styles.guestName, item.is_active && { color: theme.colors.muted }]}>
+                    {item.firstname} {item.lastname}
+                  </Text>
+                  {item.is_active && (
+                    <Text style={{ fontSize: 12, color: theme.colors.muted, marginTop: 2, textAlign: 'center' }}>
+                      {t('scan.alreadyLoggedIn')}
+                    </Text>
+                  )}
                 </TouchableOpacity>
               )}
             />

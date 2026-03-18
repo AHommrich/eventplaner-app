@@ -49,7 +49,6 @@ export default function HomeScreen() {
   async function loadData() {
     try {
       const info = await fetchEventInfo();
-      console.log('[Home] eventInfo:', JSON.stringify(info));
       setEventInfo(info);
       await loadTheme();
     } catch (e: any) {
@@ -128,7 +127,7 @@ export default function HomeScreen() {
     >
       {loadError && (
         <Text style={{ color: 'red', fontSize: 11, marginBottom: 8, textAlign: 'center' }}>
-          API Fehler: {loadError}
+          {t('home.loadError')}
         </Text>
       )}
       {session && (
