@@ -20,16 +20,26 @@ api.interceptors.request.use(async (config) => {
 });
 
 let _blocked = false;
+let _drinksBlocked = false;
+let _drinksBlockedHandler: (() => void) | null = null;
 
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 403 && error.response?.data?.code === 'app_blocked') {
+    const code = error.response?.data?.code;
+    if (error.response?.status === 403 && code === 'app_blocked') {
       if (!_blocked) {
         _blocked = true;
         router.replace('/blocked');
       }
       return new Promise(() => {}); // schlucken — kein catch/Alert feuert
+    }
+    if (code === 'drinks_blocked') {
+      if (!_drinksBlocked) {
+        _drinksBlocked = true;
+        _drinksBlockedHandler?.();
+      }
+      return new Promise(() => {}); // schlucken
     }
     return Promise.reject(error);
   }
@@ -37,6 +47,19 @@ api.interceptors.response.use(
 
 export function clearBlocked() {
   _blocked = false;
+}
+
+export function registerDrinksBlockedHandler(fn: () => void) {
+  _drinksBlockedHandler = fn;
+}
+
+export function clearDrinksBlockedHandler() {
+  _drinksBlockedHandler = null;
+  _drinksBlocked = false;
+}
+
+export function resetDrinksBlocked() {
+  _drinksBlocked = false;
 }
 
 export default api;

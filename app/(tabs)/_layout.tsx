@@ -1,29 +1,38 @@
 import { useEffect, useState } from 'react';
-import { Tabs } from 'expo-router';
+import { Alert } from 'react-native';
+import { Tabs, useRouter, useSegments } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { theme } from '../../constants/theme';
 import { useLanguage } from '../../lib/LanguageContext';
 import { useEventTheme } from '../../lib/EventThemeContext';
+import { useBlockedFeatures } from '../../lib/BlockedFeaturesContext';
 import { fetchGuestMe, RsvpStatus } from '../../lib/guest';
-import api from '../../lib/api';
 
 export default function TabLayout() {
   const { t } = useLanguage();
   const { colors, eventInfo } = useEventTheme();
+  const { drinksBlocked } = useBlockedFeatures();
+  const router = useRouter();
+  const segments = useSegments();
   const [rsvpStatus, setRsvpStatus] = useState<RsvpStatus>('accepted_pending');
-  const [showDrinksTab, setShowDrinksTab] = useState(true);
 
   useEffect(() => {
     fetchGuestMe()
       .then((g) => setRsvpStatus(g.rsvp_status))
       .catch(() => {});
-
-    api.get('/api/drinks').catch((e) => {
-      if (e?.response?.data?.code === 'drinks_blocked') setShowDrinksTab(false);
-    });
   }, []);
 
+  useEffect(() => {
+    if (!drinksBlocked) return;
+    const onDrinksTab = segments[segments.length - 1] === 'drinks';
+    if (onDrinksTab) {
+      Alert.alert(t('drinks.blockedTitle'), t('drinks.blockedMessage'));
+      router.replace('/(tabs)/home');
+    }
+  }, [drinksBlocked]);
+
   const showRsvpTab = rsvpStatus === 'accepted_pending';
+  const showDrinksTab = !drinksBlocked && (eventInfo?.drink_game_enabled === true);
   const hasCover = !!eventInfo?.cover_image_url;
 
   return (

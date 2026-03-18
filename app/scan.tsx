@@ -22,7 +22,8 @@ type ApiGuest = {
   guest_id: number;
   firstname: string;
   lastname: string;
-  token: string;
+  token: string | null;
+  is_active: boolean;
 };
 
 type ApiResponse = {
@@ -42,6 +43,7 @@ export default function ScanScreen() {
   const [familyName, setFamilyName] = useState<string | null>(null);
   const [responseType, setResponseType] = useState<'solo' | 'family'>('solo');
   const [showPicker, setShowPicker] = useState(false);
+  const [qrToken, setQrToken] = useState('');
   const [devToken, setDevToken] = useState('');
   const [showDevInput, setShowDevInput] = useState(false);
 
@@ -71,6 +73,7 @@ export default function ScanScreen() {
     setResponseType(type);
     setFamilyName(family_name);
     setGuests(apiGuests);
+    setQrToken(token);
     if (type === 'solo' && !needsLanguagePick) {
       await persistAndNavigate(apiGuests[0], type, family_name);
     } else {
@@ -83,6 +86,7 @@ export default function ScanScreen() {
     type: 'solo' | 'family',
     famName: string | null,
   ) {
+    if (!guest.token) return;
     const session: GuestSession = {
       token: guest.token,
       guestId: guest.guest_id,
@@ -95,6 +99,37 @@ export default function ScanScreen() {
     await loadTheme();
     setShowPicker(false);
     router.replace('/');
+  }
+
+  async function selectFamilyGuest(guest: ApiGuest) {
+    if (guest.is_active) return;
+    setLoading(true);
+    try {
+      type SelectResponse = { guest_id: number; firstname: string; lastname: string; token: string };
+      const res = await api.post<SelectResponse>(`/api/auth/qr/${qrToken}/select`, { guest_id: guest.guest_id });
+      const { token, firstname, lastname } = res.data;
+      const session: GuestSession = {
+        token,
+        guestId: guest.guest_id,
+        firstname,
+        lastname,
+        type: responseType,
+        familyName,
+      };
+      await saveSession(session);
+      await loadTheme();
+      setShowPicker(false);
+      router.replace('/');
+    } catch (e: any) {
+      if (e?.response?.status === 409) {
+        Alert.alert(t('common.error'), t('scan.alreadyLoggedIn'));
+        setGuests((prev) => prev.map((g) => g.guest_id === guest.guest_id ? { ...g, is_active: true } : g));
+      } else {
+        Alert.alert(t('common.error'), e?.response?.data?.message ?? t('scan.invalidQrMessage'));
+      }
+    } finally {
+      setLoading(false);
+    }
   }
 
   if (!permission) return <View style={styles.container} />;
@@ -184,12 +219,16 @@ export default function ScanScreen() {
                   keyExtractor={(item) => String(item.guest_id)}
                   renderItem={({ item }) => (
                     <TouchableOpacity
-                      style={styles.guestRow}
-                      onPress={() => persistAndNavigate(item, responseType, familyName)}
+                      style={[styles.guestRow, item.is_active && styles.guestRowDisabled]}
+                      onPress={() => selectFamilyGuest(item)}
+                      activeOpacity={item.is_active ? 1 : 0.7}
                     >
-                      <Text style={styles.guestName}>
+                      <Text style={[styles.guestName, item.is_active && styles.guestNameDisabled]}>
                         {item.firstname} {item.lastname}
                       </Text>
+                      {item.is_active && (
+                        <Text style={styles.guestActiveHint}>{t('scan.alreadyLoggedIn')}</Text>
+                      )}
                     </TouchableOpacity>
                   )}
                 />
@@ -374,10 +413,23 @@ const styles = StyleSheet.create({
     paddingVertical: theme.spacing.md,
     borderBottomWidth: 1,
     borderBottomColor: '#f0f0f0',
+    alignItems: 'center',
+  },
+  guestRowDisabled: {
+    opacity: 0.4,
   },
   guestName: {
     fontSize: 16,
     color: theme.colors.primary,
+    textAlign: 'center',
+  },
+  guestNameDisabled: {
+    color: theme.colors.muted,
+  },
+  guestActiveHint: {
+    fontSize: 12,
+    color: theme.colors.muted,
+    marginTop: 2,
     textAlign: 'center',
   },
 });

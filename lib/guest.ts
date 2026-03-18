@@ -39,6 +39,8 @@ export type EventInfo = {
   color_primary: string | null;
   color_secondary: string | null;
   color_home_text: string | null;
+  drink_game_enabled: boolean;
+  drink_game_end_time: string | null;
 };
 
 export function isFullAccess(status: RsvpStatus): boolean {
