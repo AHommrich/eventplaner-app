@@ -39,24 +39,27 @@ export default function TabLayout() {
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: colors.accent,
-        tabBarInactiveTintColor: theme.colors.muted,
+        tabBarActiveTintColor: colors.tabTint,
+        tabBarInactiveTintColor: colors.tabTint + '66',
         tabBarStyle: {
-          backgroundColor: colors.background,
-          borderTopColor: colors.accent,
+          backgroundColor: colors.screenBg,
+          borderTopColor: colors.tabTint + '40',
           borderTopWidth: 1,
         },
+        tabBarLabelStyle: colors.fontFamily
+          ? { fontFamily: colors.fontFamily.regular }
+          : undefined,
       }}
     >
       <Tabs.Screen
         name="home"
         options={{
           title: t('tabs.home'),
-          tabBarActiveTintColor: hasCover ? colors.homeText : colors.accent,
-          tabBarInactiveTintColor: hasCover ? 'rgba(255,255,255,0.55)' : theme.colors.muted,
+          tabBarActiveTintColor: hasCover ? (colors.homeText ?? colors.tabTint) : colors.tabTint,
+          tabBarInactiveTintColor: hasCover ? 'rgba(255,255,255,0.55)' : colors.tabTint + '66',
           tabBarStyle: hasCover
             ? { position: 'absolute', backgroundColor: 'transparent', borderTopWidth: 0, elevation: 0, shadowOpacity: 0 }
-            : { backgroundColor: colors.background, borderTopColor: colors.accent, borderTopWidth: 1 },
+            : { backgroundColor: colors.screenBg, borderTopColor: colors.tabTint + '40', borderTopWidth: 1 },
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="home-outline" size={size} color={color} />
           ),

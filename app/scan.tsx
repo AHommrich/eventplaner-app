@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import {
   View,
-  Text,
   TouchableOpacity,
   ActivityIndicator,
   Modal,
@@ -10,6 +9,7 @@ import {
   Alert,
   StyleSheet,
 } from 'react-native';
+import { ThemedText } from '../components/ThemedText';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { useRouter } from 'expo-router';
 import api from '../lib/api';
@@ -137,11 +137,11 @@ export default function ScanScreen() {
   if (!permission.granted) {
     return (
       <View style={styles.container}>
-        <Text style={styles.permissionText}>
+        <ThemedText style={styles.permissionText}>
           {t('scan.cameraPermissionText')}
-        </Text>
+        </ThemedText>
         <TouchableOpacity style={styles.button} onPress={requestPermission}>
-          <Text style={styles.buttonText}>{t('scan.allowAccess')}</Text>
+          <ThemedText style={styles.buttonText}>{t('scan.allowAccess')}</ThemedText>
         </TouchableOpacity>
       </View>
     );
@@ -167,7 +167,7 @@ export default function ScanScreen() {
         <View style={styles.devContainer}>
           {showDevInput ? (
             <View style={styles.devInputBox}>
-              <Text style={styles.devLabel}>{t('scan.devLabel')}</Text>
+              <ThemedText style={styles.devLabel}>{t('scan.devLabel')}</ThemedText>
               <TextInput
                 style={styles.devInput}
                 placeholder={t('scan.devPlaceholder')}
@@ -190,7 +190,7 @@ export default function ScanScreen() {
                   }
                 }}
               >
-                <Text style={styles.devButtonText}>{t('scan.devLogin')}</Text>
+                <ThemedText style={styles.devButtonText}>{t('scan.devLogin')}</ThemedText>
               </TouchableOpacity>
             </View>
           ) : (
@@ -198,7 +198,7 @@ export default function ScanScreen() {
               style={styles.devToggle}
               onPress={() => setShowDevInput(true)}
             >
-              <Text style={styles.devToggleText}>{t('scan.devToggle')}</Text>
+              <ThemedText style={styles.devToggleText}>{t('scan.devToggle')}</ThemedText>
             </TouchableOpacity>
           )}
         </View>
@@ -210,10 +210,10 @@ export default function ScanScreen() {
           <View style={styles.modalSheet}>
             {guests.length > 1 && (
               <>
-                <Text style={styles.modalTitle}>
+                <ThemedText style={styles.modalTitle}>
                   {familyName ? t('scan.familyTitle', { name: familyName }) : t('scan.whoAreYou')}
-                </Text>
-                <Text style={styles.modalSubtitle}>{t('scan.chooseName')}</Text>
+                </ThemedText>
+                <ThemedText style={styles.modalSubtitle}>{t('scan.chooseName')}</ThemedText>
                 <FlatList
                   data={guests}
                   keyExtractor={(item) => String(item.guest_id)}
@@ -223,11 +223,11 @@ export default function ScanScreen() {
                       onPress={() => selectFamilyGuest(item)}
                       activeOpacity={item.is_active ? 1 : 0.7}
                     >
-                      <Text style={[styles.guestName, item.is_active && styles.guestNameDisabled]}>
+                      <ThemedText style={[styles.guestName, item.is_active && styles.guestNameDisabled]}>
                         {item.firstname} {item.lastname}
-                      </Text>
+                      </ThemedText>
                       {item.is_active && (
-                        <Text style={styles.guestActiveHint}>{t('scan.alreadyLoggedIn')}</Text>
+                        <ThemedText style={styles.guestActiveHint}>{t('scan.alreadyLoggedIn')}</ThemedText>
                       )}
                     </TouchableOpacity>
                   )}
@@ -240,7 +240,7 @@ export default function ScanScreen() {
                 style={styles.continueButton}
                 onPress={() => persistAndNavigate(guests[0], responseType, familyName)}
               >
-                <Text style={styles.continueButtonText}>{t('scan.continue')}</Text>
+                <ThemedText style={styles.continueButtonText}>{t('scan.continue')}</ThemedText>
               </TouchableOpacity>
             )}
 
@@ -253,9 +253,9 @@ export default function ScanScreen() {
                     style={[styles.langButton, language === lang && styles.langButtonActive]}
                     onPress={() => setLanguage(lang)}
                   >
-                    <Text style={[styles.langButtonText, language === lang && styles.langButtonTextActive]}>
+                    <ThemedText style={[styles.langButtonText, language === lang && styles.langButtonTextActive]}>
                       {lang === 'de' ? '🇩🇪  Deutsch' : '🇬🇧  English'}
-                    </Text>
+                    </ThemedText>
                   </TouchableOpacity>
                 ))}
               </View>

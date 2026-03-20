@@ -34,18 +34,28 @@ export type EventInfo = {
   cover_image_url: string | null;
   venue_name: string | null;
   venue_address: string | null;
+  venue_lat: number | null;
+  venue_lng: number | null;
   dresscode: string | null;
   schedule: string | null;
-  // neue Theme-Felder
-  color_accent: string | null;
-  color_background: string | null;
-  color_card: string | null;
-  color_home_text: string | null;
-  // alte Felder (Übergangszeit, können ignoriert werden)
+  // Palette
   color_primary: string | null;
   color_secondary: string | null;
+  color_tertiary: string | null;
+  // aufgelöste Rollen
+  color_screen_bg: string | null;
+  color_card: string | null;
+  color_card_text: string | null;
+  color_card_button: string | null;
+  color_card_button_text: string | null;
+  color_tab_tint: string | null;
+  color_border: string | null;
+  color_fab: string | null;
+  color_fab_icon: string | null;
+  color_home_text: string | null;
   drink_game_enabled: boolean;
   drink_game_end_time: string | null;
+  font_heading: string | null;
 };
 
 export function isFullAccess(status: RsvpStatus): boolean {

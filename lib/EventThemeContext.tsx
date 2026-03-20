@@ -1,18 +1,27 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import * as SecureStore from 'expo-secure-store';
 import { fetchEventInfo, EventInfo } from './guest';
+import { FONT_MAP, FontDefinition, FontKey } from '../constants/fonts';
 
-const FALLBACK_ACCENT     = '#7c2d3e';
-const FALLBACK_BACKGROUND = '#e8e3de';
-const FALLBACK_CARD       = '#ffffff';
-const FALLBACK_HOME_TEXT  = '#ffffff';
+const FALLBACK_PRIMARY   = '#7c2d3e';
+const FALLBACK_SECONDARY = '#e8e3de';
+const FALLBACK_TERTIARY  = '#ffffff';
 
 export type EventThemeColors = {
-  accent: string;
-  onAccent: string;   // automatisch abgeleitet — Text AUF accent-gefüllten Buttons
-  background: string;
+  primary: string;
+  secondary: string;
+  tertiary: string;
+  screenBg: string;
   card: string;
-  homeText: string;
+  cardText: string;
+  cardButton: string;
+  cardButtonText: string;
+  border: string;
+  fab: string;
+  fabIcon: string;
+  homeText: string | null;
+  tabTint: string;
+  fontFamily: FontDefinition | undefined;
 };
 
 type EventThemeContextValue = {
@@ -21,26 +30,23 @@ type EventThemeContextValue = {
   loadTheme: () => Promise<void>;
 };
 
-/** WCAG-Luminanz-Check: gibt '#fff' oder '#1a1a1a' zurück je nach Helligkeit von accent */
-function deriveOnAccent(hex: string): string {
-  const h = hex.replace('#', '');
-  if (h.length !== 6) return '#ffffff';
-  const r = parseInt(h.slice(0, 2), 16) / 255;
-  const g = parseInt(h.slice(2, 4), 16) / 255;
-  const b = parseInt(h.slice(4, 6), 16) / 255;
-  const lin = (c: number) => c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
-  const L = 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b);
-  return L > 0.179 ? '#1a1a1a' : '#ffffff';
-}
-
 const EventThemeContext = createContext<EventThemeContextValue>({
   eventInfo: null,
   colors: {
-    accent: FALLBACK_ACCENT,
-    onAccent: deriveOnAccent(FALLBACK_ACCENT),
-    background: FALLBACK_BACKGROUND,
-    card: FALLBACK_CARD,
-    homeText: FALLBACK_HOME_TEXT,
+    primary: FALLBACK_PRIMARY,
+    secondary: FALLBACK_SECONDARY,
+    tertiary: FALLBACK_TERTIARY,
+    screenBg: FALLBACK_SECONDARY,
+    card: FALLBACK_TERTIARY,
+    cardText: FALLBACK_PRIMARY,
+    cardButton: FALLBACK_PRIMARY,
+    cardButtonText: FALLBACK_TERTIARY,
+    border: FALLBACK_PRIMARY,
+    fab: FALLBACK_PRIMARY,
+    fabIcon: FALLBACK_TERTIARY,
+    homeText: null,
+    tabTint: FALLBACK_PRIMARY,
+    fontFamily: undefined,
   },
   loadTheme: async () => {},
 });
@@ -63,16 +69,25 @@ export function EventThemeProvider({ children }: { children: ReactNode }) {
     loadTheme();
   }, []);
 
-  const accent     = eventInfo?.color_accent     ?? FALLBACK_ACCENT;
-  const background = eventInfo?.color_background ?? FALLBACK_BACKGROUND;
-  const card       = eventInfo?.color_card       ?? FALLBACK_CARD;
+  const fontKey = (eventInfo?.font_heading ?? null) as FontKey | null;
+  const fontFamily: FontDefinition | undefined =
+    fontKey && FONT_MAP[fontKey] ? FONT_MAP[fontKey] : undefined;
 
   const colors: EventThemeColors = {
-    accent,
-    onAccent: deriveOnAccent(accent),
-    background,
-    card,
-    homeText: eventInfo?.color_home_text ?? FALLBACK_HOME_TEXT,
+    primary:        eventInfo?.color_primary        ?? FALLBACK_PRIMARY,
+    secondary:      eventInfo?.color_secondary      ?? FALLBACK_SECONDARY,
+    tertiary:       eventInfo?.color_tertiary       ?? FALLBACK_TERTIARY,
+    screenBg:       eventInfo?.color_screen_bg      ?? FALLBACK_SECONDARY,
+    card:           eventInfo?.color_card           ?? FALLBACK_TERTIARY,
+    cardText:       eventInfo?.color_card_text      ?? FALLBACK_PRIMARY,
+    cardButton:     eventInfo?.color_card_button    ?? FALLBACK_PRIMARY,
+    cardButtonText: eventInfo?.color_card_button_text ?? FALLBACK_TERTIARY,
+    border:         eventInfo?.color_border         ?? FALLBACK_PRIMARY,
+    fab:            eventInfo?.color_fab            ?? FALLBACK_PRIMARY,
+    fabIcon:        eventInfo?.color_fab_icon       ?? FALLBACK_TERTIARY,
+    homeText:       eventInfo?.color_home_text      ?? null,
+    tabTint:        eventInfo?.color_tab_tint       ?? FALLBACK_PRIMARY,
+    fontFamily,
   };
 
   return (

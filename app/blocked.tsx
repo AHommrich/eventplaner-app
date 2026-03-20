@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
-import { View, Text, ActivityIndicator, StyleSheet } from 'react-native';
+import { View, ActivityIndicator, StyleSheet } from 'react-native';
+import { ThemedText } from '../components/ThemedText';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import api, { clearBlocked } from '../lib/api';
@@ -33,8 +34,8 @@ export default function BlockedScreen() {
   return (
     <View style={styles.container}>
       <Ionicons name="lock-closed-outline" size={64} color={theme.colors.muted} />
-      <Text style={styles.title}>{t('blocked.title')}</Text>
-      <Text style={styles.message}>{t('blocked.message')}</Text>
+      <ThemedText style={styles.title}>{t('blocked.title')}</ThemedText>
+      <ThemedText style={styles.message}>{t('blocked.message')}</ThemedText>
       <ActivityIndicator color={theme.colors.muted} style={{ marginTop: 8 }} />
     </View>
   );
