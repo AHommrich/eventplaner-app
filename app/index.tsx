@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { View, Text, TouchableOpacity, Alert, StyleSheet, Modal, FlatList } from 'react-native';
+import { View, TouchableOpacity, Alert, StyleSheet, Modal, FlatList } from 'react-native';
+import { ThemedText } from '../components/ThemedText';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
@@ -153,15 +154,15 @@ export default function WelcomeScreen() {
       <View style={styles.overlay}>
         {!checking && (
           <View style={styles.content}>
-            <Text style={styles.title}>{t('welcome.title')}</Text>
-            <Text style={styles.subtitle}>{t('welcome.subtitle')}</Text>
+            <ThemedText style={styles.title}>{t('welcome.title')}</ThemedText>
+            <ThemedText style={styles.subtitle}>{t('welcome.subtitle')}</ThemedText>
 
             <TouchableOpacity
               style={styles.scanButton}
               onPress={() => router.push('/scan')}
               disabled={loading}
             >
-              <Text style={styles.scanButtonText}>{t('welcome.scanButton')}</Text>
+              <ThemedText style={styles.scanButtonText}>{t('welcome.scanButton')}</ThemedText>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -170,7 +171,7 @@ export default function WelcomeScreen() {
               disabled={loading}
             >
               <Ionicons name="image-outline" size={18} color="#fff" />
-              <Text style={styles.galleryButtonText}>{t('scan.fromGallery')}</Text>
+              <ThemedText style={styles.galleryButtonText}>{t('scan.fromGallery')}</ThemedText>
             </TouchableOpacity>
           </View>
         )}
@@ -181,10 +182,10 @@ export default function WelcomeScreen() {
       <Modal visible={showFamilyPicker} transparent animationType="slide">
         <View style={styles.modalBackdrop}>
           <View style={styles.modalSheet}>
-            <Text style={styles.modalTitle}>
+            <ThemedText style={styles.modalTitle}>
               {familyName ? t('scan.familyTitle', { name: familyName }) : t('scan.whoAreYou')}
-            </Text>
-            <Text style={styles.modalSubtitle}>{t('scan.chooseName')}</Text>
+            </ThemedText>
+            <ThemedText style={styles.modalSubtitle}>{t('scan.chooseName')}</ThemedText>
             <FlatList
               data={familyGuests}
               keyExtractor={(item) => String(item.guest_id)}
@@ -194,13 +195,13 @@ export default function WelcomeScreen() {
                   onPress={() => selectFamilyGuest(item)}
                   activeOpacity={item.is_active ? 1 : 0.7}
                 >
-                  <Text style={[styles.guestName, item.is_active && { color: theme.colors.muted }]}>
+                  <ThemedText style={[styles.guestName, item.is_active && { color: theme.colors.muted }]}>
                     {item.firstname} {item.lastname}
-                  </Text>
+                  </ThemedText>
                   {item.is_active && (
-                    <Text style={{ fontSize: 12, color: theme.colors.muted, marginTop: 2, textAlign: 'center' }}>
+                    <ThemedText style={{ fontSize: 12, color: theme.colors.muted, marginTop: 2, textAlign: 'center' }}>
                       {t('scan.alreadyLoggedIn')}
-                    </Text>
+                    </ThemedText>
                   )}
                 </TouchableOpacity>
               )}

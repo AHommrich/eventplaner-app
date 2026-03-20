@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
-import { View, Text, TouchableOpacity, ActivityIndicator, Alert, ScrollView, RefreshControl } from 'react-native';
+import { View, TouchableOpacity, ActivityIndicator, Alert, ScrollView, RefreshControl } from 'react-native';
+import { ThemedText } from '../components/ThemedText';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -109,7 +110,7 @@ export default function DeclinedScreen() {
 
   if (loading) {
     return (
-      <View style={{ flex: 1, backgroundColor: colors.background, alignItems: 'center', justifyContent: 'center' }}>
+      <View style={{ flex: 1, backgroundColor: colors.screenBg, alignItems: 'center', justifyContent: 'center' }}>
         <ActivityIndicator color={theme.colors.primary} />
       </View>
     );
@@ -122,11 +123,11 @@ export default function DeclinedScreen() {
   const deadlineFormatted = deadline ? formatDeadline(deadline, language) : null;
 
   return (
-    <View style={{ flex: 1, backgroundColor: colors.background }}>
+    <View style={{ flex: 1, backgroundColor: colors.screenBg }}>
     <ScrollView
       style={{ flex: 1 }}
       contentContainerStyle={{ flexGrow: 1, padding: theme.spacing.lg, justifyContent: 'center' }}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={colors.accent} />}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={colors.primary} />}
     >
       <View style={{ alignItems: 'center', marginBottom: theme.spacing.xl }}>
         <Ionicons
@@ -136,26 +137,26 @@ export default function DeclinedScreen() {
         />
       </View>
 
-      <Text
+      <ThemedText
         style={{
           fontSize: 24,
           fontWeight: 'bold',
-          color: colors.accent,
+          color: colors.primary,
           textAlign: 'center',
           marginBottom: theme.spacing.md,
         }}
       >
         {isFinal ? t('declined.titleFinal') : t('declined.titlePending')}
-      </Text>
+      </ThemedText>
 
       {deadlineFormatted && (
-        <Text style={{ fontSize: 14, color: theme.colors.muted, textAlign: 'center', marginBottom: theme.spacing.sm }}>
+        <ThemedText style={{ fontSize: 14, color: theme.colors.muted, textAlign: 'center', marginBottom: theme.spacing.sm }}>
           {t('declined.deadline', { date: deadlineFormatted })}
-        </Text>
+        </ThemedText>
       )}
 
 
-      <Text
+      <ThemedText
         style={{
           fontSize: 15,
           color: theme.colors.muted,
@@ -169,7 +170,7 @@ export default function DeclinedScreen() {
           : isFinal
           ? t('declined.subtitleFinal')
           : t('declined.subtitlePending')}
-      </Text>
+      </ThemedText>
 
       {/* Rücknahme beantragen — nur bei declined_pending */}
       {isPending && (
@@ -178,7 +179,7 @@ export default function DeclinedScreen() {
           disabled={revoking}
           style={{
             borderWidth: 1,
-            borderColor: colors.accent,
+            borderColor: colors.primary,
             borderRadius: theme.borderRadius.md,
             paddingVertical: theme.spacing.md,
             alignItems: 'center',
@@ -186,11 +187,11 @@ export default function DeclinedScreen() {
           }}
         >
           {revoking ? (
-            <ActivityIndicator color={colors.accent} />
+            <ActivityIndicator color={colors.primary} />
           ) : (
-            <Text style={{ color: colors.accent, fontWeight: '600' }}>
+            <ThemedText style={{ color: colors.primary, fontWeight: '600' }}>
               {t('declined.revokeButton')}
-            </Text>
+            </ThemedText>
           )}
         </TouchableOpacity>
       )}
@@ -206,9 +207,9 @@ export default function DeclinedScreen() {
           alignItems: 'center',
         }}
       >
-        <Text style={{ color: theme.colors.error, fontWeight: '600' }}>
+        <ThemedText style={{ color: theme.colors.error, fontWeight: '600' }}>
           {t('declined.logout')}
-        </Text>
+        </ThemedText>
       </TouchableOpacity>
     </ScrollView>
 
@@ -218,14 +219,14 @@ export default function DeclinedScreen() {
           position: 'absolute',
           top: insets.top + 12,
           alignSelf: 'center',
-          backgroundColor: colors.accent,
+          backgroundColor: colors.primary,
           paddingHorizontal: 16,
           paddingVertical: 8,
           borderRadius: theme.borderRadius.full,
         }}>
-          <Text style={{ color: '#fff', fontSize: 13, fontWeight: '600' }}>
+          <ThemedText style={{ color: '#fff', fontSize: 13, fontWeight: '600' }}>
             ✓ {t('common.refreshed')}
-          </Text>
+          </ThemedText>
         </View>
       )}
     </View>

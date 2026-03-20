@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
-import { View, Text, TouchableOpacity } from 'react-native';
+import { View, TouchableOpacity } from 'react-native';
+import { ThemedText } from '../../components/ThemedText';
 import { useRouter } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getSession, clearSession, GuestSession } from '../../lib/auth';
 import { useLanguage, Language } from '../../lib/LanguageContext';
 import { useEventTheme } from '../../lib/EventThemeContext';
@@ -10,6 +12,7 @@ export default function SettingsScreen() {
   const router = useRouter();
   const { t, language, setLanguage } = useLanguage();
   const { colors } = useEventTheme();
+  const insets = useSafeAreaInsets();
   const [session, setSession] = useState<GuestSession | null>(null);
 
   useEffect(() => {
@@ -22,56 +25,56 @@ export default function SettingsScreen() {
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: colors.background, padding: theme.spacing.lg, justifyContent: 'center' }}>
-      {session && (
-        <View style={{ backgroundColor: colors.card, borderRadius: theme.borderRadius.lg, padding: theme.spacing.md, marginBottom: theme.spacing.xl }}>
-          <Text style={{ fontSize: 12, color: theme.colors.muted, marginBottom: 4 }}>{t('settings.loggedInAs')}</Text>
-          <Text style={{ fontSize: 16, fontWeight: '600', color: colors.accent }}>
-            {session.firstname} {session.lastname}
-          </Text>
-          {session.familyName && (
-            <Text style={{ fontSize: 14, color: theme.colors.muted, marginTop: 2 }}>
-              {t('settings.family', { name: session.familyName })}
-            </Text>
-          )}
-        </View>
-      )}
+    <View style={{ flex: 1, backgroundColor: colors.screenBg, padding: theme.spacing.lg, paddingTop: insets.top + theme.spacing.md }}>
+      {/* Eine Card: Nutzer-Info + Sprache */}
+      <View style={{ backgroundColor: colors.card, borderRadius: theme.borderRadius.lg, borderWidth: 2, borderColor: colors.border + '33', overflow: 'hidden', marginBottom: theme.spacing.xl }}>
+        {session && (
+          <View style={{ padding: theme.spacing.md, borderBottomWidth: 1, borderBottomColor: colors.border + '30' }}>
+            <ThemedText style={{ fontSize: 12, color: colors.cardText + 'aa', marginBottom: 4 }}>{t('settings.loggedInAs')}</ThemedText>
+            <ThemedText style={{ fontSize: 16, fontWeight: '600', color: colors.cardText }}>
+              {session.firstname} {session.lastname}
+            </ThemedText>
+            {session.familyName && (
+              <ThemedText style={{ fontSize: 14, color: colors.cardText + 'aa', marginTop: 2 }}>
+                {t('settings.family', { name: session.familyName })}
+              </ThemedText>
+            )}
+          </View>
+        )}
 
-      {/* Language switcher */}
-      <View style={{ backgroundColor: colors.card, borderRadius: theme.borderRadius.lg, padding: theme.spacing.md, marginBottom: theme.spacing.md }}>
-        <Text style={{ fontSize: 12, color: theme.colors.muted, marginBottom: theme.spacing.sm }}>{t('settings.language')}</Text>
-        <View style={{ flexDirection: 'row', gap: 8 }}>
-          {(['de', 'en'] as Language[]).map((lang) => (
-            <TouchableOpacity
-              key={lang}
-              onPress={() => setLanguage(lang)}
-              style={{
-                flex: 1,
-                paddingVertical: 10,
-                borderRadius: theme.borderRadius.md,
-                alignItems: 'center',
-                backgroundColor: language === lang ? colors.accent : colors.background,
-              }}
-            >
-              <Text
+        {/* Language switcher */}
+        <View style={{ padding: theme.spacing.md, borderBottomWidth: 1, borderBottomColor: colors.border + '30' }}>
+          <ThemedText style={{ fontSize: 12, color: colors.cardText + 'aa', marginBottom: theme.spacing.sm }}>{t('settings.language')}</ThemedText>
+          <View style={{ flexDirection: 'row', borderRadius: theme.borderRadius.md, overflow: 'hidden', borderWidth: 1, borderColor: colors.cardText + '50' }}>
+            {(['de', 'en'] as Language[]).map((lang, i) => (
+              <TouchableOpacity
+                key={lang}
+                onPress={() => setLanguage(lang)}
                 style={{
-                  fontWeight: '600',
-                  color: language === lang ? colors.onAccent : theme.colors.muted,
+                  flex: 1,
+                  paddingVertical: 10,
+                  alignItems: 'center',
+                  backgroundColor: language === lang ? colors.cardButton : 'transparent',
+                  borderRightWidth: i === 0 ? 1 : 0,
+                  borderRightColor: colors.cardText + '50',
                 }}
               >
-                {lang === 'de' ? t('settings.german') : t('settings.english')}
-              </Text>
-            </TouchableOpacity>
-          ))}
+                <ThemedText style={{ fontWeight: '600', color: language === lang ? colors.cardButtonText : colors.cardText }}>
+                  {lang === 'de' ? t('settings.german') : t('settings.english')}
+                </ThemedText>
+              </TouchableOpacity>
+            ))}
+          </View>
         </View>
-      </View>
 
-      <TouchableOpacity
-        onPress={handleLogout}
-        style={{ borderWidth: 1, borderColor: theme.colors.error, paddingVertical: theme.spacing.md, borderRadius: theme.borderRadius.lg, alignItems: 'center' }}
-      >
-        <Text style={{ color: theme.colors.error, fontWeight: '600' }}>{t('settings.logout')}</Text>
-      </TouchableOpacity>
+        {/* Logout */}
+        <TouchableOpacity
+          onPress={handleLogout}
+          style={{ margin: theme.spacing.md, paddingVertical: theme.spacing.sm, borderRadius: theme.borderRadius.md, alignItems: 'center', backgroundColor: colors.cardButton }}
+        >
+          <ThemedText style={{ color: colors.cardButtonText, fontWeight: '600', fontSize: 14 }}>{t('settings.logout')}</ThemedText>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 }

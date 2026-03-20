@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react';
 import {
   View,
-  Text,
   TouchableOpacity,
   ActivityIndicator,
   ScrollView,
   Alert,
 } from 'react-native';
+import { ThemedText } from '../components/ThemedText';
 import { useRouter } from 'expo-router';
 import { useLanguage } from '../lib/LanguageContext';
 import { useEventTheme } from '../lib/EventThemeContext';
@@ -80,7 +80,7 @@ export default function RsvpScreen() {
 
   if (loading) {
     return (
-      <View style={{ flex: 1, backgroundColor: colors.background, alignItems: 'center', justifyContent: 'center' }}>
+      <View style={{ flex: 1, backgroundColor: colors.screenBg, alignItems: 'center', justifyContent: 'center' }}>
         <ActivityIndicator color={theme.colors.primary} />
       </View>
     );
@@ -96,24 +96,24 @@ export default function RsvpScreen() {
 
   return (
     <ScrollView
-      style={{ flex: 1, backgroundColor: colors.background }}
+      style={{ flex: 1, backgroundColor: colors.screenBg }}
       contentContainerStyle={{ padding: theme.spacing.lg, paddingBottom: 48 }}
     >
-      <Text
+      <ThemedText
         style={{
           fontSize: 28,
           fontWeight: 'bold',
-          color: colors.accent,
+          color: colors.primary,
           marginBottom: theme.spacing.sm,
           marginTop: theme.spacing.xl,
         }}
       >
         {t('rsvp.title')}
-      </Text>
+      </ThemedText>
       {deadlineFormatted && (
-        <Text style={{ fontSize: 14, color: theme.colors.muted, marginBottom: theme.spacing.xl }}>
+        <ThemedText style={{ fontSize: 14, color: theme.colors.muted, marginBottom: theme.spacing.xl }}>
           {t('rsvp.subtitle', { deadline: deadlineFormatted })}
-        </Text>
+        </ThemedText>
       )}
 
       {/* Eigene RSVP */}
@@ -125,9 +125,9 @@ export default function RsvpScreen() {
           marginBottom: theme.spacing.md,
         }}
       >
-        <Text style={{ fontSize: 16, fontWeight: '600', color: colors.accent, marginBottom: theme.spacing.md }}>
+        <ThemedText style={{ fontSize: 16, fontWeight: '600', color: colors.primary, marginBottom: theme.spacing.md }}>
           {guest.firstname} {guest.lastname}
-        </Text>
+        </ThemedText>
         {savingOwn ? (
           <ActivityIndicator color={theme.colors.primary} style={{ alignSelf: 'flex-start' }} />
         ) : (
@@ -146,9 +146,9 @@ export default function RsvpScreen() {
                 opacity: ownSet && !ownAccepted ? 0.4 : 1,
               }}
             >
-              <Text style={{ fontWeight: '700', color: ownAccepted ? '#fff' : theme.colors.muted }}>
+              <ThemedText style={{ fontWeight: '700', color: ownAccepted ? '#fff' : theme.colors.muted }}>
                 {t('rsvp.accept')}
-              </Text>
+              </ThemedText>
             </TouchableOpacity>
             <TouchableOpacity
               onPress={() => !ownSet && confirmDecline()}
@@ -164,9 +164,9 @@ export default function RsvpScreen() {
                 opacity: ownSet && !ownDeclined ? 0.4 : 1,
               }}
             >
-              <Text style={{ fontWeight: '700', color: '#fff' }}>
+              <ThemedText style={{ fontWeight: '700', color: '#fff' }}>
                 {t('rsvp.decline')}
-              </Text>
+              </ThemedText>
             </TouchableOpacity>
           </View>
         )}
@@ -177,16 +177,16 @@ export default function RsvpScreen() {
         <TouchableOpacity
           onPress={handleContinue}
           style={{
-            backgroundColor: colors.accent,
+            backgroundColor: colors.primary,
             borderRadius: theme.borderRadius.md,
             paddingVertical: theme.spacing.md,
             alignItems: 'center',
             marginTop: theme.spacing.sm,
           }}
         >
-          <Text style={{ color: theme.colors.secondary, fontWeight: '700', fontSize: 16 }}>
+          <ThemedText style={{ color: theme.colors.secondary, fontWeight: '700', fontSize: 16 }}>
             {t('scan.continue')}
-          </Text>
+          </ThemedText>
         </TouchableOpacity>
       )}
     </ScrollView>

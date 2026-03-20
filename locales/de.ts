@@ -41,6 +41,10 @@ const de = {
     countdownSeconds: "Sek",
     countdownToday: "Heute ist der große Tag! 🎉",
     countdownPast: "Es war ein wunderschöner Tag.",
+    openInMaps: "Adresse öffnen in",
+    openInMapsHint: "Bitte Adresse vor Abreise noch einmal prüfen — Navi-Apps können Fehler machen.",
+    mapsApple: "Karten",
+    mapsGoogle: "Google Maps",
   },
   settings: {
     loggedInAs: "Eingeloggt als",

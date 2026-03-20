@@ -6,10 +6,11 @@ import {
   FlatList,
   Modal,
   Pressable,
+  RefreshControl,
   ScrollView,
-  Text,
   View,
 } from 'react-native';
+import { ThemedText } from '../../components/ThemedText';
 import { Image } from 'expo-image';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
@@ -19,6 +20,8 @@ import api from '../../lib/api';
 import { theme } from '../../constants/theme';
 import { useLanguage } from '../../lib/LanguageContext';
 import { useEventTheme } from '../../lib/EventThemeContext';
+import { useRefreshToast } from '../../lib/useRefreshToast';
+import { RefreshToast } from '../../components/RefreshToast';
 
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
 
@@ -56,13 +59,14 @@ const POLL_INTERVAL = 30_000;
 
 export default function PhotosScreen() {
   const { t } = useLanguage();
-  const { colors } = useEventTheme();
+  const { colors, loadTheme } = useEventTheme();
   const [photos, setPhotos] = useState<Photo[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [selected, setSelected] = useState<Photo | null>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const insets = useSafeAreaInsets();
+  const { refreshing, refreshed, onRefresh } = useRefreshToast(async () => { await fetchPhotos(); loadTheme(); });
 
   async function fetchPhotos() {
     try {
@@ -149,26 +153,27 @@ export default function PhotosScreen() {
 
   if (loading) {
     return (
-      <View style={{ flex: 1, backgroundColor: colors.background, alignItems: 'center', justifyContent: 'center', paddingTop: insets.top }}>
+      <View style={{ flex: 1, backgroundColor: colors.screenBg, alignItems: 'center', justifyContent: 'center', paddingTop: insets.top }}>
         <ActivityIndicator color={theme.colors.primary} />
       </View>
     );
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: colors.background, paddingTop: insets.top }}>
+    <View style={{ flex: 1, backgroundColor: colors.screenBg, paddingTop: insets.top }}>
       <FlatList
         data={photos}
         keyExtractor={(item) => String(item.id)}
         numColumns={COLUMNS}
         contentContainerStyle={{ padding: GAP }}
         columnWrapperStyle={{ gap: GAP }}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.tabTint} colors={[colors.tabTint]} />}
         ItemSeparatorComponent={() => <View style={{ height: GAP }} />}
         ListEmptyComponent={
           <View className="flex-1 items-center justify-center mt-32">
             <Ionicons name="images-outline" size={48} color={theme.colors.muted} />
-            <Text className="text-muted mt-3 text-base">{t('photos.empty')}</Text>
-            <Text className="text-muted text-sm">{t('photos.beFirst')}</Text>
+            <ThemedText className="text-muted mt-3 text-base">{t('photos.empty')}</ThemedText>
+            <ThemedText className="text-muted text-sm">{t('photos.beFirst')}</ThemedText>
           </View>
         }
         renderItem={({ item }) => (
@@ -183,6 +188,7 @@ export default function PhotosScreen() {
           </Pressable>
         )}
       />
+      <RefreshToast visible={refreshed} refreshing={refreshing} />
 
       {/* Detail-Modal */}
       <Modal visible={!!selected} transparent animationType="fade" onRequestClose={() => setSelected(null)}>
@@ -190,7 +196,7 @@ export default function PhotosScreen() {
           {selected && <ZoomableImage key={selected.id} uri={selected.url} />}
           {selected && (
             <View style={{ alignItems: 'center', marginTop: 16 }}>
-              <Text style={{ color: '#fff', fontSize: 14, opacity: 0.7 }}>{selected.guest_name}</Text>
+              <ThemedText style={{ color: '#fff', fontSize: 14, opacity: 0.7 }}>{selected.guest_name}</ThemedText>
             </View>
           )}
           <Pressable
@@ -213,7 +219,7 @@ export default function PhotosScreen() {
           width: 56,
           height: 56,
           borderRadius: 28,
-          backgroundColor: uploading ? theme.colors.muted : colors.accent,
+          backgroundColor: uploading ? theme.colors.muted : colors.fab,
           alignItems: 'center',
           justifyContent: 'center',
           shadowColor: '#000',
@@ -224,9 +230,9 @@ export default function PhotosScreen() {
         }}
       >
         {uploading ? (
-          <ActivityIndicator color="#fff" size="small" />
+          <ActivityIndicator color={colors.cardText} size="small" />
         ) : (
-          <Ionicons name="camera" size={24} color="#fff" />
+          <Ionicons name="camera" size={24} color={colors.fabIcon} />
         )}
       </Pressable>
     </View>

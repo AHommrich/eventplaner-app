@@ -77,6 +77,10 @@ const en = {
     countdownSeconds: 's',
     countdownToday: "Today is the big day! 🎉",
     countdownPast: 'What a beautiful day it was.',
+    openInMaps: 'Open address in',
+    openInMapsHint: 'Please double-check the address before departure — navigation apps can make mistakes.',
+    mapsApple: 'Maps',
+    mapsGoogle: 'Google Maps',
   },
   settings: {
     loggedInAs: 'Logged in as',

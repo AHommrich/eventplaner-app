@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { View, Text, ImageBackground, ScrollView, RefreshControl, ActivityIndicator, StyleSheet } from 'react-native';
+import { View, ImageBackground, ScrollView, RefreshControl, ActivityIndicator, StyleSheet, TouchableOpacity, Linking, Platform, Alert } from 'react-native';
+import { ThemedText } from '../../components/ThemedText';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useFocusEffect } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -8,7 +9,43 @@ import { getSession, GuestSession } from '../../lib/auth';
 import { useLanguage } from '../../lib/LanguageContext';
 import { useEventTheme } from '../../lib/EventThemeContext';
 import { fetchEventInfo, EventInfo } from '../../lib/guest';
+import { useRefreshToast } from '../../lib/useRefreshToast';
+import { RefreshToast } from '../../components/RefreshToast';
+import { Ionicons } from '@expo/vector-icons';
 import { theme } from '../../constants/theme';
+
+function openInMaps(event: EventInfo, t: (k: string) => string) {
+  const label = encodeURIComponent(event.venue_name ?? event.venue_address ?? '');
+  const hasCoords = event.venue_lat != null && event.venue_lng != null;
+  const lat = event.venue_lat;
+  const lng = event.venue_lng;
+
+  // Apple Maps: ll= für exakte Koordinaten, sonst Adresse
+  const appleUrl = hasCoords
+    ? `maps://?ll=${lat},${lng}&q=${label}`
+    : `maps://?q=${encodeURIComponent(event.venue_address ?? '')}`;
+  // Google Maps (iOS): q=lat,lng pinnt exakt
+  const googleUrl = hasCoords
+    ? `comgooglemaps://?q=${lat},${lng}&zoom=16`
+    : `comgooglemaps://?q=${encodeURIComponent(event.venue_address ?? '')}`;
+  // Android: q=lat,lng(label) pinnt exakt
+  const androidUrl = hasCoords
+    ? `geo:${lat},${lng}?q=${lat},${lng}(${label})`
+    : `geo:0,0?q=${encodeURIComponent(event.venue_address ?? '')}`;
+
+  if (Platform.OS === 'ios') {
+    Alert.alert(t('home.openInMaps'), t('home.openInMapsHint'), [
+      { text: t('home.mapsApple'), onPress: () => Linking.openURL(appleUrl) },
+      {
+        text: t('home.mapsGoogle'),
+        onPress: () => Linking.openURL(googleUrl).catch(() => Linking.openURL(appleUrl)),
+      },
+      { text: t('common.cancel'), style: 'cancel' },
+    ]);
+  } else {
+    Linking.openURL(androidUrl);
+  }
+}
 
 function formatEventDate(iso: string, locale: string): string {
   return new Date(iso).toLocaleDateString(locale === 'de' ? 'de-DE' : 'en-GB', {
@@ -41,7 +78,6 @@ export default function HomeScreen() {
   const [session, setSession] = useState<GuestSession | null>(null);
   const [eventInfo, setEventInfo] = useState<EventInfo | null>(null);
   const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [countdown, setCountdown] = useState<CountdownParts | null>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -74,16 +110,12 @@ export default function HomeScreen() {
     return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
   }, [eventInfo?.date]);
 
-  async function handleRefresh() {
-    setRefreshing(true);
-    await loadData();
-    setRefreshing(false);
-  }
+  const { refreshing, refreshed, onRefresh } = useRefreshToast(loadData);
 
   const hasCover = !!eventInfo?.cover_image_url;
-  const textColor = hasCover ? colors.homeText : colors.accent;
-  const pillBg = hasCover ? 'rgba(0,0,0,0.35)' : colors.accent;
-  const pillText = hasCover ? colors.homeText : '#fff';
+  const textColor = (hasCover && colors.homeText) ? colors.homeText : colors.cardText;
+  const pillBg = (hasCover && colors.homeText) ? 'rgba(0,0,0,0.35)' : colors.primary;
+  const pillText = (hasCover && colors.homeText) ? colors.homeText : colors.cardButtonText;
   const eventDate = eventInfo?.date ? formatEventDate(eventInfo.date, language) : null;
 
   function renderCountdown() {
@@ -105,7 +137,7 @@ export default function HomeScreen() {
     return (
       <View style={styles.pillRow}>
         <View style={[styles.pill, { backgroundColor: pillBg }]}>
-          <Text style={[styles.pillText, { color: pillText }]}>{label}</Text>
+          <ThemedText style={[styles.pillText, { color: pillText }]}>{label}</ThemedText>
         </View>
       </View>
     );
@@ -113,42 +145,51 @@ export default function HomeScreen() {
 
   if (loading) {
     return (
-      <View style={[styles.container, { backgroundColor: colors.background, justifyContent: 'center', alignItems: 'center' }]}>
-        <ActivityIndicator color={colors.accent} />
+      <View style={[styles.container, { backgroundColor: colors.screenBg, justifyContent: 'center', alignItems: 'center' }]}>
+        <ActivityIndicator color={colors.tabTint} />
       </View>
     );
   }
 
   const content = (
     <ScrollView
-      style={styles.scroll}
+      style={[styles.scroll, { paddingTop: insets.top }]}
       contentContainerStyle={[styles.content, { paddingBottom: (hasCover ? tabBarHeight : insets.bottom) + theme.spacing.xl }]}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={hasCover ? '#fff' : colors.accent} />}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={hasCover ? '#fff' : colors.tabTint} colors={[colors.tabTint]} />}
     >
       {loadError && (
-        <Text style={{ color: 'red', fontSize: 11, marginBottom: 8, textAlign: 'center' }}>
+        <ThemedText style={{ color: 'red', fontSize: 11, marginBottom: 8, textAlign: 'center' }}>
           {t('home.loadError')}
-        </Text>
+        </ThemedText>
       )}
       {session && (
-        <Text style={[styles.welcome, { color: textColor }]}>
+        <ThemedText style={[styles.welcome, { color: textColor }]}>
           {t('home.welcome', { name: session.firstname })}
-        </Text>
+        </ThemedText>
       )}
       {eventInfo?.name && (
-        <Text style={[styles.title, { color: textColor }]}>{eventInfo.name}</Text>
+        <ThemedText style={[styles.title, { color: textColor }]}>{eventInfo.name}</ThemedText>
       )}
       {eventDate && (
-        <Text style={[styles.meta, { color: textColor }]}>{eventDate}</Text>
+        <ThemedText style={[styles.meta, { color: textColor }]}>{eventDate}</ThemedText>
       )}
       {eventInfo?.venue_name && (
-        <Text style={[styles.meta, { color: textColor }]}>{eventInfo.venue_name}</Text>
+        <ThemedText style={[styles.meta, { color: textColor }]}>{eventInfo.venue_name}</ThemedText>
       )}
-      {eventInfo?.venue_address && (
-        <Text style={[styles.meta, { color: textColor }]}>{eventInfo.venue_address}</Text>
-      )}
+      {eventInfo && (eventInfo.venue_address || (eventInfo.venue_lat != null && eventInfo.venue_lng != null)) ? (
+        <TouchableOpacity
+          onPress={() => openInMaps(eventInfo, t)}
+          activeOpacity={0.7}
+          style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 2 }}
+        >
+          <ThemedText style={[styles.meta, { color: textColor, marginBottom: 0 }]}>
+            {eventInfo.venue_address ?? `${eventInfo.venue_lat?.toFixed(4)}, ${eventInfo.venue_lng?.toFixed(4)}`}
+          </ThemedText>
+          <Ionicons name="location-outline" size={12} color={textColor} />
+        </TouchableOpacity>
+      ) : null}
       {eventInfo?.dresscode && (
-        <Text style={[styles.meta, { color: textColor, opacity: 0.7 }]}>{eventInfo.dresscode}</Text>
+        <ThemedText style={[styles.meta, { color: textColor, opacity: 0.7 }]}>{eventInfo.dresscode}</ThemedText>
       )}
       {renderCountdown()}
     </ScrollView>
@@ -167,13 +208,15 @@ export default function HomeScreen() {
           style={StyleSheet.absoluteFill}
         />
         {content}
+        <RefreshToast visible={refreshed} refreshing={refreshing} />
       </ImageBackground>
     );
   }
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
+    <View style={[styles.container, { backgroundColor: colors.screenBg }]}>
       {content}
+      <RefreshToast visible={refreshed} refreshing={refreshing} />
     </View>
   );
 }
