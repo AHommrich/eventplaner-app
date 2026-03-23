@@ -81,10 +81,11 @@ name: string
 date: string                    // ISO datetime
 rsvp_deadline: string
 cover_image_url: string | null
-venue_name: string | null       // Anzeigename (z.B. "Dernbacher Grillhütte")
-venue_address: string | null    // Adresse als Freitext
-venue_lat: number | null        // exakte Koordinaten (pixelgenaue Navigation)
+venue_name: string | null           // Anzeigename (z.B. "Dernbacher Grillhütte")
+venue_address: string | null        // Adresse als Freitext
+venue_lat: number | null            // exakte Koordinaten (pixelgenaue Navigation)
 venue_lng: number | null
+venue_display_mode: 'address' | 'name' | 'both'  // was auf Home anzeigen (default: 'both')
 dresscode: string | null
 schedule: string | null
 // Farbpalette
@@ -93,6 +94,8 @@ color_primary / color_secondary / color_tertiary: string | null
 color_screen_bg / color_card / color_card_text / color_card_button /
 color_card_button_text / color_tab_tint / color_border / color_fab /
 color_fab_icon / color_home_text: string | null
+color_home_shadow: string           // Hex, default '#000000'
+home_shadow_opacity: number         // 0–100, default 50
 drink_game_enabled: boolean
 drink_game_end_time: string | null
 font_heading: string | null
@@ -201,11 +204,12 @@ const res = await api.get('/api/...');
 | `colors.cardText` | Text auf Cards |
 | `colors.cardButton` | Button-Hintergrund in Cards |
 | `colors.cardButtonText` | Text auf Card-Buttons |
-| `colors.border` | Card-Rahmen (immer mit `+ '33'` für ~20% Opacity) |
+| `colors.border` | Card-Rahmen (`+ '33'`), Zeilen-Divider (`+ '30'`), Toggle-Border (`+ '55'`), Navbar-Top (`+ '33'`) |
 | `colors.fab` | FAB-Button Hintergrund (photos.tsx) |
 | `colors.fabIcon` | FAB-Icon Farbe (photos.tsx) |
 | `colors.tabTint` | Navbar Icons + Labels |
 | `colors.homeText` | Text auf Home-Cover (`null` wenn kein Cover/nicht gesetzt) |
+| `colors.homeShadow` | Schattenfarbe auf Home-Cover (default `#000000`) |
 | `colors.fontFamily` | `{ regular, bold }` — wird von ThemedText automatisch angewendet |
 
 **Pull-to-Refresh** — einheitlich über alle Tabs:
@@ -242,12 +246,20 @@ if (loading && !guest) return <ActivityIndicator ... />;             // rsvp
 - Nur Adresse → Geocoding-Query
 - iOS: Alert mit App-Auswahl (Karten / Google Maps), Google Maps Fallback auf Apple Maps
 - `app.json` hat `LSApplicationQueriesSchemes: ['comgooglemaps']` für `canOpenURL`
-- URL-Formate: Apple Maps `maps://?ll=lat,lng&q=label`, Google Maps `comgooglemaps://?q=lat,lng`, Android `geo:lat,lng?q=lat,lng(label)`
+- URL-Formate: Apple Maps `maps://?ll=lat,lng&q=label`, Google Maps `comgooglemaps://?q=lat,lng&zoom=16`, Android `geo:lat,lng?q=lat,lng(label)`
+- `geo:lat,lng?q=adresse` NICHT verwenden — `q=adresse` überschreibt Koordinaten!
 
-**Venue-Anzeige** (home.tsx):
-- `venue_name` → immer als normaler Text (nicht tippbar), wenn vorhanden
-- Tippbarer Bereich (Adresse + Pin-Icon): sichtbar wenn `venue_address` ODER Koordinaten vorhanden
-  - Zeigt `venue_address` als Text, falls nicht vorhanden: Koordinaten als Dezimalzahl
+**Venue-Anzeige** (home.tsx) — gesteuert durch `venue_display_mode`:
+- `'name'`: venue_name + Pin-Icon, tappbar (wenn Navigationsdaten vorhanden)
+- `'address'`: Adresse + Pin-Icon, tappbar
+- `'both'`: venue_name oben, darunter Adresse + Pin-Icon — ein gemeinsamer Button, ein Icon
+- Kein Navigationsdaten → venue_name als plain Text, kein Icon
+- Dresscode: Label "Dresscode:" + Zeilenumbruch + Wert, opacity 0.7
+
+**Home-Screen Schatten** (Cover-Modus):
+- Konfigurierbar via `color_home_shadow` + `home_shadow_opacity` (0–100)
+- Kein LinearGradient — einfacher `View` mit `backgroundColor + opacity`
+- Sitzt zwischen Cover-Bild und Text-Content (`pointerEvents="none"`)
 
 **Fonts** — 8 Google Fonts lokal gebündelt (`@expo-google-fonts/*`), DSGVO-konform (kein CDN zur Laufzeit). Backend liefert `font_heading` Key, `ThemedText` wendet automatisch regular/bold Variante an. Tab-Bar Labels erhalten Font via `tabBarLabelStyle: { fontFamily: colors.fontFamily.regular }`.
 

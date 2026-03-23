@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { View, ImageBackground, ScrollView, RefreshControl, ActivityIndicator, StyleSheet, TouchableOpacity, Linking, Platform, Alert } from 'react-native';
 import { ThemedText } from '../../components/ThemedText';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useFocusEffect } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
@@ -173,23 +172,57 @@ export default function HomeScreen() {
       {eventDate && (
         <ThemedText style={[styles.meta, { color: textColor }]}>{eventDate}</ThemedText>
       )}
-      {eventInfo?.venue_name && (
-        <ThemedText style={[styles.meta, { color: textColor }]}>{eventInfo.venue_name}</ThemedText>
-      )}
-      {eventInfo && (eventInfo.venue_address || (eventInfo.venue_lat != null && eventInfo.venue_lng != null)) ? (
-        <TouchableOpacity
-          onPress={() => openInMaps(eventInfo, t)}
-          activeOpacity={0.7}
-          style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 2 }}
-        >
-          <ThemedText style={[styles.meta, { color: textColor, marginBottom: 0 }]}>
-            {eventInfo.venue_address ?? `${eventInfo.venue_lat?.toFixed(4)}, ${eventInfo.venue_lng?.toFixed(4)}`}
-          </ThemedText>
-          <Ionicons name="location-outline" size={12} color={textColor} />
-        </TouchableOpacity>
-      ) : null}
+      {(() => {
+        const displayMode = eventInfo?.venue_display_mode ?? 'both';
+        const hasNav = !!(eventInfo && (eventInfo.venue_address || (eventInfo.venue_lat != null && eventInfo.venue_lng != null)));
+        const showName = displayMode !== 'address' && !!eventInfo?.venue_name;
+        const showAddress = displayMode !== 'name' && hasNav;
+        const bothVisible = showName && showAddress;
+
+        if (!showName && !showAddress) return null;
+
+        const addrText = eventInfo?.venue_address ?? `${eventInfo?.venue_lat?.toFixed(4)}, ${eventInfo?.venue_lng?.toFixed(4)}`;
+
+        // both: ein gemeinsamer Button mit einem Icon
+        if (bothVisible) {
+          return (
+            <TouchableOpacity
+              onPress={() => openInMaps(eventInfo!, t)}
+              activeOpacity={0.7}
+              style={{ alignItems: 'center', marginVertical: 8 }}
+            >
+              <ThemedText style={[styles.meta, { color: textColor, marginBottom: 0, fontSize: 18 }]}>{eventInfo!.venue_name}</ThemedText>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                <ThemedText style={[styles.meta, { color: textColor, marginBottom: 0, fontSize: 18 }]}>{addrText}</ThemedText>
+                <Ionicons name="location-outline" size={15} color={textColor} />
+              </View>
+            </TouchableOpacity>
+          );
+        }
+
+        // nur name oder nur adresse
+        return (
+          hasNav ? (
+            <TouchableOpacity
+              onPress={() => openInMaps(eventInfo!, t)}
+              activeOpacity={0.7}
+              style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginVertical: 8 }}
+            >
+              <ThemedText style={[styles.meta, { color: textColor, marginBottom: 0, fontSize: 18 }]}>
+                {showName ? eventInfo!.venue_name : addrText}
+              </ThemedText>
+              <Ionicons name="location-outline" size={15} color={textColor} />
+            </TouchableOpacity>
+          ) : (
+            <ThemedText style={[styles.meta, { color: textColor, fontSize: 18 }]}>{eventInfo!.venue_name}</ThemedText>
+          )
+        );
+      })()}
       {eventInfo?.dresscode && (
-        <ThemedText style={[styles.meta, { color: textColor, opacity: 0.7 }]}>{eventInfo.dresscode}</ThemedText>
+        <View style={{ alignItems: 'center', marginBottom: 2 }}>
+          <ThemedText style={[styles.meta, { color: textColor, opacity: 0.7, marginBottom: 0 }]}>{t('home.dresscode')}</ThemedText>
+          <ThemedText style={[styles.meta, { color: textColor, opacity: 0.7, marginBottom: 0 }]}>{eventInfo.dresscode}</ThemedText>
+        </View>
       )}
       {renderCountdown()}
     </ScrollView>
@@ -202,10 +235,13 @@ export default function HomeScreen() {
         style={styles.container}
         resizeMode="cover"
       >
-        <LinearGradient
-          colors={['rgba(0,0,0,0.45)', 'transparent', 'rgba(0,0,0,0.65)']}
-          locations={[0, 0.35, 1]}
-          style={StyleSheet.absoluteFill}
+        <View
+          style={{
+            ...StyleSheet.absoluteFillObject,
+            backgroundColor: colors.homeShadow,
+            opacity: (eventInfo?.home_shadow_opacity ?? 50) / 100,
+          }}
+          pointerEvents="none"
         />
         {content}
         <RefreshToast visible={refreshed} refreshing={refreshing} />

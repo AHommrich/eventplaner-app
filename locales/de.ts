@@ -41,6 +41,7 @@ const de = {
     countdownSeconds: "Sek",
     countdownToday: "Heute ist der große Tag! 🎉",
     countdownPast: "Es war ein wunderschöner Tag.",
+    dresscode: "Dresscode:",
     openInMaps: "Adresse öffnen in",
     openInMapsHint: "Bitte Adresse vor Abreise noch einmal prüfen — Navi-Apps können Fehler machen.",
     mapsApple: "Karten",

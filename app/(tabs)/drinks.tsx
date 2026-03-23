@@ -377,12 +377,12 @@ export default function DrinksScreen() {
       <View style={{ backgroundColor: colors.card, borderRadius: theme.borderRadius.lg, borderWidth: 2, borderColor: colors.border + '33', marginHorizontal: theme.spacing.lg, marginTop: theme.spacing.md, overflow: 'hidden' }}>
 
         {/* Toggle */}
-        <View style={{ flexDirection: 'row', margin: theme.spacing.xs, borderRadius: theme.borderRadius.lg - theme.spacing.xs, overflow: 'hidden', borderWidth: 1.5, borderColor: colors.cardText + '40' }}>
+        <View style={{ flexDirection: 'row', margin: theme.spacing.xs, borderRadius: theme.borderRadius.lg - theme.spacing.xs, overflow: 'hidden', borderWidth: 1.5, borderColor: colors.border + '55' }}>
           <TouchableOpacity
             style={[styles.toggleBtn, {
               backgroundColor: view === 'log' ? colors.cardButton : 'transparent',
               borderRightWidth: 1,
-              borderRightColor: colors.cardText + '40',
+              borderRightColor: colors.border + '55',
             }]}
             onPress={() => setView('log')}
           >
