@@ -45,7 +45,7 @@ export default function SettingsScreen() {
         {/* Language switcher */}
         <View style={{ padding: theme.spacing.md, borderBottomWidth: 1, borderBottomColor: colors.border + '30' }}>
           <ThemedText style={{ fontSize: 12, color: colors.cardText + 'aa', marginBottom: theme.spacing.sm }}>{t('settings.language')}</ThemedText>
-          <View style={{ flexDirection: 'row', borderRadius: theme.borderRadius.md, overflow: 'hidden', borderWidth: 1, borderColor: colors.cardText + '50' }}>
+          <View style={{ flexDirection: 'row', borderRadius: theme.borderRadius.md, overflow: 'hidden', borderWidth: 1, borderColor: colors.border + '55' }}>
             {(['de', 'en'] as Language[]).map((lang, i) => (
               <TouchableOpacity
                 key={lang}
@@ -56,7 +56,7 @@ export default function SettingsScreen() {
                   alignItems: 'center',
                   backgroundColor: language === lang ? colors.cardButton : 'transparent',
                   borderRightWidth: i === 0 ? 1 : 0,
-                  borderRightColor: colors.cardText + '50',
+                  borderRightColor: colors.border + '55',
                 }}
               >
                 <ThemedText style={{ fontWeight: '600', color: language === lang ? colors.cardButtonText : colors.cardText }}>

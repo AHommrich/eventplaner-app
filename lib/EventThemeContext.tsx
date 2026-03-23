@@ -20,6 +20,7 @@ export type EventThemeColors = {
   fab: string;
   fabIcon: string;
   homeText: string | null;
+  homeShadow: string;
   tabTint: string;
   fontFamily: FontDefinition | undefined;
 };
@@ -45,6 +46,7 @@ const EventThemeContext = createContext<EventThemeContextValue>({
     fab: FALLBACK_PRIMARY,
     fabIcon: FALLBACK_TERTIARY,
     homeText: null,
+    homeShadow: '#000000',
     tabTint: FALLBACK_PRIMARY,
     fontFamily: undefined,
   },
@@ -86,6 +88,7 @@ export function EventThemeProvider({ children }: { children: ReactNode }) {
     fab:            eventInfo?.color_fab            ?? FALLBACK_PRIMARY,
     fabIcon:        eventInfo?.color_fab_icon       ?? FALLBACK_TERTIARY,
     homeText:       eventInfo?.color_home_text      ?? null,
+    homeShadow:     eventInfo?.color_home_shadow    ?? '#000000',
     tabTint:        eventInfo?.color_tab_tint       ?? FALLBACK_PRIMARY,
     fontFamily,
   };

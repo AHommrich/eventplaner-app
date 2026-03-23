@@ -43,7 +43,7 @@ export default function TabLayout() {
         tabBarInactiveTintColor: colors.tabTint + '66',
         tabBarStyle: {
           backgroundColor: colors.screenBg,
-          borderTopColor: colors.tabTint + '40',
+          borderTopColor: colors.border + '33',
           borderTopWidth: 1,
         },
         tabBarLabelStyle: colors.fontFamily
@@ -59,7 +59,7 @@ export default function TabLayout() {
           tabBarInactiveTintColor: hasCover ? 'rgba(255,255,255,0.55)' : colors.tabTint + '66',
           tabBarStyle: hasCover
             ? { position: 'absolute', backgroundColor: 'transparent', borderTopWidth: 0, elevation: 0, shadowOpacity: 0 }
-            : { backgroundColor: colors.screenBg, borderTopColor: colors.tabTint + '40', borderTopWidth: 1 },
+            : { backgroundColor: colors.screenBg, borderTopColor: colors.border + '33', borderTopWidth: 1 },
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="home-outline" size={size} color={color} />
           ),

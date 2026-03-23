@@ -36,6 +36,7 @@ export type EventInfo = {
   venue_address: string | null;
   venue_lat: number | null;
   venue_lng: number | null;
+  venue_display_mode: 'address' | 'name' | 'both';
   dresscode: string | null;
   schedule: string | null;
   // Palette
@@ -53,6 +54,8 @@ export type EventInfo = {
   color_fab: string | null;
   color_fab_icon: string | null;
   color_home_text: string | null;
+  color_home_shadow: string;
+  home_shadow_opacity: number;
   drink_game_enabled: boolean;
   drink_game_end_time: string | null;
   font_heading: string | null;
