@@ -36,7 +36,7 @@ export default function SettingsScreen() {
             </ThemedText>
             {session.familyName && (
               <ThemedText style={{ fontSize: 14, color: colors.cardText + 'aa', marginTop: 2 }}>
-                {t('settings.family', { name: session.familyName })}
+                {session.familyName}
               </ThemedText>
             )}
           </View>

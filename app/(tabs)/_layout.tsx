@@ -33,6 +33,7 @@ export default function TabLayout() {
 
   const showRsvpTab = rsvpStatus === 'accepted_pending';
   const showDrinksTab = !drinksBlocked && (eventInfo?.drink_game_enabled === true);
+  const showPhotoGameTab = eventInfo?.photo_game_enabled === true;
   const hasCover = !!eventInfo?.cover_image_url;
 
   return (
@@ -81,6 +82,16 @@ export default function TabLayout() {
           title: t('tabs.photos'),
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="images-outline" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="photo-game"
+        options={{
+          title: t('photoGame.tab'),
+          href: showPhotoGameTab ? undefined : null,
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="camera-outline" size={size} color={color} />
           ),
         }}
       />

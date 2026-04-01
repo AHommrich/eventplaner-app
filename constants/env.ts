@@ -1,5 +1,1 @@
-/**
- * Umgebungskonfiguration.
- * Für Production: API_BASE auf 'https://hommrich.app' ändern.
- */
-export const API_BASE = 'https://beta.hommrich.app';
+export const API_BASE = process.env.EXPO_PUBLIC_API_BASE ?? 'https://beta.hommrich.app';

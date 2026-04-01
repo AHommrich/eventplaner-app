@@ -12,10 +12,14 @@ const api = axios.create({
 });
 
 api.interceptors.request.use(async (config) => {
-  const token = await SecureStore.getItemAsync('guest_token');
+  const [token, language] = await Promise.all([
+    SecureStore.getItemAsync('guest_token'),
+    SecureStore.getItemAsync('app_language'),
+  ]);
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
+  config.headers['Accept-Language'] = language ?? 'de';
   return config;
 });
 
