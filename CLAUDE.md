@@ -70,6 +70,9 @@ Staging-Tokens funktionieren NICHT auf Production (separate Datenbanken).
 | `/api/drinks` | GET | Getränkeliste laden |
 | `/api/drinks/log` | POST | Getränk loggen `{ drink_id }` |
 | `/api/drinks/stats` | GET | Getränke-Statistiken + Rangliste |
+| `/api/game/photo/status` | GET | Foto-Spiel Status + Assignment laden |
+| `/api/game/photo/assign` | POST | Zufällige Aufgabe zuteilen (kein Body) |
+| `/api/game/photo/submit` | POST | Foto einreichen (multipart/form-data, Feld: `photo`) |
 
 ### Geplante Endpoints (noch nicht gebaut)
 - `GET /api/event/menu`
@@ -98,6 +101,7 @@ color_home_shadow: string           // Hex, default '#000000'
 home_shadow_opacity: number         // 0–100, default 50
 drink_game_enabled: boolean
 drink_game_end_time: string | null
+photo_game_enabled: boolean
 font_heading: string | null
 ```
 
@@ -137,6 +141,7 @@ app/
     home.tsx           Begrüßungsscreen mit Countdown + Cover-Bild + tippbare Venue-Navigation
     rsvp.tsx           RSVP-Tab (sichtbar nur bei accepted_pending)
     photos.tsx         Fotogalerie + Upload + Auto-Refresh (30s)
+    photo-game.tsx     Foto-Spiel: Aufgabe erhalten + Foto hochladen (4 States)
     drinks.tsx         Getränke-Log (Suche + Akkordeon) + Rangliste
     settings.tsx       Logout + Sprachauswahl
 

@@ -18,14 +18,21 @@ import { theme } from '../../constants/theme';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
-type Drink = {
-  id: number;
+type DrinkSize = {
+  drink_id: number;     // für POST /api/drinks/log
+  id: number;           // size_id
+  amount_liter: number | null;
+  is_default: boolean;
+  points: number | null;
+};
+
+type DrinkCatalog = {
+  id: number;           // catalog_id (NICHT für log)
   display_name: string;
   category: string;
   category_label: string;
   is_alcoholic: boolean;
-  amount_liter: number;
-  points: number;
+  sizes: DrinkSize[];
 };
 
 type LogResponse = {
@@ -75,21 +82,21 @@ const MEDAL_COLORS = ['#C9A84C', '#A8A9AD', '#CD7F32'];
 // ─── Component ───────────────────────────────────────────────────────────────
 
 export default function DrinksScreen() {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const { colors, eventInfo, loadTheme } = useEventTheme();
   const insets = useSafeAreaInsets();
   const tabBarHeight = useBottomTabBarHeight();
 
   const [view, setView] = useState<'log' | 'leaderboard'>('log');
-  const [drinks, setDrinks] = useState<Drink[]>([]);
-  const [selected, setSelected] = useState<Drink | null>(null);
+  const [drinks, setDrinks] = useState<DrinkCatalog[]>([]);
+  const [selectedSize, setSelectedSize] = useState<DrinkSize | null>(null);
+  const [selectedGroup, setSelectedGroup] = useState<number | null>(null); // catalog.id
   const [logging, setLogging] = useState(false);
   const [cooldown, setCooldown] = useState(0);
   const [stats, setStats] = useState<Stats | null>(null);
   const [myStatsExpanded, setMyStatsExpanded] = useState(false);
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
   const [search, setSearch] = useState('');
-  const [selectedGroup, setSelectedGroup] = useState<string | null>(null);
   const [toast, setToast] = useState<ToastData | null>(null);
   const [gameEnded, setGameEnded] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -151,7 +158,7 @@ export default function DrinksScreen() {
     setLoading(true);
     try {
       const [drinksRes, statsRes] = await Promise.all([
-        api.get<{ data: Drink[] }>('/api/drinks'),
+        api.get<{ data: DrinkCatalog[] }>('/api/drinks'),
         api.get<Stats>('/api/drinks/stats'),
       ]);
       setDrinks(drinksRes.data.data);
@@ -178,21 +185,23 @@ export default function DrinksScreen() {
 
   // ── Log drink ──────────────────────────────────────────────────────────────
 
-  async function handleLog(drink: Drink) {
+  async function handleLog(size: DrinkSize) {
     if (logging || cooldown > 0 || gameEnded) return;
     setLogging(true);
     try {
-      const res = await api.post<LogResponse>('/api/drinks/log', { drink_id: drink.id });
+      const res = await api.post<LogResponse>('/api/drinks/log', { drink_id: size.drink_id });
       const data = res.data;
       setCooldown(60);
       showToast({ points: data.final_points, bingePenalty: data.binge_penalty });
-      setSelected(null);
+      setSelectedSize(null);
       setSelectedGroup(null);
       loadStats();
     } catch (e: any) {
       const code = e?.response?.data?.code;
       if (code === 'cooldown') {
         setCooldown(Math.ceil(e.response.data.retry_after ?? 60));
+        setSelectedSize(null);
+        setSelectedGroup(null);
       } else if (code === 'game_ended') {
         setGameEnded(true);
       }
@@ -208,43 +217,27 @@ export default function DrinksScreen() {
     toastTimer.current = setTimeout(() => setToast(null), 3000);
   }
 
-  // ── Drink grouping helpers ─────────────────────────────────────────────────
+  // ── Helpers ────────────────────────────────────────────────────────────────
 
-  function extractBaseName(displayName: string): string {
-    return displayName.replace(/\s+\d[\d,.]*\s*(?:l|cl|ml)$/i, '').trim() || displayName;
-  }
-
-  function formatSize(amountLiter: number): string {
+  function formatSize(amountLiter: number | null | undefined): string {
+    if (amountLiter == null || isNaN(amountLiter)) return '?';
     if (amountLiter < 0.1) return `${Math.round(amountLiter * 100)} cl`;
-    const str = amountLiter.toFixed(2).replace('.', ',').replace(/0+$/, '').replace(/,$/, '');
+    const sep = language === 'en' ? '.' : ',';
+    const str = amountLiter.toFixed(2).replace('.', sep).replace(/0+$/, '').replace(new RegExp(`\\${sep}$`), '');
     return `${str} l`;
   }
 
-  type DrinkGroup = { baseName: string; drinks: Drink[] };
+  // ── Drink-Zeile rendern ────────────────────────────────────────────────────
 
-  function buildGroups(drinkList: Drink[]): DrinkGroup[] {
-    const order: string[] = [];
-    const map: Record<string, DrinkGroup> = {};
-    for (const drink of drinkList) {
-      const baseName = extractBaseName(drink.display_name);
-      if (!map[baseName]) { order.push(baseName); map[baseName] = { baseName, drinks: [] }; }
-      map[baseName].drinks.push(drink);
-    }
-    return order.map((k) => map[k]);
-  }
-
-  // ── Drink row renderer ─────────────────────────────────────────────────────
-
-  function renderGroup(group: DrinkGroup) {
-    const { baseName, drinks: gDrinks } = group;
-    const isMulti = gDrinks.length > 1;
+  function renderCatalogItem(catalog: DrinkCatalog) {
+    const isMulti = catalog.sizes.length > 1;
     const disabled = gameEnded || cooldown > 0;
 
     if (isMulti) {
-      const isExpanded = selectedGroup === baseName;
+      const isExpanded = selectedGroup === catalog.id;
       return (
         <TouchableOpacity
-          key={baseName}
+          key={catalog.id}
           style={[
             styles.drinkRow,
             { borderBottomWidth: 1, borderBottomColor: colors.border + '30' },
@@ -253,39 +246,40 @@ export default function DrinksScreen() {
           ]}
           onPress={() => {
             if (disabled) return;
-            setSelected(null);
-            setSelectedGroup(isExpanded ? null : baseName);
+            setSelectedSize(null);
+            setSelectedGroup(isExpanded ? null : catalog.id);
           }}
           activeOpacity={0.75}
           disabled={disabled && !isExpanded}
         >
           {isExpanded ? (
             <View style={styles.sizeButtonRow}>
-              {gDrinks.map((drink) => (
+              {catalog.sizes.map((size) => (
                 <TouchableOpacity
-                  key={drink.id}
+                  key={size.id}
                   style={[styles.sizeButton, { backgroundColor: colors.cardButton, borderWidth: 1.5, borderColor: colors.cardButton, borderRadius: theme.borderRadius.lg - theme.spacing.xs }]}
-                  onPress={() => handleLog(drink)}
+                  onPress={() => handleLog(size)}
                   disabled={logging}
                   activeOpacity={0.8}
                 >
                   {logging
                     ? <ActivityIndicator color={colors.cardButtonText} size="small" />
-                    : <ThemedText style={[styles.sizeButtonText, { color: colors.cardButtonText }]}>{formatSize(drink.amount_liter)}?</ThemedText>
+                    : <ThemedText style={[styles.sizeButtonText, { color: colors.cardButtonText }]}>{formatSize(size.amount_liter)}?</ThemedText>
                   }
                 </TouchableOpacity>
               ))}
             </View>
           ) : (
             <>
-              <ThemedText style={[styles.drinkName, { color: colors.cardText }]}>{baseName}</ThemedText>
+              <ThemedText style={[styles.drinkName, { color: colors.cardText }]}>{catalog.display_name}</ThemedText>
               <View style={{ flexDirection: 'row', gap: theme.spacing.xs }}>
-                {gDrinks.map((d) => {
-                  const pos = d.points >= 0;
+                {catalog.sizes.map((size) => {
+                  if (size.points == null) return null;
+                  const pos = size.points >= 0;
                   return (
-                    <View key={d.id} style={[styles.pointsBadge, { backgroundColor: pos ? colors.primary + '18' : '#00000010' }]}>
+                    <View key={size.id} style={[styles.pointsBadge, { backgroundColor: pos ? colors.primary + '18' : '#00000010' }]}>
                       <ThemedText style={[styles.pointsText, { color: colors.cardText }]}>
-                        {pos ? `+${d.points}` : `${d.points}`}
+                        {pos ? `+${size.points}` : `${size.points}`}
                       </ThemedText>
                     </View>
                   );
@@ -298,12 +292,13 @@ export default function DrinksScreen() {
     }
 
     // Single size
-    const drink = gDrinks[0];
-    const isSelected = selected?.id === drink.id;
-    const positive = drink.points >= 0;
+    const size = catalog.sizes[0];
+    const isSelected = selectedSize?.drink_id === size?.drink_id;
+    const positive = (size?.points ?? 0) >= 0;
+
     return (
       <TouchableOpacity
-        key={drink.id}
+        key={catalog.id}
         style={[
           styles.drinkRow,
           { borderBottomWidth: 1, borderBottomColor: colors.border + '30' },
@@ -311,7 +306,11 @@ export default function DrinksScreen() {
         ]}
         onPress={() => {
           setSelectedGroup(null);
-          isSelected ? handleLog(drink) : setSelected(drink);
+          if (isSelected) {
+            handleLog(size);
+          } else {
+            setSelectedSize(size);
+          }
         }}
         activeOpacity={0.75}
         disabled={disabled && !isSelected}
@@ -320,7 +319,7 @@ export default function DrinksScreen() {
           <View style={styles.sizeButtonRow}>
             <TouchableOpacity
               style={[styles.sizeButton, { backgroundColor: colors.cardButton, borderWidth: 1.5, borderColor: colors.cardButton, borderRadius: theme.borderRadius.lg - theme.spacing.xs }]}
-              onPress={() => handleLog(drink)}
+              onPress={() => handleLog(size)}
               disabled={logging}
               activeOpacity={0.8}
             >
@@ -332,12 +331,14 @@ export default function DrinksScreen() {
           </View>
         ) : (
           <>
-            <ThemedText style={[styles.drinkName, { color: colors.cardText }]}>{baseName}</ThemedText>
-            <View style={[styles.pointsBadge, { backgroundColor: positive ? colors.primary + '18' : '#00000010' }]}>
-              <ThemedText style={[styles.pointsText, { color: colors.cardText }]}>
-                {positive ? `+${drink.points}` : `${drink.points}`}
-              </ThemedText>
-            </View>
+            <ThemedText style={[styles.drinkName, { color: colors.cardText }]}>{catalog.display_name}</ThemedText>
+            {size?.points != null && (
+              <View style={[styles.pointsBadge, { backgroundColor: positive ? colors.primary + '18' : '#00000010' }]}>
+                <ThemedText style={[styles.pointsText, { color: colors.cardText }]}>
+                  {positive ? `+${size.points}` : `${size.points}`}
+                </ThemedText>
+              </View>
+            )}
           </>
         )}
       </TouchableOpacity>
@@ -471,21 +472,21 @@ export default function DrinksScreen() {
                       </ThemedText>
                     );
                   }
-                  return buildGroups(results).map(renderGroup);
+                  return results.map(renderCatalogItem);
                 })()
               ) : (
                 (() => {
                   const categoryOrder: string[] = [];
-                  const categoryMap: Record<string, { label: string; drinks: Drink[] }> = {};
-                  for (const drink of drinks) {
-                    if (!categoryMap[drink.category]) {
-                      categoryOrder.push(drink.category);
-                      categoryMap[drink.category] = { label: drink.category_label, drinks: [] };
+                  const categoryMap: Record<string, { label: string; items: DrinkCatalog[] }> = {};
+                  for (const catalog of drinks) {
+                    if (!categoryMap[catalog.category]) {
+                      categoryOrder.push(catalog.category);
+                      categoryMap[catalog.category] = { label: catalog.category_label, items: [] };
                     }
-                    categoryMap[drink.category].drinks.push(drink);
+                    categoryMap[catalog.category].items.push(catalog);
                   }
                   return categoryOrder.map((cat) => {
-                    const { label, drinks: catDrinks } = categoryMap[cat];
+                    const { label, items } = categoryMap[cat];
                     const isOpen = expandedCategories.has(cat);
                     return (
                       <View key={cat}>
@@ -497,7 +498,9 @@ export default function DrinksScreen() {
                               next.has(cat) ? next.delete(cat) : next.add(cat);
                               return next;
                             });
-                            if (selected && catDrinks.some((d) => d.id === selected.id)) setSelected(null);
+                            if (selectedSize && items.some((c) => c.sizes.some((s) => s.drink_id === selectedSize.drink_id))) {
+                              setSelectedSize(null);
+                            }
                           }}
                           activeOpacity={0.7}
                         >
@@ -506,7 +509,7 @@ export default function DrinksScreen() {
                         </TouchableOpacity>
                         {isOpen && (
                           <View style={{ borderLeftWidth: 3, borderLeftColor: colors.primary + '50' }}>
-                            {buildGroups(catDrinks).map(renderGroup)}
+                            {items.map(renderCatalogItem)}
                           </View>
                         )}
                       </View>
@@ -655,7 +658,6 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
 
-  // Toggle (kept for toggleBtn/toggleText usage)
   toggleRow: {
     flexDirection: 'row',
   },
@@ -669,21 +671,12 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
 
-  // Scroll
   scrollContent: {
     paddingHorizontal: theme.spacing.lg,
     paddingTop: 0,
     paddingBottom: theme.spacing.xxl * 2,
   },
 
-  // Banner
-  banner: {
-    borderWidth: 1,
-    borderRadius: theme.borderRadius.md,
-    paddingHorizontal: theme.spacing.md,
-    paddingVertical: theme.spacing.sm,
-    marginBottom: theme.spacing.xs,
-  },
   bannerText: {
     fontSize: 15,
     fontWeight: '600',
@@ -698,20 +691,11 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
 
-  // Game End
-  gameEndBadge: {
-    borderRadius: theme.borderRadius.md,
-    paddingHorizontal: theme.spacing.md,
-    paddingVertical: theme.spacing.sm,
-    alignItems: 'center',
-    marginBottom: theme.spacing.xs,
-  },
   gameEndText: {
     fontSize: 14,
     fontWeight: '600',
   },
 
-  // Search
   searchRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -724,38 +708,6 @@ const styles = StyleSheet.create({
     paddingVertical: 0,
   },
 
-  // Drink grid
-  drinkGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: theme.spacing.sm,
-    paddingTop: theme.spacing.xs,
-  },
-  drinkCard: {
-    width: '48.5%',
-    aspectRatio: 1,
-    borderRadius: theme.borderRadius.md,
-    borderWidth: 1.5,
-    padding: theme.spacing.md,
-    justifyContent: 'space-between',
-  },
-  drinkCardName: {
-    fontSize: 14,
-    fontWeight: '500',
-    lineHeight: 19,
-  },
-  drinkCardConfirm: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  drinkCardConfirmText: {
-    fontSize: 28,
-    fontWeight: '800',
-    color: '#fff',
-  },
-
-  // Drink list
   categoryRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -790,7 +742,6 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
 
-  // Size buttons (multi-size groups)
   sizeButtonRow: {
     flex: 1,
     flexDirection: 'row',
@@ -808,7 +759,6 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
 
-  // Bottom action (Log-Button + Cooldown)
   bottomAction: {
     marginHorizontal: theme.spacing.lg,
     flexDirection: 'row',
@@ -818,17 +768,11 @@ const styles = StyleSheet.create({
     borderRadius: theme.borderRadius.md,
     paddingVertical: theme.spacing.md,
   },
-  logButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '700',
-  },
   cooldownText: {
     fontSize: 16,
     fontWeight: '600',
   },
 
-  // Leaderboard
   tableHeader: {
     flexDirection: 'row',
     paddingVertical: theme.spacing.sm,
@@ -864,11 +808,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: theme.spacing.xs,
   },
 
-  // My stats
   myDrinksSection: {
     marginTop: theme.spacing.xl,
     borderTopWidth: 1,
-    borderTopColor: '#e0e0e0',
     paddingTop: theme.spacing.md,
   },
   myDrinksHeader: {
@@ -908,6 +850,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontStyle: 'italic',
     textAlign: 'center',
-    marginTop: theme.spacing.xl,
+    padding: theme.spacing.lg,
   },
 });

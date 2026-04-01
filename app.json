@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "eventplaner-app",
-    "slug": "eventplaner-app",
+    "name": "eveplan",
+    "slug": "eveplan",
     "scheme": "eventplaner",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -15,8 +15,13 @@
     "ios": {
       "supportsTablet": true,
       "infoPlist": {
-        "LSApplicationQueriesSchemes": ["comgooglemaps"]
-      }
+        "LSApplicationQueriesSchemes": [
+          "comgooglemaps",
+          "comgooglemaps"
+        ],
+        "ITSAppUsesNonExemptEncryption": false
+      },
+      "bundleIdentifier": "com.ahommrichsorganization.eveplan"
     },
     "android": {
       "adaptiveIcon": {
@@ -25,7 +30,10 @@
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "permissions": [
+        "android.permission.CAMERA"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -33,8 +41,25 @@
     "plugins": [
       "expo-router",
       "expo-secure-store",
-      "expo-barcode-scanner",
-      "expo-font"
-    ]
+      "expo-camera",
+      "expo-font",
+      [
+        "expo-build-properties",
+        {
+          "ios": {
+            "extraPodfileProperties": {
+              "SWIFT_STRICT_CONCURRENCY": "minimal",
+              "OTHER_SWIFT_FLAGS": "$(inherited) -strict-concurrency=minimal"
+            }
+          }
+        }
+      ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "69c16c3f-227c-49b9-adcf-4f0bd57eaf29"
+      }
+    },
+    "owner": "ahommrichs-organization"
   }
 }
