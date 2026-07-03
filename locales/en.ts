@@ -90,6 +90,18 @@ const en = {
     language: 'Language',
     german: 'German',
     english: 'English',
+    privacy: 'Privacy policy',
+  },
+  legal: {
+    privacy: {
+      title: 'Privacy policy',
+      updatedAt: 'Last updated: %{date}',
+      offlineTitle: 'Unavailable',
+      offlineMessage:
+        "The privacy policy couldn't be loaded. You can read it in your browser.",
+      openInBrowser: 'Open in browser',
+      retry: 'Retry',
+    },
   },
   drinks: {
     logTab: 'Log',

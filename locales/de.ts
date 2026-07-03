@@ -54,6 +54,18 @@ const de = {
     language: "Sprache",
     german: "Deutsch",
     english: "Englisch",
+    privacy: "Datenschutzerklärung",
+  },
+  legal: {
+    privacy: {
+      title: "Datenschutzerklärung",
+      updatedAt: "Zuletzt aktualisiert: %{date}",
+      offlineTitle: "Nicht verfügbar",
+      offlineMessage:
+        "Die Datenschutzerklärung konnte nicht geladen werden. Du kannst sie im Browser lesen.",
+      openInBrowser: "Im Browser öffnen",
+      retry: "Erneut versuchen",
+    },
   },
   tabs: {
     home: "Home",

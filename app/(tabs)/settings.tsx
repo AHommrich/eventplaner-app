@@ -12,6 +12,7 @@ import { View, TouchableOpacity } from 'react-native';
 import { ThemedText } from '../../components/ThemedText';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import { getSession, clearSession, GuestSession } from '../../lib/auth';
 import { useLanguage, Language } from '../../lib/LanguageContext';
 import { useEventTheme } from '../../lib/EventThemeContext';
@@ -87,6 +88,27 @@ export default function SettingsScreen() {
           style={{ margin: theme.spacing.md, paddingVertical: theme.spacing.sm, borderRadius: theme.borderRadius.md, alignItems: 'center', backgroundColor: colors.cardButton }}
         >
           <ThemedText style={{ color: colors.cardButtonText, fontWeight: '600', fontSize: 14 }}>{t('settings.logout')}</ThemedText>
+        </TouchableOpacity>
+
+        {/* Privacy notice — additive row appended at the bottom of the card
+            per Phase 5 of the refactor plan. Every existing row above stays
+            byte-identical to before. */}
+        <TouchableOpacity
+          onPress={() => router.push('/legal/privacy')}
+          style={{
+            paddingHorizontal: theme.spacing.md,
+            paddingVertical: theme.spacing.md,
+            borderTopWidth: 1,
+            borderTopColor: colors.border + '30',
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+          }}
+        >
+          <ThemedText style={{ color: colors.cardText, fontSize: 15 }}>
+            {t('settings.privacy')}
+          </ThemedText>
+          <Ionicons name="chevron-forward" size={16} color={colors.cardText + 'aa'} />
         </TouchableOpacity>
       </View>
     </View>

@@ -123,6 +123,7 @@ export default function RootLayout() {
             <Stack.Screen name="declined" />
             <Stack.Screen name="blocked" />
             <Stack.Screen name="(tabs)" />
+            <Stack.Screen name="legal/privacy" />
           </Stack>
           {splashVisible && (
             <Animated.View style={[StyleSheet.absoluteFill, { opacity: fadeAnim }]} pointerEvents="none">
