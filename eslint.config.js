@@ -26,11 +26,14 @@ module.exports = [
   },
   {
     // Jest mock factories run before ES imports resolve, so `require()`
-    // inside them is the officially blessed pattern. Disable the ban
-    // scoped to the test tree.
+    // inside them is the officially blessed pattern. `jest.mock(...)` calls
+    // also have to sit above `import` statements (Jest hoists them, but the
+    // source order matters for readability) — `import/first` would otherwise
+    // fight the intended test setup.
     files: ['tests/**/*.{ts,tsx,js}'],
     rules: {
       '@typescript-eslint/no-require-imports': 'off',
+      'import/first': 'off',
     },
   },
   {
