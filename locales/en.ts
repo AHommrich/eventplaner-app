@@ -91,6 +91,7 @@ const en = {
     german: 'German',
     english: 'English',
     privacy: 'Privacy policy',
+    consents: 'Manage consents',
   },
   legal: {
     privacy: {
@@ -101,6 +102,26 @@ const en = {
         "The privacy policy couldn't be loaded. You can read it in your browser.",
       openInBrowser: 'Open in browser',
       retry: 'Retry',
+    },
+  },
+  consents: {
+    title: 'Consents',
+    subtitle:
+      'Here you can see which data processing you have agreed to. You can withdraw your consent at any time (Art. 7 (3) GDPR).',
+    grant: 'I agree',
+    decline: 'Cancel',
+    revoke: 'Withdraw',
+    grantedAt: 'Granted on %{date}',
+    notGranted: 'Not granted yet',
+    photoUpload: {
+      title: 'Photos in the shared gallery',
+      body:
+        'When you upload photos, they become visible in the shared wedding gallery to every invited guest. Your photos are stored for up to 30 days after the event and then deleted automatically. You may withdraw your consent at any time — already-uploaded photos can be deleted on request by contacting us.',
+    },
+    photoGame: {
+      title: 'Sharing your photo task',
+      body:
+        'For the photo task you receive an assignment and upload exactly one photo. Your image is shown together with your name inside the task view and is used only for evaluation by the couple. It is stored for up to 30 days after the event and then deleted automatically. Withdrawal is possible at any time.',
     },
   },
   drinks: {

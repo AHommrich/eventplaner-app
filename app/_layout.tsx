@@ -65,6 +65,7 @@ import '../global.css';
 import { LanguageProvider } from '../lib/LanguageContext';
 import { EventThemeProvider } from '../lib/EventThemeContext';
 import { BlockedFeaturesProvider } from '../lib/BlockedFeaturesContext';
+import { ConsentGateProvider } from '../components/ConsentGate';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -116,6 +117,7 @@ export default function RootLayout() {
     <LanguageProvider>
       <EventThemeProvider>
         <BlockedFeaturesProvider>
+          <ConsentGateProvider>
           <Stack screenOptions={{ headerShown: false }}>
             <Stack.Screen name="index" />
             <Stack.Screen name="scan" />
@@ -124,6 +126,7 @@ export default function RootLayout() {
             <Stack.Screen name="blocked" />
             <Stack.Screen name="(tabs)" />
             <Stack.Screen name="legal/privacy" />
+            <Stack.Screen name="consents/index" />
           </Stack>
           {splashVisible && (
             <Animated.View style={[StyleSheet.absoluteFill, { opacity: fadeAnim }]} pointerEvents="none">
@@ -143,6 +146,7 @@ export default function RootLayout() {
               </View>
             </Animated.View>
           )}
+          </ConsentGateProvider>
         </BlockedFeaturesProvider>
       </EventThemeProvider>
     </LanguageProvider>
