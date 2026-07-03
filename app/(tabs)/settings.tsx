@@ -1,3 +1,12 @@
+/**
+ * Settings tab — currently just user info, language switcher and logout.
+ *
+ * This screen is intentionally tiny; it exists as the single "app-wide
+ * preferences" surface and will host new rows for privacy notice, consents
+ * and data-subject rights in future phases (see docs/REFACTOR_PLAN.md).
+ * All existing rows below use the same card + row pattern documented in
+ * CLAUDE.md so future additions can copy-paste consistently.
+ */
 import { useEffect, useState } from 'react';
 import { View, TouchableOpacity } from 'react-native';
 import { ThemedText } from '../../components/ThemedText';
@@ -19,6 +28,11 @@ export default function SettingsScreen() {
     getSession().then(setSession);
   }, []);
 
+  /**
+   * Clear the local session AND fire the server-side logout (best effort in
+   * `clearSession`). The redirect to `/` re-runs the welcome screen's
+   * session probe so a logged-out state is picked up immediately.
+   */
   async function handleLogout() {
     await clearSession();
     router.replace('/');
@@ -26,7 +40,7 @@ export default function SettingsScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.screenBg, padding: theme.spacing.lg, paddingTop: insets.top + theme.spacing.md }}>
-      {/* Eine Card: Nutzer-Info + Sprache */}
+      {/* Single card: user identity + language + logout, one section each. */}
       <View style={{ backgroundColor: colors.card, borderRadius: theme.borderRadius.lg, borderWidth: 2, borderColor: colors.border + '33', overflow: 'hidden', marginBottom: theme.spacing.xl }}>
         {session && (
           <View style={{ padding: theme.spacing.md, borderBottomWidth: 1, borderBottomColor: colors.border + '30' }}>
@@ -42,7 +56,7 @@ export default function SettingsScreen() {
           </View>
         )}
 
-        {/* Language switcher */}
+        {/* Language switcher — persisted in SecureStore, effective immediately. */}
         <View style={{ padding: theme.spacing.md, borderBottomWidth: 1, borderBottomColor: colors.border + '30' }}>
           <ThemedText style={{ fontSize: 12, color: colors.cardText + 'aa', marginBottom: theme.spacing.sm }}>{t('settings.language')}</ThemedText>
           <View style={{ flexDirection: 'row', borderRadius: theme.borderRadius.md, overflow: 'hidden', borderWidth: 1, borderColor: colors.border + '55' }}>
@@ -67,7 +81,7 @@ export default function SettingsScreen() {
           </View>
         </View>
 
-        {/* Logout */}
+        {/* Logout — clears SecureStore + fires server logout best-effort. */}
         <TouchableOpacity
           onPress={handleLogout}
           style={{ margin: theme.spacing.md, paddingVertical: theme.spacing.sm, borderRadius: theme.borderRadius.md, alignItems: 'center', backgroundColor: colors.cardButton }}

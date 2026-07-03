@@ -1,3 +1,28 @@
+/**
+ * Bottom tab bar — dynamically shows and hides tabs based on RSVP state,
+ * feature toggles, and whether a cover image is set.
+ *
+ * Tab visibility rules (all layered):
+ *   - `home` .......... always shown; when a cover image is set it goes
+ *                       "full-bleed" (transparent tab bar with the cover
+ *                       image bleeding under it and light-on-dark tint).
+ *   - `rsvp` .......... only visible while the guest is in
+ *                       `accepted_pending`. After a full `accepted` the tab
+ *                       disappears because the RSVP is settled; the RSVP
+ *                       screen still lives, it just is no longer linked.
+ *   - `photos` ........ always shown.
+ *   - `photo-game` .... only when the couple has flipped
+ *                       `photo_game_enabled` on the backend.
+ *   - `drinks` ........ only when `drink_game_enabled` AND not currently
+ *                       drinks-blocked (the latter can flip mid-session; we
+ *                       redirect off the drinks tab if the guest is standing
+ *                       on it when the block fires).
+ *   - `settings` ...... always shown.
+ *
+ * Tabs are hidden by setting `href: null` — that removes the entry from the
+ * router while keeping the screen file registered, which is Expo Router's
+ * blessed pattern for conditional tabs.
+ */
 import { useEffect, useState } from 'react';
 import { Alert } from 'react-native';
 import { Tabs, useRouter, useSegments } from 'expo-router';
@@ -14,6 +39,8 @@ export default function TabLayout() {
   const { drinksBlocked } = useBlockedFeatures();
   const router = useRouter();
   const segments = useSegments();
+  // Start optimistic: assume the guest has full access until fetch resolves,
+  // otherwise the RSVP tab would flash-out on every fresh mount.
   const [rsvpStatus, setRsvpStatus] = useState<RsvpStatus>('accepted_pending');
 
   useEffect(() => {
@@ -22,6 +49,9 @@ export default function TabLayout() {
       .catch(() => {});
   }, []);
 
+  // If drinks are blocked while the guest is standing ON the drinks tab, boot
+  // them off with an explanatory alert. Effect keys on `drinksBlocked` so it
+  // only fires on the block edge, not on every re-render.
   useEffect(() => {
     if (!drinksBlocked) return;
     const onDrinksTab = segments[segments.length - 1] === 'drinks';
@@ -56,6 +86,8 @@ export default function TabLayout() {
         name="home"
         options={{
           title: t('tabs.home'),
+          // Home tab uses `homeText` when a cover is set so labels stay legible
+          // over the image; otherwise the standard tab tint applies.
           tabBarActiveTintColor: hasCover ? (colors.homeText ?? colors.tabTint) : colors.tabTint,
           tabBarInactiveTintColor: hasCover ? 'rgba(255,255,255,0.55)' : colors.tabTint + '66',
           tabBarStyle: hasCover

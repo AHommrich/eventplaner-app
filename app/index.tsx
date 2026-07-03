@@ -1,3 +1,26 @@
+/**
+ * Welcome / entry screen.
+ *
+ * Two responsibilities:
+ *
+ *   1. **Session probe on mount.** If SecureStore holds a session, fetch the
+ *      guest and redirect based on `rsvp_status`:
+ *        - `null` .................. never answered → `/rsvp` onboarding
+ *        - `accepted_pending` /
+ *          `accepted` ............. → `/(tabs)/home`
+ *        - `declined_pending` /
+ *          `declined` /
+ *          `revocation_requested` .. → `/declined`
+ *      On error (network offline, backend down) we keep the welcome screen
+ *      visible so the guest can retry via the scan button.
+ *
+ *   2. **Gallery QR fallback login.** Guests can either scan the QR live
+ *      (`/scan`) or pick a photo of the invitation from their gallery. The
+ *      gallery path uses `QrFromImageView` (WebView + jsQR) to decode
+ *      offline. Both paths feed the same two-step auth flow described in
+ *      `lib/guest.ts` — solo tokens log in immediately, family tokens open
+ *      the family picker modal.
+ */
 import { useEffect, useState } from 'react';
 import { View, Image, Text, TouchableOpacity, Alert, StyleSheet, Modal, FlatList } from 'react-native';
 import { ThemedText } from '../components/ThemedText';
@@ -14,6 +37,8 @@ import api from '../lib/api';
 import { useEventTheme } from '../lib/EventThemeContext';
 import { theme } from '../constants/theme';
 
+// Same splash palette as `_layout.tsx` — visual continuity when the splash
+// fades out into this screen.
 const SPLASH_COLORS = ['#FF6B8A', '#FF8C5A', '#FFD166', '#72D4C8'] as const;
 
 type ApiGuest = { guest_id: number; firstname: string; lastname: string; token: string | null; is_active: boolean };
@@ -48,12 +73,21 @@ export default function WelcomeScreen() {
           router.replace('/declined');
         }
       } catch {
-        // API nicht erreichbar — trotzdem zeigen
+        // Backend unreachable — keep the welcome screen so guest can retry.
         setChecking(false);
       }
     });
   }, []);
 
+  /**
+   * Gallery-fallback login flow:
+   *   1. Ask for media-library permission.
+   *   2. Let the guest pick an image.
+   *   3. Base64-encode via `expo-file-system` so `QrFromImageView` can load
+   *      it inside the WebView (a `file://` URI would be blocked by CORS).
+   *   4. Decode → parse → hit `/api/auth/qr/{token}` → same solo/family branch
+   *      as the live scanner.
+   */
   async function handlePickImage() {
     const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!perm.granted) {
@@ -105,6 +139,7 @@ export default function WelcomeScreen() {
     }
   }
 
+  /** Post-login redirect — the same matrix as the session probe above. */
   async function navigateByStatus(status: RsvpStatus | null) {
     if (status === null) {
       router.replace('/rsvp');
@@ -117,6 +152,12 @@ export default function WelcomeScreen() {
     }
   }
 
+  /**
+   * Second step of a family QR flow: guest picks their name, we hit
+   * `/api/auth/qr/{token}/select` to trade the QR token for a per-guest
+   * bearer token. 409 = another device already claimed this slot — grey the
+   * row out via `is_active: true` and keep the picker open.
+   */
   async function selectFamilyGuest(guest: ApiGuest) {
     if (guest.is_active || !qrToken) return;
     setLoading(true);
@@ -187,6 +228,7 @@ export default function WelcomeScreen() {
         )}
       </View>
 
+      {/* Hidden WebView decoder — mounts once and hands us back a `decode` fn. */}
       <QrFromImageView onReady={(fn) => setQrDecoder(() => fn)} />
 
       <Modal visible={showFamilyPicker} transparent animationType="slide">

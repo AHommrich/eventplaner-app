@@ -1,3 +1,17 @@
+/**
+ * Full-screen "app is temporarily disabled" barrier.
+ *
+ * Reached from the axios response interceptor in `lib/api.ts` when the
+ * backend hands back a 403 with `code: 'app_blocked'`. The couple's admin UI
+ * toggles this flag when the app needs to be paused (e.g. mid-ceremony
+ * silence, or a data problem the couple wants to fix before guests keep
+ * poking).
+ *
+ * The screen polls `/api/guest/me` every 10 seconds to detect a re-enable.
+ * A successful response calls `clearBlocked()` to reset the interceptor's
+ * debounce flag and routes the guest back to `/` so `app/index.tsx` picks
+ * the appropriate post-login destination.
+ */
 import { useEffect, useRef } from 'react';
 import { View, ActivityIndicator, StyleSheet } from 'react-native';
 import { ThemedText } from '../components/ThemedText';
@@ -20,7 +34,7 @@ export default function BlockedScreen() {
       clearBlocked();
       router.replace('/');
     } catch {
-      // noch gesperrt oder Netzwerkfehler — bleiben
+      // Still blocked or network offline — stay put and try again next tick.
     }
   }
 

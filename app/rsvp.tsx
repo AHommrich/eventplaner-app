@@ -1,3 +1,20 @@
+/**
+ * Onboarding RSVP — shown once, right after first login, before the guest is
+ * routed into the tab layout.
+ *
+ * Distinct from `app/(tabs)/rsvp.tsx` in scope: this screen exists for the
+ * very first "yes / no" answer and offers only the own-RSVP decision plus a
+ * "Continue" button that moves the guest into `/(tabs)/home` once they have
+ * accepted. Group-member RSVPs happen later in the tab-RSVP screen.
+ *
+ * Accept flow: `handleOwnRsvp(true)` → posts to `/api/guest/rsvp`, the
+ * backend returns `accepted_pending`, `handleContinue` routes to home.
+ *
+ * Decline flow: double-confirm via `Alert` (same pattern as the tab-RSVP
+ * screen), then `handleOwnRsvp(false)` → posts declined → hard-redirect to
+ * `/declined`. The onboarding screen never leaves the guest here in a
+ * decided state.
+ */
 import { useEffect, useState } from 'react';
 import {
   View,
@@ -18,6 +35,7 @@ import {
 } from '../lib/guest';
 import { theme } from '../constants/theme';
 
+/** Locale-aware deadline formatter — `de-DE` for German, `en-GB` for English. */
 function formatDeadline(iso: string, locale: string): string {
   return new Date(iso).toLocaleDateString(locale === 'de' ? 'de-DE' : 'en-GB', {
     day: '2-digit',
@@ -46,6 +64,7 @@ export default function RsvpScreen() {
       .finally(() => setLoading(false));
   }, []);
 
+  /** Double-confirm dialog — decline is destructive, we surface that explicitly. */
   function confirmDecline() {
     Alert.alert(
       t('rsvp.declineConfirmTitle'),
@@ -65,6 +84,8 @@ export default function RsvpScreen() {
       const updated = { ...guest, rsvp_status: newStatus };
       setGuest(updated);
       if (!attending) {
+        // Onboarding decline: leave immediately — the declined screen owns
+        // the revocation-request UX, this screen doesn't.
         router.replace('/declined');
       }
     } catch (e: any) {
@@ -91,6 +112,8 @@ export default function RsvpScreen() {
   const ownStatus = guest.rsvp_status;
   const ownAccepted = ownStatus === 'accepted_pending' || ownStatus === 'accepted';
   const ownDeclined = ownStatus === 'declined_pending' || ownStatus === 'declined';
+  // Once a decision exists, both buttons visibly lock (the disabled one goes
+  // to 0.4 opacity, matching the button-disable pattern in CLAUDE.md).
   const ownSet = ownStatus !== null;
   const deadlineFormatted = deadline ? formatDeadline(deadline, language) : null;
 
@@ -116,7 +139,7 @@ export default function RsvpScreen() {
         </ThemedText>
       )}
 
-      {/* Eigene RSVP */}
+      {/* Own RSVP — the only decision presented on the onboarding screen. */}
       <View
         style={{
           backgroundColor: theme.colors.surface,
@@ -172,7 +195,7 @@ export default function RsvpScreen() {
         )}
       </View>
 
-      {/* Weiter-Button — sobald eigene Zusage gesetzt */}
+      {/* Continue — only appears once the guest has accepted. */}
       {ownAccepted && (
         <TouchableOpacity
           onPress={handleContinue}

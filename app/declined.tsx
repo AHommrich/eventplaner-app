@@ -1,3 +1,20 @@
+/**
+ * Post-decline landing screen with revocation-request flow.
+ *
+ * States (drive title, subtitle, and which action button appears):
+ *   - `declined_pending` .. the guest just declined; can still request a
+ *                            revocation of the decline via the button.
+ *   - `declined` .......... final; the couple has confirmed the decline.
+ *                            No revocation button, only logout.
+ *   - `revocation_requested` .. waiting for couple-side approval;
+ *                            no button changes state until the couple flips
+ *                            it back to `accepted_pending`, at which point
+ *                            the polling below routes the guest onwards.
+ *
+ * A 30-second poll of `/api/guest/me` catches any state change the couple
+ * makes in the admin backend so a re-invited guest lands on the correct
+ * screen without needing to reopen the app.
+ */
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { View, TouchableOpacity, ActivityIndicator, Alert, ScrollView, RefreshControl } from 'react-native';
 import { ThemedText } from '../components/ThemedText';
@@ -16,6 +33,7 @@ import {
 } from '../lib/guest';
 import { theme } from '../constants/theme';
 
+/** Poll interval — matches the "check every 30 s" pattern of the photos tab. */
 const POLL_INTERVAL = 30_000;
 
 function formatDeadline(iso: string, locale: string): string {
@@ -45,6 +63,9 @@ export default function DeclinedScreen() {
       const [guest, info] = await Promise.all([fetchGuestMe(), fetchEventInfo()]);
       setStatus(guest.rsvp_status);
       setDeadline(info.rsvp_deadline);
+      // Post-load routing: if the couple has meanwhile moved the guest back
+      // into an active-RSVP state, bounce out of the declined screen so it
+      // never gets "stuck".
       if (guest.rsvp_status === null) {
         router.replace('/rsvp');
         return;
@@ -53,7 +74,7 @@ export default function DeclinedScreen() {
         router.replace('/(tabs)/home');
       }
     } catch {
-      // silent
+      // Silent — the polling loop tries again in POLL_INTERVAL ms.
     } finally {
       setLoading(false);
       if (isRefresh) setRefreshing(false);
@@ -70,7 +91,9 @@ export default function DeclinedScreen() {
 
   useEffect(() => {
     loadData();
-    // Polling nur wenn revocation_requested
+    // Passive poll — same route as the manual pull-to-refresh above, minus
+    // the toast/spinner side effects, so the guest doesn't see a spinner
+    // every 30 s.
     intervalRef.current = setInterval(async () => {
       try {
         const guest = await fetchGuestMe();
@@ -91,6 +114,11 @@ export default function DeclinedScreen() {
     };
   }, []);
 
+  /**
+   * Ask the couple to reverse the decline. Moves the guest into the
+   * `revocation_requested` state; the poll above catches the couple's
+   * decision when it lands.
+   */
   async function handleRevoke() {
     setRevoking(true);
     try {
@@ -172,7 +200,7 @@ export default function DeclinedScreen() {
           : t('declined.subtitlePending')}
       </ThemedText>
 
-      {/* Rücknahme beantragen — nur bei declined_pending */}
+      {/* Request revocation — only reachable from `declined_pending`. */}
       {isPending && (
         <TouchableOpacity
           onPress={handleRevoke}
@@ -196,7 +224,7 @@ export default function DeclinedScreen() {
         </TouchableOpacity>
       )}
 
-      {/* Ausloggen */}
+      {/* Logout — always available from this screen. */}
       <TouchableOpacity
         onPress={handleLogout}
         style={{
@@ -213,7 +241,7 @@ export default function DeclinedScreen() {
       </TouchableOpacity>
     </ScrollView>
 
-      {/* Toast — absolut oben mittig */}
+      {/* Pull-to-refresh toast — absolute-positioned centred pill. */}
       {refreshed && (
         <View style={{
           position: 'absolute',

@@ -1,3 +1,22 @@
+/**
+ * Home tab — the "landing after login" screen.
+ *
+ * Content, top-to-bottom:
+ *   1. Optional cover image (from `EventInfo.cover_image_url`) rendered as a
+ *      full-bleed background with a configurable dark overlay (see
+ *      `home_shadow_opacity` and `color_home_shadow`).
+ *   2. Welcome line ("Hallo {name}").
+ *   3. Event title + formatted date + venue block (see `openInMaps` below
+ *      for the tap-to-navigate rules).
+ *   4. Dresscode (optional).
+ *   5. Live countdown pill — updates every 1 s until day-of, then flips to
+ *      "today" and finally to "past".
+ *
+ * Refresh: pull-to-refresh runs `loadData` which re-fetches `EventInfo` AND
+ * calls `loadTheme()` so colour changes on the backend propagate. The
+ * `useFocusEffect` runs `loadData` on every tab focus for the same reason
+ * without needing a manual pull.
+ */
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { View, ImageBackground, ScrollView, RefreshControl, ActivityIndicator, StyleSheet, TouchableOpacity, Linking, Platform, Alert } from 'react-native';
 import { ThemedText } from '../../components/ThemedText';
@@ -13,21 +32,39 @@ import { RefreshToast } from '../../components/RefreshToast';
 import { Ionicons } from '@expo/vector-icons';
 import { theme } from '../../constants/theme';
 
+/**
+ * Tap-to-navigate dispatcher for the venue.
+ *
+ * URL scheme matrix (verified against real devices — see CLAUDE.md):
+ *
+ *   Platform  |  Coords available            |  Address only
+ *   ----------+-------------------------------+---------------------
+ *   iOS       |  Alert: Apple Maps / GMaps    |  Same alert, geocoded
+ *             |  `maps://?ll=lat,lng&q=label` |  `maps://?q=address`
+ *             |  `comgooglemaps://?q=lat,lng` |  `comgooglemaps://?q=address`
+ *   Android   |  `geo:lat,lng?q=lat,lng(lbl)` |  `geo:0,0?q=address`
+ *
+ * Never use `geo:lat,lng?q=address` — the `q=address` overrides the
+ * coordinates and geocodes instead of pinning the exact spot.
+ *
+ * iOS falls back to Apple Maps when Google Maps isn't installed
+ * (`Linking.openURL(googleUrl).catch(...)`).
+ */
 function openInMaps(event: EventInfo, t: (k: string) => string) {
   const label = encodeURIComponent(event.venue_name ?? event.venue_address ?? '');
   const hasCoords = event.venue_lat != null && event.venue_lng != null;
   const lat = event.venue_lat;
   const lng = event.venue_lng;
 
-  // Apple Maps: ll= für exakte Koordinaten, sonst Adresse
+  // Apple Maps: `ll=` for exact coordinates, address geocode as fallback.
   const appleUrl = hasCoords
     ? `maps://?ll=${lat},${lng}&q=${label}`
     : `maps://?q=${encodeURIComponent(event.venue_address ?? '')}`;
-  // Google Maps (iOS): q=lat,lng pinnt exakt
+  // Google Maps (iOS): `q=lat,lng` pins the exact spot.
   const googleUrl = hasCoords
     ? `comgooglemaps://?q=${lat},${lng}&zoom=16`
     : `comgooglemaps://?q=${encodeURIComponent(event.venue_address ?? '')}`;
-  // Android: q=lat,lng(label) pinnt exakt
+  // Android: `q=lat,lng(label)` pins with a title.
   const androidUrl = hasCoords
     ? `geo:${lat},${lng}?q=${lat},${lng}(${label})`
     : `geo:0,0?q=${encodeURIComponent(event.venue_address ?? '')}`;
@@ -57,6 +94,11 @@ function formatEventDate(iso: string, locale: string): string {
 
 type CountdownParts = { days: number; hours: number; minutes: number; seconds: number } | 'today' | 'past';
 
+/**
+ * Countdown state calculator. Returns `'today'` for the full 24 h window
+ * around the event start (0 ..> -24 h from the target), `'past'` after that,
+ * and a broken-down `{days, hours, minutes, seconds}` tuple otherwise.
+ */
 function calcCountdown(iso: string): CountdownParts {
   const diff = new Date(iso).getTime() - Date.now();
   if (diff <= 0 && diff > -86_400_000) return 'today';
@@ -98,10 +140,15 @@ export default function HomeScreen() {
     getSession().then(setSession);
   }, []);
 
+  // Re-fetch on every focus so a mid-session backend change (e.g. new cover
+  // image, updated deadline) is reflected without a pull-to-refresh.
   useFocusEffect(useCallback(() => {
     loadData();
   }, []));
 
+  // 1 Hz ticker for the countdown pill — cheap because `calcCountdown` is
+  // pure arithmetic; teardown on eventInfo change so a fresh date doesn't
+  // race the old interval.
   useEffect(() => {
     if (!eventInfo?.date) return;
     setCountdown(calcCountdown(eventInfo.date));
@@ -112,6 +159,8 @@ export default function HomeScreen() {
   const { refreshing, refreshed, onRefresh } = useRefreshToast(loadData);
 
   const hasCover = !!eventInfo?.cover_image_url;
+  // On a cover image, `homeText` is the couple-picked legible colour; without
+  // one, we fall back to the standard cardText tone.
   const textColor = (hasCover && colors.homeText) ? colors.homeText : colors.cardText;
   const pillBg = (hasCover && colors.homeText) ? 'rgba(0,0,0,0.35)' : colors.primary;
   const pillText = (hasCover && colors.homeText) ? colors.homeText : colors.cardButtonText;
@@ -173,6 +222,10 @@ export default function HomeScreen() {
         <ThemedText style={[styles.meta, { color: textColor }]}>{eventDate}</ThemedText>
       )}
       {(() => {
+        // Venue block — three display modes controlled by
+        // `venue_display_mode`: `'address'` shows address only, `'name'`
+        // shows the venue name only, `'both'` stacks name over address with
+        // a single tap target and a single pin icon.
         const displayMode = eventInfo?.venue_display_mode ?? 'both';
         const hasNav = !!(eventInfo && (eventInfo.venue_address || (eventInfo.venue_lat != null && eventInfo.venue_lng != null)));
         const showName = displayMode !== 'address' && !!eventInfo?.venue_name;
@@ -183,7 +236,7 @@ export default function HomeScreen() {
 
         const addrText = eventInfo?.venue_address ?? `${eventInfo?.venue_lat?.toFixed(4)}, ${eventInfo?.venue_lng?.toFixed(4)}`;
 
-        // both: ein gemeinsamer Button mit einem Icon
+        // `both`: one combined button, name on top and address+icon below.
         if (bothVisible) {
           return (
             <TouchableOpacity
@@ -200,7 +253,7 @@ export default function HomeScreen() {
           );
         }
 
-        // nur name oder nur adresse
+        // `name` OR `address` only — one label, optional pin icon.
         return (
           hasNav ? (
             <TouchableOpacity
@@ -235,6 +288,9 @@ export default function HomeScreen() {
         style={styles.container}
         resizeMode="cover"
       >
+        {/* Cover overlay — simple View with backgroundColor + opacity beats a
+            LinearGradient here because the tint is a solid colour, not a
+            gradient, and the pointerEvents="none" lets touches pass through. */}
         <View
           style={{
             ...StyleSheet.absoluteFillObject,

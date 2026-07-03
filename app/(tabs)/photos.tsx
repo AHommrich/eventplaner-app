@@ -1,3 +1,21 @@
+/**
+ * Photo gallery — shared wedding album.
+ *
+ * Grid: 3-column FlatList of thumbnails with 2 px gutters. Auto-refreshes
+ * every 30 s so photos posted by other guests appear without needing a
+ * manual pull. Pull-to-refresh is also available and shares the same fetch
+ * function.
+ *
+ * Upload: FAB in the bottom-right → Alert with "Camera" / "From library"
+ * options. Every asset is transcoded to JPEG at 80 % quality via
+ * `ImageManipulator.manipulateAsync` (empty transform list, format+compress
+ * only) so the backend never has to deal with HEIC. Multipart body is built
+ * manually because axios' default JSON serialisation would corrupt the file.
+ *
+ * Detail modal: tap a thumbnail → dark full-screen modal with a zoomable
+ * `ScrollView` (`maximumZoomScale=4`) that renders the same URI at cover-fit
+ * resolution.
+ */
 import { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
@@ -25,6 +43,12 @@ import { RefreshToast } from '../../components/RefreshToast';
 
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
 
+/**
+ * Detail-modal image with pinch-to-zoom. `ScrollView` gives us that for free
+ * on both iOS and Android without pulling in `react-native-gesture-handler`
+ * for one screen. `contentFit="contain"` prevents cropping when the image
+ * aspect ratio doesn't match the viewport.
+ */
 function ZoomableImage({ uri }: { uri: string }) {
   return (
     <ScrollView
@@ -52,6 +76,7 @@ type Photo = {
   created_at: string;
 };
 
+// --- Grid layout constants ---
 const COLUMNS = 3;
 const GAP = 2;
 const TILE_SIZE = (Dimensions.get('window').width - GAP * (COLUMNS + 1)) / COLUMNS;
@@ -73,7 +98,7 @@ export default function PhotosScreen() {
       const res = await api.get<{ data: Photo[] }>('/api/photos');
       setPhotos(res.data.data);
     } catch {
-      // silent — zeigt einfach alten Stand
+      // Silent — retain the previous list, next poll or pull will retry.
     } finally {
       setLoading(false);
     }
@@ -87,6 +112,12 @@ export default function PhotosScreen() {
     };
   }, []);
 
+  /**
+   * Multipart upload of a single asset. `transformRequest: data => data`
+   * disables axios' JSON serialisation so React Native's fetch layer forwards
+   * the FormData verbatim. The optimistic prepend into the local list means
+   * the new photo appears at the top before the backend even confirms.
+   */
   async function uploadAsset(uri: string) {
     const jpeg = await ImageManipulator.manipulateAsync(
       uri,
@@ -190,7 +221,8 @@ export default function PhotosScreen() {
       />
       <RefreshToast visible={refreshed} refreshing={refreshing} />
 
-      {/* Detail-Modal */}
+      {/* Detail modal — fades in and out so the transition doesn't clash with
+          the FlatList scroll position. */}
       <Modal visible={!!selected} transparent animationType="fade" onRequestClose={() => setSelected(null)}>
         <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.95)', justifyContent: 'center' }}>
           {selected && <ZoomableImage key={selected.id} uri={selected.url} />}
@@ -208,7 +240,7 @@ export default function PhotosScreen() {
         </View>
       </Modal>
 
-      {/* Upload-Button */}
+      {/* Upload FAB — camera icon that swaps to a spinner during upload. */}
       <Pressable
         onPress={showUploadOptions}
         disabled={uploading}

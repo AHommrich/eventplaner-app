@@ -1,3 +1,23 @@
+/**
+ * Photo-game tab — a small "scavenger hunt" style feature where each guest
+ * gets exactly one photo task and uploads a matching picture.
+ *
+ * Four-state finite automaton (drives `renderContent()`):
+ *
+ *   ended / draft ....... game is off (or over) → show the ended card.
+ *   no_assignment ....... guest has never asked for a task → show the
+ *                          "get task" card + button.
+ *   assigned ............ guest has a task but no submission → show the
+ *                          task text + "upload photo" button.
+ *   submitted ........... task + uploaded photo shown; the button becomes
+ *                          "replace photo" so the guest can retry until
+ *                          they are happy.
+ *
+ * State transitions are optimistic — after `assign` we synthesise the new
+ * assignment locally so the guest sees the task immediately; the next
+ * `loadStatus` re-sync is only needed on the 409 recovery path (task already
+ * assigned on the server side).
+ */
 import { useCallback, useState } from 'react';
 import { View, ScrollView, RefreshControl, ActivityIndicator, Alert, TouchableOpacity, StyleSheet } from 'react-native';
 import { ThemedText } from '../../components/ThemedText';
@@ -47,6 +67,12 @@ export default function PhotoGameScreen() {
 
   const { refreshing, refreshed, onRefresh } = useRefreshToast(loadStatus);
 
+  /**
+   * Ask the backend for a fresh task. Optimistically synthesise the returned
+   * assignment into `statusData` so the UI updates without a follow-up
+   * fetch. 409 means the server already had one for us — re-sync via
+   * `loadStatus` picks up the existing assignment.
+   */
   async function handleAssign() {
     setAssigning(true);
     setError(null);
@@ -67,6 +93,7 @@ export default function PhotoGameScreen() {
     }
   }
 
+  /** Two-source picker: camera or library. Both feed into `pickAndSubmit`. */
   async function handleUpload() {
     Alert.alert(t('photoGame.uploadButton'), undefined, [
       {
@@ -81,6 +108,14 @@ export default function PhotoGameScreen() {
     ]);
   }
 
+  /**
+   * Shared pick-and-submit path.
+   *
+   * `ImageManipulator.manipulateAsync` with no transforms + `compress: 0.8`
+   * transcodes any HEIC/PNG into a JPEG the backend can accept without
+   * server-side conversion. The empty transform array is intentional — the
+   * whole point is just the format+quality change.
+   */
   async function pickAndSubmit(source: 'camera' | 'library') {
     let result: ImagePicker.ImagePickerResult;
     if (source === 'camera') {
@@ -138,6 +173,12 @@ export default function PhotoGameScreen() {
   const isSubmitted = !!(assignment?.submitted_at);
   const isEnded = status === 'ended' || status === 'draft';
 
+  /**
+   * 4-way switch (see file header for the FSM). The order is important:
+   * `ended` beats everything (so a submitted photo from a since-ended game
+   * still shows the ended card), then `submitted`, then `assigned`, then the
+   * default "get task" card.
+   */
   function renderContent() {
     if (isEnded) {
       return (
@@ -206,7 +247,7 @@ export default function PhotoGameScreen() {
       );
     }
 
-    // no_assignment
+    // Default: no assignment yet → invite the guest to request one.
     return (
       <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border + '33' }]}>
         <Ionicons name="camera-outline" size={32} color={colors.cardText} style={{ marginBottom: theme.spacing.sm }} />

@@ -1,3 +1,29 @@
+/**
+ * Drinks tab — the "drink game" feature.
+ *
+ * Two views inside one screen, toggled at the top:
+ *
+ *   1. **Log view.** Guest picks a drink from a searchable catalogue
+ *      (accordion by category, or a flat filtered list when a search query
+ *      is active). Some catalogs have multiple sizes (e.g. Bier 0.3 l /
+ *      0.5 l); those expand inline into size buttons with per-size point
+ *      values. A single-size catalog acts as a two-tap confirm: first tap
+ *      selects the row, second tap logs the drink.
+ *
+ *   2. **Leaderboard view.** Live per-guest totals + points table, plus a
+ *      collapsible "my drinks" breakdown. Polls stats every 5 s while the
+ *      view is open; the polling loop tears down on view switch or unmount.
+ *
+ * Behavioural constraints:
+ *   - **60 s cooldown** between logs to discourage spam-logging.
+ *   - **Streak + binge penalty** — the backend replies with
+ *     `binge_penalty: true` when the streak triggers the abstinence rule;
+ *     we surface it as a warning banner and a toast.
+ *   - **Game end.** `EventInfo.drink_game_end_time` is checked every 10 s;
+ *     after it passes, all buttons freeze into a "game ended" state.
+ *   - **`drinks_blocked` code (from `lib/api.ts`).** Handled globally — the
+ *     tab-layout redirects off this screen when the block fires.
+ */
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   View, TouchableOpacity, ScrollView, RefreshControl,
@@ -18,16 +44,26 @@ import { theme } from '../../constants/theme';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
+/**
+ * One size of a catalog entry. `drink_id` is the loggable id (unique per
+ * size), `id` is the size id inside the catalog. The distinction matters
+ * because logging must reference the SIZE, not the parent catalog.
+ */
 type DrinkSize = {
-  drink_id: number;     // für POST /api/drinks/log
+  drink_id: number;     // used for POST /api/drinks/log
   id: number;           // size_id
   amount_liter: number | null;
   is_default: boolean;
   points: number | null;
 };
 
+/**
+ * A logical drink group (e.g. "Bier") with N size variants. `id` here is the
+ * catalog id — NOT usable for logging directly, only its sizes carry the
+ * loggable `drink_id`.
+ */
 type DrinkCatalog = {
-  id: number;           // catalog_id (NICHT für log)
+  id: number;           // catalog_id (NOT for logging)
   display_name: string;
   category: string;
   category_label: string;
@@ -76,6 +112,7 @@ function formatEndTime(iso: string): string {
   return new Date(iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 }
 
+/** Podium medal emojis + accent colours for the top-three leaderboard rows. */
 const MEDAL = ['🥇', '🥈', '🥉'];
 const MEDAL_COLORS = ['#C9A84C', '#A8A9AD', '#CD7F32'];
 
@@ -116,6 +153,9 @@ export default function DrinksScreen() {
 
   const endTime = eventInfo?.drink_game_end_time ?? null;
 
+  // Poll the game-end sentinel every 10 s. Cheap arithmetic — we compare the
+  // configured end time against `Date.now()` — but critical: once past, every
+  // downstream button gates on `gameEnded`, freezing the UI.
   useEffect(() => {
     if (!endTime) return;
     const check = () => setGameEnded(new Date(endTime).getTime() <= Date.now());
@@ -126,6 +166,9 @@ export default function DrinksScreen() {
 
   // ── Cooldown countdown ─────────────────────────────────────────────────────
 
+  // 1 Hz decrement of the cooldown counter. `Math.max(0, Math.ceil(c) - 1)`
+  // ensures we settle exactly at 0 even if the initial value was a
+  // fractional `retry_after` from the backend (e.g. 59.7 s).
   useEffect(() => {
     if (cooldown <= 0) return;
     const t = setTimeout(() => setCooldown((c) => Math.max(0, Math.ceil(c) - 1)), 1000);
@@ -134,6 +177,9 @@ export default function DrinksScreen() {
 
   // ── Leaderboard polling ────────────────────────────────────────────────────
 
+  // Only the leaderboard view drives the 5 s stats-refresh loop; the log view
+  // relies on the cooldown timer and the toast to reflect the guest's own
+  // last action, so we don't need to hammer stats there.
   useEffect(() => {
     if (view !== 'leaderboard') {
       if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; }
@@ -154,6 +200,7 @@ export default function DrinksScreen() {
 
   // ── Data loading ───────────────────────────────────────────────────────────
 
+  /** Cold-load: catalog + stats in parallel so the log view has something to render. */
   async function loadInitial() {
     setLoading(true);
     try {
@@ -164,12 +211,15 @@ export default function DrinksScreen() {
       setDrinks(drinksRes.data.data);
       applyStats(statsRes.data);
     } catch {
-      // Fehler vom Interceptor behandelt
+      // Errors are handled globally by the axios interceptor (app_blocked,
+      // drinks_blocked). Everything else is swallowed here — the empty
+      // state renders and the guest can retry via pull-to-refresh.
     } finally {
       setLoading(false);
     }
   }
 
+  /** Stats-only refresh used by the leaderboard poll AND pull-to-refresh. */
   async function loadStats() {
     try {
       const res = await api.get<Stats>('/api/drinks/stats');
@@ -185,6 +235,14 @@ export default function DrinksScreen() {
 
   // ── Log drink ──────────────────────────────────────────────────────────────
 
+  /**
+   * The single log-and-score action. Backend response drives:
+   *   - `final_points` → toast + optimistic UI reset
+   *   - `binge_penalty` → warning subtitle on the toast
+   * Error `code: 'cooldown'` uses the returned `retry_after` (rounded up) so
+   * the client cooldown matches the server truth. `code: 'game_ended'`
+   * freezes the UI.
+   */
   async function handleLog(size: DrinkSize) {
     if (logging || cooldown > 0 || gameEnded) return;
     setLogging(true);
@@ -205,7 +263,7 @@ export default function DrinksScreen() {
       } else if (code === 'game_ended') {
         setGameEnded(true);
       }
-      // drinks_blocked: global vom Interceptor behandelt
+      // `drinks_blocked` is handled by the axios interceptor globally.
     } finally {
       setLogging(false);
     }
@@ -219,6 +277,11 @@ export default function DrinksScreen() {
 
   // ── Helpers ────────────────────────────────────────────────────────────────
 
+  /**
+   * Format a size like `0.3 l` or `4 cl`. `cl` for anything under 0.1 l
+   * (shots), `l` otherwise with a locale-appropriate decimal separator and
+   * trailing zeros trimmed.
+   */
   function formatSize(amountLiter: number | null | undefined): string {
     if (amountLiter == null || isNaN(amountLiter)) return '?';
     if (amountLiter < 0.1) return `${Math.round(amountLiter * 100)} cl`;
@@ -227,8 +290,13 @@ export default function DrinksScreen() {
     return `${str} l`;
   }
 
-  // ── Drink-Zeile rendern ────────────────────────────────────────────────────
+  // ── Render a drink row ─────────────────────────────────────────────────────
 
+  /**
+   * Renders a single catalog row. Multi-size catalogs render as an accordion
+   * whose expanded state shows size buttons instead of the label + points;
+   * single-size catalogs use a two-tap confirm to prevent misfires.
+   */
   function renderCatalogItem(catalog: DrinkCatalog) {
     const isMulti = catalog.sizes.length > 1;
     const disabled = gameEnded || cooldown > 0;
@@ -291,7 +359,7 @@ export default function DrinksScreen() {
       );
     }
 
-    // Single size
+    // Single-size catalog — two-tap confirm to avoid accidental logs.
     const size = catalog.sizes[0];
     const isSelected = selectedSize?.drink_id === size?.drink_id;
     const positive = (size?.points ?? 0) >= 0;
@@ -358,7 +426,7 @@ export default function DrinksScreen() {
   return (
     <View style={[styles.container, { backgroundColor: colors.screenBg, paddingTop: insets.top }]}>
 
-      {/* Toast */}
+      {/* Log-result toast — replaces the refresh toast while active. */}
       {toast && (
         <View style={[styles.toast, { backgroundColor: colors.cardButton, borderWidth: 2, borderColor: colors.border + '33', borderRadius: theme.borderRadius.lg - theme.spacing.xs, top: insets.top + theme.spacing.sm }]}>
           <ThemedText style={[styles.toastPoints, { color: colors.cardButtonText }]}>
@@ -374,10 +442,10 @@ export default function DrinksScreen() {
 
       {!toast && <RefreshToast visible={refreshed} refreshing={refreshing} />}
 
-      {/* ── Card 1: Toggle + Streak/GameEnd ── */}
+      {/* Card 1: view toggle + streak/game-end banner. */}
       <View style={{ backgroundColor: colors.card, borderRadius: theme.borderRadius.lg, borderWidth: 2, borderColor: colors.border + '33', marginHorizontal: theme.spacing.lg, marginTop: theme.spacing.md, overflow: 'hidden' }}>
 
-        {/* Toggle */}
+        {/* Log / Leaderboard toggle. */}
         <View style={{ flexDirection: 'row', margin: theme.spacing.xs, borderRadius: theme.borderRadius.lg - theme.spacing.xs, overflow: 'hidden', borderWidth: 1.5, borderColor: colors.border + '55' }}>
           <TouchableOpacity
             style={[styles.toggleBtn, {
@@ -403,7 +471,7 @@ export default function DrinksScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* Streak / Penalty */}
+        {/* Streak and binge-penalty banner — only shows in log view. */}
         {view === 'log' && stats && (stats.current_streak > 0 || stats.binge_penalty) && (
           <View style={{ paddingHorizontal: theme.spacing.md, paddingVertical: theme.spacing.sm, borderTopWidth: 1, borderTopColor: colors.cardText + '20' }}>
             {stats.current_streak > 0 && (
@@ -424,7 +492,7 @@ export default function DrinksScreen() {
           </View>
         )}
 
-        {/* Game End */}
+        {/* Game-end / end-time banner. */}
         {view === 'log' && endTime && (
           <View style={{ paddingHorizontal: theme.spacing.md, paddingVertical: theme.spacing.sm, borderTopWidth: 1, borderTopColor: colors.cardText + '20', backgroundColor: gameEnded ? theme.colors.error + '22' : colors.primary + '18' }}>
             <ThemedText style={[styles.gameEndText, { color: gameEnded ? theme.colors.error : colors.cardText }]}>
@@ -439,10 +507,10 @@ export default function DrinksScreen() {
         <View style={[styles.flex, { marginTop: theme.spacing.md }]}>
           <ScrollView style={styles.flex} contentContainerStyle={styles.scrollContent} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.tabTint} colors={[colors.tabTint]} />}>
 
-            {/* Card 2: Suche + Getränkeliste */}
+            {/* Card 2: search + drink list. */}
             <View style={{ backgroundColor: colors.card, borderRadius: theme.borderRadius.lg, borderWidth: 2, borderColor: colors.border + '33', overflow: 'hidden' }}>
 
-              {/* Suche */}
+              {/* Search input — filters across name and category label. */}
               <View style={[styles.searchRow, { borderBottomWidth: 1, borderBottomColor: colors.border + '30' }]}>
                 <Ionicons name="search-outline" size={16} color={colors.cardText} style={{ marginRight: 6 }} />
                 <TextInput
@@ -457,7 +525,7 @@ export default function DrinksScreen() {
                 />
               </View>
 
-              {/* Drink List — Suche oder Akkordeon */}
+              {/* Drink list — either flat search results or category accordion. */}
               {search.trim().length > 0 ? (
                 (() => {
                   const q = search.trim().toLowerCase();
@@ -476,6 +544,8 @@ export default function DrinksScreen() {
                 })()
               ) : (
                 (() => {
+                  // Group drinks by category into insertion-ordered buckets so
+                  // the backend's category ordering is preserved.
                   const categoryOrder: string[] = [];
                   const categoryMap: Record<string, { label: string; items: DrinkCatalog[] }> = {};
                   for (const catalog of drinks) {
@@ -498,6 +568,8 @@ export default function DrinksScreen() {
                               next.has(cat) ? next.delete(cat) : next.add(cat);
                               return next;
                             });
+                            // Collapse category → clear a pending selection
+                            // that would otherwise belong to a hidden row.
                             if (selectedSize && items.some((c) => c.sizes.some((s) => s.drink_id === selectedSize.drink_id))) {
                               setSelectedSize(null);
                             }
@@ -521,7 +593,7 @@ export default function DrinksScreen() {
 
           </ScrollView>
 
-          {/* Cooldown direkt über der Navbar */}
+          {/* Cooldown banner — sits directly above the tab bar during cooldown. */}
           {cooldown > 0 && (
             <View style={[styles.bottomAction, { backgroundColor: colors.cardButton, borderWidth: 2, borderColor: colors.border + '33', borderRadius: theme.borderRadius.lg - theme.spacing.xs, marginBottom: theme.spacing.sm, marginHorizontal: theme.spacing.lg }]}>
               <Ionicons name="time-outline" size={18} color={colors.cardButtonText} />
@@ -539,11 +611,11 @@ export default function DrinksScreen() {
       {view === 'leaderboard' && (
         <ScrollView contentContainerStyle={[styles.scrollContent, { paddingTop: theme.spacing.md, paddingBottom: tabBarHeight + theme.spacing.xxl }]} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.tabTint} colors={[colors.tabTint]} />}>
 
-          {/* Rangliste */}
+          {/* Ranking table. Podium rows carry a left accent strip. */}
           <View style={{ backgroundColor: colors.card, borderRadius: theme.borderRadius.lg, borderWidth: 2, borderColor: colors.border + '33', padding: theme.spacing.md }}>
           {stats?.guest_totals && stats.guest_totals.length > 0 ? (
             <>
-              {/* Header */}
+              {/* Column headers. */}
               <View style={styles.tableHeader}>
                 <ThemedText style={[styles.tableHeaderCell, { width: 40, color: colors.cardText }]}>{t('drinks.rank')}</ThemedText>
                 <ThemedText style={[styles.tableHeaderCell, { flex: 1, color: colors.cardText }]}>Name</ThemedText>
@@ -590,7 +662,7 @@ export default function DrinksScreen() {
             <ThemedText style={[styles.emptyText, { color: theme.colors.muted }]}>{t('drinks.noData')}</ThemedText>
           )}
 
-          {/* Meine Getränke */}
+          {/* My-drinks breakdown — collapsible so it doesn't dominate the view. */}
           {stats?.my_stats && (
             <View style={[styles.myDrinksSection, { borderTopColor: colors.border + '30' }]}>
               <Pressable
