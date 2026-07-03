@@ -1,6 +1,23 @@
+/**
+ * Guest-session persistence.
+ *
+ * A "session" here is a bundle of identifying strings the app needs on every
+ * screen: the bearer token, the numeric guest id, the display name and the
+ * guest type (solo vs family). All of it lives in `expo-secure-store` —
+ * intentionally NOT in AsyncStorage. Reason: SecureStore is Keychain on iOS
+ * and encrypted-SharedPreferences on Android; the bearer token functions as
+ * a password because tokens never expire on the backend (see CLAUDE.md).
+ * Storing it in plaintext would expose an unrevokable credential to any
+ * process that reads app-private storage.
+ *
+ * Each field lives under its own key so the storage layer can be partially
+ * cleared (e.g. on server-side "already logged in" errors) without invalidating
+ * the whole bundle.
+ */
 import * as SecureStore from 'expo-secure-store';
 import api from './api';
 
+/** Shape passed to `saveSession` and returned by `getSession`. */
 export type GuestSession = {
   token: string;
   guestId: number;
@@ -10,6 +27,11 @@ export type GuestSession = {
   familyName: string | null;
 };
 
+/**
+ * Persist a freshly minted session after the two-step QR login completes.
+ * Callers should redirect to `/` immediately after — `app/index.tsx` reads
+ * this back synchronously to pick the right post-login route.
+ */
 export async function saveSession(session: GuestSession): Promise<void> {
   await SecureStore.setItemAsync('guest_token', session.token);
   await SecureStore.setItemAsync('guest_id', String(session.guestId));
@@ -21,6 +43,12 @@ export async function saveSession(session: GuestSession): Promise<void> {
   }
 }
 
+/**
+ * Read the persisted session, or `null` when the guest has never logged in
+ * (missing token). The token is treated as the sentinel — every other field
+ * defaults to a safe placeholder so a partially corrupted store cannot crash
+ * the render tree.
+ */
 export async function getSession(): Promise<GuestSession | null> {
   const token = await SecureStore.getItemAsync('guest_token');
   if (!token) return null;
@@ -41,11 +69,19 @@ export async function getSession(): Promise<GuestSession | null> {
   };
 }
 
+/**
+ * Log the guest out. Fires the backend logout endpoint first (best effort —
+ * a lost network is not allowed to trap the guest on the app) and then
+ * removes every persisted key. Local cleanup is always executed, so a
+ * partial server outage still leaves the app in a coherent, logged-out
+ * state on the next launch.
+ */
 export async function clearSession(): Promise<void> {
   try {
     await api.delete('/api/auth/logout');
   } catch {
-    // Token serverseitig löschen schlägt ggf. fehl — lokal trotzdem aufräumen
+    // Server-side revoke may fail (offline, backend down) — still clear
+    // locally so the next launch does not think we're logged in.
   }
   await SecureStore.deleteItemAsync('guest_token');
   await SecureStore.deleteItemAsync('guest_id');
