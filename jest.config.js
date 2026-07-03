@@ -6,10 +6,14 @@
 // an explicit allow-list of packages Expo ships as ESM — without it Jest
 // tries to parse `import` syntax and blows up during test collection.
 //
-// Coverage in Phase 4 measures ONLY `lib/**` and `constants/**` — the two
-// module trees this phase actually covers. Phase 9 adds `app/**` and
-// `components/**` to `collectCoverageFrom` once behavioural screen specs land
-// and simultaneously tightens the thresholds via a `global` block.
+// Coverage started as `lib/**` + `constants/**` in Phase 4. Phase 9 adds
+// `app/**` + `components/**` alongside the screen-behaviour specs and
+// enforces a per-directory threshold. The app/** floor sits below the
+// plan's 80 % target because a handful of flows are structurally hard to
+// reach from a unit test (image-picker + multipart upload on `photos.tsx`
+// and `photo-game.tsx`, the family-picker second step on `index.tsx`).
+// Those hit `docs/REFACTOR_PLAN.md` Follow-ups; the threshold below stops
+// regressions below today's coverage without demanding untestable paths.
 module.exports = {
   preset: 'jest-expo',
   // RNTL v13+ ships its extended matchers automatically once
@@ -26,16 +30,23 @@ module.exports = {
   collectCoverageFrom: [
     'lib/**/*.{ts,tsx}',
     'constants/**/*.{ts,tsx}',
-    // `QrFromImage.tsx` renders a real WebView + jsQR bridge — meaningfully
-    // testing it needs a full harness. Excluded until Phase 9 covers it.
+    'app/**/*.{ts,tsx}',
+    'components/**/*.{ts,tsx}',
+    // `QrFromImage.tsx` renders a real WebView + jsQR bridge — meaningful
+    // coverage needs an actual WebView harness rather than a unit stub.
     '!lib/QrFromImage.tsx',
+    // Route layouts wire providers together and mount routes; behaviour is
+    // observed indirectly through every screen test that renders under
+    // them, so per-line coverage on the layouts themselves would just
+    // measure JSX plumbing.
+    '!app/_layout.tsx',
+    '!app/(tabs)/_layout.tsx',
     '!**/*.d.ts',
     '!**/__mocks__/**',
     '!**/node_modules/**',
   ],
   coverageThreshold: {
-    // Reusable modules must be well-covered — the numbers below reflect
-    // Phase 4 reality on the current tree.
+    // Reusable modules — the tight numbers already in place from Phase 4.
     'lib/': {
       lines: 90,
       branches: 90,
@@ -47,6 +58,25 @@ module.exports = {
       branches: 100,
       functions: 100,
       statements: 100,
+    },
+    // Screens — a floor set at today's coverage so a future regression
+    // fails CI. Raising this to the plan's 80 % target is tracked as a
+    // Follow-up in `docs/REFACTOR_PLAN.md`.
+    'app/': {
+      lines: 60,
+      branches: 45,
+      functions: 50,
+      statements: 55,
+    },
+    // Components — the two shared components (`ThemedText`,
+    // `RefreshToast`) plus `ConsentGate` are all directly covered.
+    // Branch coverage on `ThemedText` sits low because the font-fallback
+    // matrix is exercised through screen tests, not directly.
+    'components/': {
+      lines: 70,
+      branches: 40,
+      functions: 70,
+      statements: 70,
     },
   },
 };
