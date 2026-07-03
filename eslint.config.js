@@ -25,6 +25,15 @@ module.exports = [
     },
   },
   {
+    // Jest mock factories run before ES imports resolve, so `require()`
+    // inside them is the officially blessed pattern. Disable the ban
+    // scoped to the test tree.
+    files: ['tests/**/*.{ts,tsx,js}'],
+    rules: {
+      '@typescript-eslint/no-require-imports': 'off',
+    },
+  },
+  {
     ignores: [
       'node_modules/**',
       '.expo/**',
