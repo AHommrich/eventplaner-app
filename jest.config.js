@@ -6,9 +6,10 @@
 // an explicit allow-list of packages Expo ships as ESM — without it Jest
 // tries to parse `import` syntax and blows up during test collection.
 //
-// Coverage: Phase 3 sets floors on `lib/**` and `constants/**` because those
-// modules are pure logic and land in Phase 4. The overall floor stays low so
-// screens aren't required to have specs until Phase 9 tightens the numbers.
+// Coverage in Phase 4 measures ONLY `lib/**` and `constants/**` — the two
+// module trees this phase actually covers. Phase 9 adds `app/**` and
+// `components/**` to `collectCoverageFrom` once behavioural screen specs land
+// and simultaneously tightens the thresholds via a `global` block.
 module.exports = {
   preset: 'jest-expo',
   // RNTL v13+ ships its extended matchers automatically once
@@ -25,32 +26,27 @@ module.exports = {
   collectCoverageFrom: [
     'lib/**/*.{ts,tsx}',
     'constants/**/*.{ts,tsx}',
-    'app/**/*.{ts,tsx}',
-    'components/**/*.{ts,tsx}',
+    // `QrFromImage.tsx` renders a real WebView + jsQR bridge — meaningfully
+    // testing it needs a full harness. Excluded until Phase 9 covers it.
+    '!lib/QrFromImage.tsx',
     '!**/*.d.ts',
     '!**/__mocks__/**',
     '!**/node_modules/**',
   ],
   coverageThreshold: {
-    // Overall floor stays modest — Phase 9 tightens it to 75 %.
-    global: {
-      lines: 50,
-      branches: 50,
-      functions: 50,
-      statements: 50,
-    },
-    // Reusable modules must be well-covered from Phase 4 onwards.
+    // Reusable modules must be well-covered — the numbers below reflect
+    // Phase 4 reality on the current tree.
     'lib/': {
-      lines: 80,
-      branches: 80,
+      lines: 90,
+      branches: 90,
       functions: 80,
-      statements: 80,
+      statements: 90,
     },
     'constants/': {
-      lines: 80,
-      branches: 80,
-      functions: 80,
-      statements: 80,
+      lines: 100,
+      branches: 100,
+      functions: 100,
+      statements: 100,
     },
   },
 };

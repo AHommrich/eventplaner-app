@@ -1,0 +1,15 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`constants/theme snapshot of the full palette 1`] = `
+{
+  "accent": "#C47B20",
+  "background": "#EAE5DC",
+  "error": "#BF4020",
+  "muted": "#7A6A5A",
+  "primary": "#7B1E1E",
+  "sage": "#5A7A4A",
+  "secondary": "#FFFFFF",
+  "surface": "#F5F2EC",
+  "terracotta": "#C4421A",
+}
+`;
