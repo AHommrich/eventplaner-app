@@ -85,31 +85,41 @@ export default function DataExportScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.screenBg }}>
-      {/* Top bar — mirrors the pattern used in `app/legal/privacy.tsx` so
-          both DSGVO screens share the same look. */}
+      {/* Header card — mirrors the pattern used across the three DSGVO
+          screens. Wraps the back arrow + title in a card-coloured strip
+          so `colors.cardText` stays legible even when it happens to be
+          close to `colors.screenBg` in the current palette. */}
       <View
         style={{
-          flexDirection: 'row',
-          alignItems: 'center',
-          paddingTop: insets.top + theme.spacing.sm,
-          paddingHorizontal: theme.spacing.md,
-          paddingBottom: theme.spacing.sm,
+          backgroundColor: colors.card,
+          paddingTop: insets.top,
+          borderBottomWidth: 1,
+          borderBottomColor: colors.border + '33',
         }}
       >
-        <TouchableOpacity onPress={() => router.back()} style={{ padding: theme.spacing.sm }}>
-          <Ionicons name="chevron-back" size={24} color={colors.cardText} />
-        </TouchableOpacity>
-        <ThemedText
+        <View
           style={{
-            flex: 1,
-            fontSize: 18,
-            fontWeight: '600',
-            color: colors.cardText,
-            marginLeft: theme.spacing.xs,
+            flexDirection: 'row',
+            alignItems: 'center',
+            paddingHorizontal: theme.spacing.md,
+            paddingVertical: theme.spacing.sm,
           }}
         >
-          {t('dataExport.title')}
-        </ThemedText>
+          <TouchableOpacity onPress={() => router.back()} style={{ padding: theme.spacing.sm }}>
+            <Ionicons name="chevron-back" size={24} color={colors.cardText} />
+          </TouchableOpacity>
+          <ThemedText
+            style={{
+              flex: 1,
+              fontSize: 18,
+              fontWeight: '600',
+              color: colors.cardText,
+              marginLeft: theme.spacing.xs,
+            }}
+          >
+            {t('dataExport.title')}
+          </ThemedText>
+        </View>
       </View>
 
       {loading && (
