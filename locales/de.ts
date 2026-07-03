@@ -55,6 +55,7 @@ const de = {
     german: "Deutsch",
     english: "Englisch",
     privacy: "Datenschutzerklärung",
+    consents: "Einwilligungen verwalten",
   },
   legal: {
     privacy: {
@@ -65,6 +66,26 @@ const de = {
         "Die Datenschutzerklärung konnte nicht geladen werden. Du kannst sie im Browser lesen.",
       openInBrowser: "Im Browser öffnen",
       retry: "Erneut versuchen",
+    },
+  },
+  consents: {
+    title: "Einwilligungen",
+    subtitle:
+      "Hier siehst du, welchen Datenverarbeitungen du zugestimmt hast. Du kannst deine Einwilligung jederzeit widerrufen (Art. 7 Abs. 3 DSGVO).",
+    grant: "Ich stimme zu",
+    decline: "Abbrechen",
+    revoke: "Widerrufen",
+    grantedAt: "Erteilt am %{date}",
+    notGranted: "Noch nicht erteilt",
+    photoUpload: {
+      title: "Fotos zur gemeinsamen Galerie",
+      body:
+        "Wenn du Fotos hochlädst, werden sie in der geteilten Wedding-Galerie sichtbar für alle eingeladenen Gäste. Deine Fotos werden bis 30 Tage nach der Veranstaltung gespeichert und danach automatisch gelöscht. Du kannst deine Einwilligung jederzeit widerrufen — bereits hochgeladene Fotos kannst du dann löschen lassen, indem du uns kontaktierst.",
+    },
+    photoGame: {
+      title: "Foto-Aufgabe teilen",
+      body:
+        "Beim Foto-Spiel bekommst du eine Aufgabe und lädst genau ein Foto hoch. Dein Bild wird zusammen mit deinem Namen im Spiel angezeigt und dient nur zur Auswertung durch das Brautpaar. Es wird bis 30 Tage nach der Veranstaltung gespeichert und danach automatisch gelöscht. Widerruf jederzeit möglich.",
     },
   },
   tabs: {

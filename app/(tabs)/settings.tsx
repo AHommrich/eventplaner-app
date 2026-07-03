@@ -110,6 +110,27 @@ export default function SettingsScreen() {
           </ThemedText>
           <Ionicons name="chevron-forward" size={16} color={colors.cardText + 'aa'} />
         </TouchableOpacity>
+
+        {/* Consent management — additive row appended per Phase 6 of the
+            refactor plan. Sits directly under the privacy row so the two
+            DSGVO-related entries stay grouped. */}
+        <TouchableOpacity
+          onPress={() => router.push('/consents')}
+          style={{
+            paddingHorizontal: theme.spacing.md,
+            paddingVertical: theme.spacing.md,
+            borderTopWidth: 1,
+            borderTopColor: colors.border + '30',
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+          }}
+        >
+          <ThemedText style={{ color: colors.cardText, fontSize: 15 }}>
+            {t('settings.consents')}
+          </ThemedText>
+          <Ionicons name="chevron-forward" size={16} color={colors.cardText + 'aa'} />
+        </TouchableOpacity>
       </View>
     </View>
   );

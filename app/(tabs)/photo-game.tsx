@@ -31,6 +31,7 @@ import { useLanguage } from '../../lib/LanguageContext';
 import { useEventTheme } from '../../lib/EventThemeContext';
 import { useRefreshToast } from '../../lib/useRefreshToast';
 import { RefreshToast } from '../../components/RefreshToast';
+import { useConsentGate } from '../../components/ConsentGate';
 import {
   fetchPhotoGameStatus,
   assignPhotoGameTask,
@@ -42,6 +43,7 @@ import { theme } from '../../constants/theme';
 export default function PhotoGameScreen() {
   const { t } = useLanguage();
   const { colors } = useEventTheme();
+  const { ensureConsent } = useConsentGate();
   const insets = useSafeAreaInsets();
   const [statusData, setStatusData] = useState<PhotoGameStatusResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -95,6 +97,8 @@ export default function PhotoGameScreen() {
 
   /** Two-source picker: camera or library. Both feed into `pickAndSubmit`. */
   async function handleUpload() {
+    // GDPR Art. 6/7 (a) explicit consent gate — see photos.tsx for shape.
+    if (!(await ensureConsent('photo_game'))) return;
     Alert.alert(t('photoGame.uploadButton'), undefined, [
       {
         text: t('photos.camera'),
