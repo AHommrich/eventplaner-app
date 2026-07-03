@@ -127,6 +127,8 @@ export default function RootLayout() {
             <Stack.Screen name="(tabs)" />
             <Stack.Screen name="legal/privacy" />
             <Stack.Screen name="consents/index" />
+            <Stack.Screen name="data-export" />
+            <Stack.Screen name="erasure-pending" />
           </Stack>
           {splashVisible && (
             <Animated.View style={[StyleSheet.absoluteFill, { opacity: fadeAnim }]} pointerEvents="none">

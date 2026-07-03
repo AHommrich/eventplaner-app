@@ -36,6 +36,7 @@ import { QrFromImageView } from '../lib/QrFromImage';
 import api from '../lib/api';
 import { useEventTheme } from '../lib/EventThemeContext';
 import { theme } from '../constants/theme';
+import { getErasureState } from '../lib/erasure';
 
 // Same splash palette as `_layout.tsx` — visual continuity when the splash
 // fades out into this screen.
@@ -60,6 +61,15 @@ export default function WelcomeScreen() {
   useEffect(() => {
     getSession().then(async (session) => {
       if (!session) {
+        // No session — before showing welcome, check whether a GDPR erasure
+        // is still pending on this device. If so, drop the guest on the
+        // pending screen so they can copy the recovery token or revoke.
+        // Added additively for Phase 7; unaffected when no erasure exists.
+        const erasure = await getErasureState();
+        if (erasure) {
+          router.replace('/erasure-pending');
+          return;
+        }
         setChecking(false);
         return;
       }

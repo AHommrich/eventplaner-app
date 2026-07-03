@@ -229,3 +229,104 @@ export async function postRevoke(): Promise<RsvpStatus> {
   const res = await api.post<{ rsvp_status: RsvpStatus }>('/api/guest/rsvp/revoke');
   return res.data.rsvp_status;
 }
+
+// --- Art. 15 / Art. 17 GDPR (data subject rights) -------------------------
+//
+// The three endpoints below implement guest-facing Data Subject Rights:
+//
+//   - `exportMyData()` .......... Art. 15 "right of access": returns a
+//                                  scoped JSON payload of everything the
+//                                  guest has produced (RSVP, photos, drinks,
+//                                  photo-game submission). Guest-scoped by
+//                                  the backend — never any other guest's
+//                                  data, family members appear as
+//                                  minimal-info stubs only.
+//   - `requestErasure()` ........ Art. 17 "right to erasure": schedules a
+//                                  soft delete with a 30-day grace window.
+//                                  The backend revokes the sanctum token
+//                                  immediately, so the caller MUST clear
+//                                  the session locally right after.
+//                                  Backend returns a one-time `recovery_token`
+//                                  (plain text, sha256-hashed at rest — the
+//                                  only way to revoke since the guest has
+//                                  no email address).
+//   - `revokeErasure()` ......... Cancel the scheduled deletion within the
+//                                  grace window. Uses the recovery token
+//                                  (NOT the sanctum bearer, which has been
+//                                  revoked at request time).
+//
+// The recovery-token lifecycle is documented in `lib/erasure.ts`.
+
+/**
+ * Data payload returned by `GET /api/guest/export`. `format_version` allows
+ * the backend to evolve the schema without breaking existing clients — bump
+ * on breaking changes, add a version check at the call site.
+ */
+export type GuestExport = {
+  format_version: number;
+  generated_at: string;
+  guest: {
+    id: number;
+    firstname: string;
+    lastname: string;
+    family_name: string | null;
+    language: string | null;
+    rsvp_status: RsvpStatus;
+    rsvp_set_at: string | null;
+    created_at: string;
+  };
+  family_members: {
+    id: number;
+    firstname: string;
+    lastname: string;
+    rsvp_status: RsvpStatus;
+  }[];
+  photos: { id: number; url: string; uploaded_at: string }[];
+  drink_logs: { id: number; drink_name: string; points: number; logged_at: string }[];
+  photo_game_submission:
+    | { assignment: string; photo_url: string | null; submitted_at: string | null }
+    | null;
+};
+
+/**
+ * Response of `POST /api/guest/erasure`. `recovery_token` is the ONLY way to
+ * revoke the request — persist it before doing anything else. `recovery_delivery`
+ * is either `"response_only"` (guest has no email) or `"email"` (backend will
+ * send a mail) — the client shows different UX per branch.
+ */
+export type ErasureResponse = {
+  scheduled_erasure_at: string;
+  can_revoke_until: string;
+  recovery_token: string;
+  recovery_delivery: 'response_only' | 'email';
+  recovery_note: string;
+};
+
+/** Load an Art. 15 export of the currently logged-in guest. */
+export async function exportMyData(): Promise<GuestExport> {
+  const res = await api.get<GuestExport>('/api/guest/export');
+  return res.data;
+}
+
+/**
+ * Schedule the guest for deletion with a 30-day grace window. On success the
+ * caller MUST persist the recovery token (see `lib/erasure.ts`) and clear
+ * the session — the backend has already revoked the bearer token.
+ */
+export async function requestErasure(): Promise<ErasureResponse> {
+  const res = await api.post<ErasureResponse>('/api/guest/erasure');
+  return res.data;
+}
+
+/**
+ * Cancel a pending erasure within the grace window. Authenticated by the
+ * plain-text `recovery_token` in the body — the sanctum bearer that
+ * `requestErasure()` returned with was revoked at request time and cannot
+ * be used here.
+ */
+export async function revokeErasure(recoveryToken: string): Promise<{ success: boolean }> {
+  const res = await api.post<{ success: boolean }>('/api/guest/erasure/revoke', {
+    recovery_token: recoveryToken,
+  });
+  return res.data;
+}

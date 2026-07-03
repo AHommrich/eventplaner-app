@@ -56,6 +56,8 @@ const de = {
     english: "Englisch",
     privacy: "Datenschutzerklärung",
     consents: "Einwilligungen verwalten",
+    exportData: "Meine Daten exportieren",
+    deleteAccount: "Konto löschen",
   },
   legal: {
     privacy: {
@@ -180,6 +182,67 @@ const de = {
       "Bitte erlaube den Zugriff auf deine Fotos in den Einstellungen.",
     cameraPermission:
       "Bitte erlaube den Zugriff auf die Kamera in den Einstellungen.",
+  },
+  dataExport: {
+    title: "Meine Daten",
+    subtitle:
+      "Hier siehst du alle Daten, die wir zu deiner Person gespeichert haben (Art. 15 DSGVO).",
+    loading: "Daten werden geladen…",
+    errorTitle: "Nicht verfügbar",
+    errorMessage:
+      "Deine Daten konnten nicht geladen werden. Bitte prüfe deine Internetverbindung und versuche es erneut.",
+    retry: "Erneut versuchen",
+    copyJson: "JSON in Zwischenablage kopieren",
+    copied: "In Zwischenablage kopiert",
+    share: "Teilen",
+    generatedAt: "Erstellt am %{date}",
+    sections: {
+      guest: "Deine Person",
+      familyMembers: "Familienmitglieder",
+      photos: "Deine Fotos",
+      drinkLogs: "Deine Getränke-Einträge",
+      photoGame: "Deine Foto-Aufgabe",
+      empty: "— keine Einträge —",
+    },
+  },
+  erasure: {
+    triggerTitle: "Konto löschen",
+    confirmTitle: "Konto wirklich löschen?",
+    confirmBody:
+      "Deine Daten (RSVP, Fotos, Getränke, Foto-Aufgabe) werden nach einer 30-Tage-Frist automatisch gelöscht. Innerhalb dieser Frist kannst du deinen Antrag mit deinem Wiederherstellungs-Code widerrufen. Danach ist eine Wiederherstellung nicht mehr möglich.",
+    confirmButton: "Ja, Konto löschen",
+    submitting: "Löschantrag wird gestellt…",
+    errorTitle: "Fehler",
+    errorMessage:
+      "Der Löschantrag konnte nicht gestellt werden. Bitte versuche es erneut.",
+    alreadyPending: "Ein Löschantrag ist bereits aktiv.",
+    pending: {
+      title: "Löschantrag aktiv",
+      subtitle:
+        "Deine Daten werden am %{date} automatisch gelöscht. Bis dahin kannst du den Antrag widerrufen.",
+      canRevokeUntil: "Widerruf möglich bis: %{date}",
+      recoveryTokenLabel: "Dein Wiederherstellungs-Code",
+      recoveryTokenHint:
+        "Notiere dir diesen Code oder mache einen Screenshot. Ohne ihn kannst du deinen Löschantrag nicht widerrufen — wir speichern ihn aus Sicherheitsgründen nur einmal.",
+      copyToken: "Code kopieren",
+      copied: "Code in Zwischenablage kopiert",
+      revokeButton: "Löschantrag widerrufen",
+      revokeConfirmTitle: "Löschantrag widerrufen?",
+      revokeConfirmBody:
+        "Nach dem Widerruf bleiben deine Daten erhalten und du kannst die App wie gewohnt weiter nutzen. Du musst dich mit deinem QR-Code neu einloggen.",
+      revokeConfirmButton: "Ja, widerrufen",
+      revokeSubmitting: "Widerruf läuft…",
+      revokeSuccessTitle: "Widerrufen",
+      revokeSuccessBody:
+        "Dein Löschantrag wurde erfolgreich widerrufen. Bitte logge dich neu ein.",
+      revokeErrorInvalidToken:
+        "Wiederherstellungs-Code ungültig. Bitte prüfe deine Eingabe.",
+      revokeErrorExpired:
+        "Das 30-Tage-Fenster ist abgelaufen. Ein Widerruf ist nicht mehr möglich.",
+      revokeErrorGeneric:
+        "Der Widerruf konnte nicht abgeschlossen werden. Bitte versuche es erneut.",
+      logoutButton: "Ausloggen",
+    },
   },
 };
 
