@@ -1,12 +1,31 @@
 /**
- * Decodes a QR code from a local image URI using a hidden WebView + jsQR.
- * Usage: await decodeQrFromImage(uri)  → returns QR string or null
+ * QR-decoder for images picked from the gallery.
+ *
+ * The Expo camera module decodes QRs from the live camera stream on its own,
+ * but the app also supports uploading an existing photo of the invitation
+ * card. There is no first-party native module for offline image decoding on
+ * both platforms, so we render an INVISIBLE `WebView` (0×0, `overflow:
+ * hidden`), load a minimal HTML page that includes jsQR, and hand it the
+ * image URI via `injectJavaScript`. The result comes back through
+ * `postMessage` and is piped into a promise for the caller.
+ *
+ * Why the bridge exists:
+ *   - jsQR is JavaScript-only and needs a `<canvas>` DOM element (not
+ *     available in the RN runtime) to read pixel data.
+ *   - A native module would ship as a config-plugin and break Expo Go — this
+ *     project must stay Expo-Go compatible per `CLAUDE.md`.
+ *
+ * The image is downscaled to a max side of 1024 px before decoding — full
+ * 12 MP wedding-invitation photos would OOM the WebView on older Android
+ * devices, and jsQR does not benefit from more pixels above ~1000.
  */
 import { useRef } from 'react';
 import { View } from 'react-native';
 import WebView from 'react-native-webview';
 
-// jsQR minified inline (via CDN at build-time we load it in the HTML)
+// jsQR is loaded inside the WebView from a JSDeliver CDN. This is the ONLY
+// runtime third-party network call in the app; it is disclosed in the
+// privacy notice. The load happens once when the WebView mounts.
 const HTML = `<!DOCTYPE html><html><body>
 <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
 <script>
@@ -38,9 +57,19 @@ window.ReactNativeWebView.postMessage(JSON.stringify({ ready: true }));
 </body></html>`;
 
 type Props = {
+  /**
+   * Called once the WebView + jsQR are ready. Hands the caller a `decode`
+   * function that resolves to the decoded QR string (or `null` if none was
+   * found). Store this reference in a ref and invoke it whenever an image
+   * needs decoding.
+   */
   onReady: (decode: (uri: string) => Promise<string | null>) => void;
 };
 
+/**
+ * Zero-size WebView that exposes an image-to-QR decoding channel. Mount it
+ * once per screen that needs the feature; unmounting tears down the bridge.
+ */
 export function QrFromImageView({ onReady }: Props) {
   const webviewRef = useRef<WebView>(null);
   const resolverRef = useRef<((val: string | null) => void) | null>(null);

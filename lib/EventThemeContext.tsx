@@ -1,12 +1,36 @@
+/**
+ * Dynamic theme provider — colours + font come from the backend.
+ *
+ * The backend hands back three raw palette colours (`primary`, `secondary`,
+ * `tertiary`) PLUS a set of already-resolved role colours (`color_card`,
+ * `color_card_text`, etc.). The role colours exist so the couple can pick
+ * exceptions like "card buttons should be terracotta even though the primary
+ * is burgundy" without the client re-deriving them from the palette. Screens
+ * consume the roles directly — `useEventTheme().colors.cardButton` — and
+ * fall back to the raw palette or a hard-coded default when a role isn't set.
+ *
+ * The provider fetches on mount (if a session is present) AND exposes
+ * `loadTheme()` so pull-to-refresh in each tab can pick up mid-event colour
+ * changes without a full reload. Fonts follow the same rule: the backend
+ * hands a `font_heading` key, this provider looks it up in the local
+ * `FONT_MAP` and exposes it as `colors.fontFamily` for `ThemedText` and the
+ * tab-bar label style.
+ */
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import * as SecureStore from 'expo-secure-store';
 import { fetchEventInfo, EventInfo } from './guest';
 import { FONT_MAP, FontDefinition, FontKey } from '../constants/fonts';
 
+// --- Fallback palette (used until the first backend fetch resolves) ---
 const FALLBACK_PRIMARY   = '#7c2d3e';
 const FALLBACK_SECONDARY = '#e8e3de';
 const FALLBACK_TERTIARY  = '#ffffff';
 
+/**
+ * Resolved colour set consumed by every screen. Screens should reach for the
+ * semantic role fields (`cardButton`, `homeText`, ...) before the raw palette
+ * so the couple's overrides win.
+ */
 export type EventThemeColors = {
   primary: string;
   secondary: string;
@@ -19,9 +43,11 @@ export type EventThemeColors = {
   border: string;
   fab: string;
   fabIcon: string;
+  /** `null` when the home cover has no legible text overlay for this palette. */
   homeText: string | null;
   homeShadow: string;
   tabTint: string;
+  /** `undefined` when the backend hasn't picked a font, then system font wins. */
   fontFamily: FontDefinition | undefined;
 };
 
@@ -53,6 +79,11 @@ const EventThemeContext = createContext<EventThemeContextValue>({
   loadTheme: async () => {},
 });
 
+/**
+ * Root-level theme provider. Fetches `EventInfo` when a session exists so a
+ * logged-out cold start does not fire an unauthorised request. Consumers
+ * re-trigger the fetch via `loadTheme()` on pull-to-refresh in each tab.
+ */
 export function EventThemeProvider({ children }: { children: ReactNode }) {
   const [eventInfo, setEventInfo] = useState<EventInfo | null>(null);
 
@@ -63,6 +94,7 @@ export function EventThemeProvider({ children }: { children: ReactNode }) {
       const info = await fetchEventInfo();
       setEventInfo(info);
     } catch (e) {
+      // Non-fatal: keep the fallback palette so the app is still usable.
       console.warn('[EventTheme] fetchEventInfo failed:', e);
     }
   }
@@ -71,10 +103,12 @@ export function EventThemeProvider({ children }: { children: ReactNode }) {
     loadTheme();
   }, []);
 
+  // --- Font resolution ---
   const fontKey = (eventInfo?.font_heading ?? null) as FontKey | null;
   const fontFamily: FontDefinition | undefined =
     fontKey && FONT_MAP[fontKey] ? FONT_MAP[fontKey] : undefined;
 
+  // --- Colour resolution: backend role → backend palette → hard-coded fallback ---
   const colors: EventThemeColors = {
     primary:        eventInfo?.color_primary        ?? FALLBACK_PRIMARY,
     secondary:      eventInfo?.color_secondary      ?? FALLBACK_SECONDARY,
@@ -100,6 +134,10 @@ export function EventThemeProvider({ children }: { children: ReactNode }) {
   );
 }
 
+/**
+ * Read the current theme + `EventInfo` + a `loadTheme` refresher. Never
+ * throws — pre-fetch consumers see the fallback palette instead of a crash.
+ */
 export function useEventTheme() {
   return useContext(EventThemeContext);
 }
