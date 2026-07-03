@@ -1,3 +1,29 @@
+/**
+ * Root layout — mounts the three global providers, the animated splash and
+ * the router stack.
+ *
+ * Provider ordering matters and is deliberate:
+ *
+ *   1. `LanguageProvider` (outermost) — every downstream provider might call
+ *      `t()`, e.g. for an error message. Sits at the top so no consumer
+ *      reads the context before it's ready.
+ *   2. `EventThemeProvider` — needs a session before it fetches, which is
+ *      only meaningful once the language layer above has resolved.
+ *   3. `BlockedFeaturesProvider` — depends on the axios instance from
+ *      `lib/api.ts`; wraps only the router stack so it can register/detach
+ *      cleanly.
+ *
+ * The splash screen is an in-app overlay on top of the router stack (NOT the
+ * native launch screen) so we can cross-fade it out AFTER fonts + auto-detect
+ * finished. The native splash is dismissed early via
+ * `SplashScreen.hideAsync()` — the animated overlay then fades from opacity
+ * 1 → 0 over 500 ms after a 1.5 s brand hold.
+ *
+ * All 8 configured wedding fonts are loaded up front so
+ * `EventThemeContext` can flip to any of them without a second fetch cycle.
+ * Adding a font here MUST be matched by an entry in `constants/fonts.ts` or
+ * `ThemedText` will silently fall back to system font.
+ */
 import { useEffect, useRef, useState } from 'react';
 import { Animated, Image, StyleSheet, Text, View } from 'react-native';
 import { Stack } from 'expo-router';
@@ -42,6 +68,9 @@ import { BlockedFeaturesProvider } from '../lib/BlockedFeaturesContext';
 
 SplashScreen.preventAutoHideAsync();
 
+// Splash gradient — hand-picked to match the eveplan brand identity. Never
+// resolves through the dynamic theme because splash renders BEFORE the theme
+// provider has fetched its palette.
 const SPLASH_COLORS = ['#FF6B8A', '#FF8C5A', '#FFD166', '#72D4C8'] as const;
 
 export default function RootLayout() {
@@ -70,6 +99,9 @@ export default function RootLayout() {
   useEffect(() => {
     if (!fontsLoaded) return;
     SplashScreen.hideAsync();
+    // 1.5 s brand hold, then a 500 ms cross-fade to the router content —
+    // long enough for the guest to see the logo, short enough not to feel
+    // like a startup delay.
     const timer = setTimeout(() => {
       Animated.timing(fadeAnim, {
         toValue: 0,

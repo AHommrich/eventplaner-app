@@ -1,3 +1,21 @@
+/**
+ * Live QR-scanner screen — the primary login path.
+ *
+ * Flow:
+ *   1. Ask for camera permission on mount (no early-return: the permission
+ *      dialog is a normal iOS/Android alert, not a route).
+ *   2. `CameraView` streams the back camera, `onBarcodeScanned` fires exactly
+ *      once per unique QR (guarded by the `scanned` flag).
+ *   3. Extract the trailing token from the URL, call `/api/auth/qr/{token}`.
+ *   4. Solo → save session, route to `/`. Family → open picker with the
+ *      returned guest list; the guest taps their name to trigger step 5.
+ *   5. `/api/auth/qr/{token}/select` returns a per-guest bearer token; 409
+ *      means someone already claimed this slot (grey out the row).
+ *
+ * The DEV token input at the bottom is guarded by `__DEV__` and lets the
+ * developer paste a test token without needing a QR image. See CLAUDE.md
+ * for the local test tokens.
+ */
 import { useState, useEffect } from 'react';
 import {
   View,
@@ -17,6 +35,8 @@ import { saveSession, GuestSession } from '../lib/auth';
 import { theme } from '../constants/theme';
 import { useLanguage, Language } from '../lib/LanguageContext';
 import { useEventTheme } from '../lib/EventThemeContext';
+
+// --- Types (kept local to this file since only scan + welcome consume them) ---
 
 type ApiGuest = {
   guest_id: number;
@@ -51,6 +71,11 @@ export default function ScanScreen() {
     if (!permission?.granted) requestPermission();
   }, []);
 
+  /**
+   * Barcode-scanned handler — guarded by `scanned` so the same QR only fires
+   * once, even though `CameraView` emits multiple detections per second.
+   * The `scanned` flag is reset on error so the guest can retry.
+   */
   async function handleQrCode(data: string) {
     if (scanned || loading) return;
     setScanned(true);
@@ -67,6 +92,13 @@ export default function ScanScreen() {
     }
   }
 
+  /**
+   * Step 1 of the two-step QR flow. Solo tokens hand back a ready-to-use
+   * `guest.token`; family tokens hand back a list of guests with
+   * `token: null` — the guest picks a name and step 2 mints a per-guest
+   * token. Also opens the picker when `needsLanguagePick` is true so the
+   * language switcher appears next to the "Continue" button.
+   */
   async function loginWithToken(token: string) {
     const response = await api.get<ApiResponse>(`/api/auth/qr/${token}`);
     const { type, family_name, guests: apiGuests } = response.data;
@@ -101,6 +133,12 @@ export default function ScanScreen() {
     router.replace('/');
   }
 
+  /**
+   * Step 2 of the family QR flow — trade the shared QR token for a per-guest
+   * bearer token. 409 means the slot was already claimed on another device;
+   * we mark it locally as `is_active: true` so the row is greyed out
+   * without a re-fetch.
+   */
   async function selectFamilyGuest(guest: ApiGuest) {
     if (guest.is_active) return;
     setLoading(true);
@@ -162,7 +200,7 @@ export default function ScanScreen() {
         </View>
       )}
 
-      {/* Dev-Modus: manuelle Token-Eingabe */}
+      {/* DEV-only: manual token input — see CLAUDE.md for local test tokens. */}
       {__DEV__ && (
         <View style={styles.devContainer}>
           {showDevInput ? (
@@ -204,7 +242,7 @@ export default function ScanScreen() {
         </View>
       )}
 
-      {/* Gastauswahl für Familien */}
+      {/* Family picker — also carries the language switcher when detection fails. */}
       <Modal visible={showPicker} transparent animationType="slide">
         <View style={styles.modalBackdrop}>
           <View style={styles.modalSheet}>
@@ -244,7 +282,7 @@ export default function ScanScreen() {
               </TouchableOpacity>
             )}
 
-            {/* Sprachauswahl — nur wenn Sprache nicht automatisch erkannt */}
+            {/* Language picker — only appears when device locale is neither DE nor EN. */}
             {needsLanguagePick && (
               <View style={styles.langRow}>
                 {(['de', 'en'] as Language[]).map((lang) => (

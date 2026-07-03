@@ -1,3 +1,19 @@
+/**
+ * `Text` wrapper that transparently applies the backend-selected wedding
+ * font.
+ *
+ * The `EventThemeContext` exposes a `fontFamily = { regular, bold }` pair
+ * whenever the couple has picked a heading font. This component looks at the
+ * text's declared `fontWeight` and swaps in the matching family — everything
+ * from 600 upwards counts as "bold", including numeric string weights that
+ * React Native accepts. Consumer code stays completely unaware: it keeps
+ * writing `<ThemedText style={{ fontWeight: 'bold' }}>` and the correct
+ * family is picked automatically.
+ *
+ * When no font is configured we forward props to the plain `<Text>` verbatim
+ * so React Native's system-font path stays intact — including the tiny cost
+ * saving of not spreading a style array in that case.
+ */
 import { Text, TextProps, StyleSheet } from 'react-native';
 import { useEventTheme } from '../lib/EventThemeContext';
 

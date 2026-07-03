@@ -1,3 +1,24 @@
+/**
+ * RSVP tab — accepted_pending guests manage their own and their family's
+ * RSVP responses here.
+ *
+ * Visibility: the tab bar hides this route once the guest reaches `accepted`
+ * (see `app/(tabs)/_layout.tsx`), so this screen is only ever reachable in
+ * the `accepted_pending` transition window. `loadData()` also route-guards:
+ *   - `isDeclinedFlow(status)` .. bounce to `/declined`.
+ *   - `status === 'accepted'` ... bounce to `/(tabs)/home` (RSVP done).
+ * The guard exists so pull-to-refresh AFTER the couple confirms the
+ * acceptance actually removes the screen from the guest's view.
+ *
+ * Family flow: the current guest can set RSVPs for every `group_members[]`
+ * entry — the backend enforces that the ids belong to the same family. Each
+ * member row is collapsed by default; tapping the row expands to reveal
+ * accept/decline buttons (`expandedMemberId`). This keeps the list dense
+ * for large families.
+ *
+ * Deadline handling: `deadlinePassed` disables every button and shows a
+ * copy string; no post-deadline mutation is possible.
+ */
 import { useCallback, useState } from 'react';
 import {
   View,
@@ -35,6 +56,11 @@ function formatDeadline(iso: string, locale: string): string {
   });
 }
 
+/**
+ * Small pill badge — green for accepted (any variant), red for declined
+ * (any variant), grey for anything else. Wraps the status colour choice in
+ * one place so a status enum tweak only needs a single edit.
+ */
 function StatusBadge({ status, t }: { status: RsvpStatus; t: (k: string) => string }) {
   const accepted = status === 'accepted_pending' || status === 'accepted';
   const declined = status === 'declined_pending' || status === 'declined';
@@ -78,6 +104,7 @@ export default function RsvpTabScreen() {
     if (!isRefresh) setLoading(true);
     try {
       const [g, info] = await Promise.all([fetchGuestMe(), fetchEventInfo()]);
+      // Route guards — see file header for why this happens on every fetch.
       if (isDeclinedFlow(g.rsvp_status)) {
         router.replace('/declined');
         return;
@@ -99,6 +126,7 @@ export default function RsvpTabScreen() {
 
   useFocusEffect(useCallback(() => { loadData(); }, []));
 
+  /** Double-confirm gate — decline is destructive so we surface a native alert. */
   function confirmDecline(onConfirm: () => void, memberName?: string) {
     Alert.alert(
       t('rsvp.declineConfirmTitle'),
@@ -129,6 +157,11 @@ export default function RsvpTabScreen() {
     }
   }
 
+  /**
+   * Set another family member's RSVP. Uses an optimistic local update so
+   * the badge flips immediately; on error the parent screen shows the alert
+   * and the caller must pull-to-refresh to re-sync (rare path).
+   */
   async function handleGroupRsvp(guestId: number, attending: boolean) {
     if (!guest || deadlinePassed) return;
     setSavingMemberId(guestId);
@@ -181,7 +214,7 @@ export default function RsvpTabScreen() {
         contentContainerStyle={{ padding: theme.spacing.lg, paddingTop: theme.spacing.md, paddingBottom: 48 }}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.tabTint} colors={[colors.tabTint]} />}
       >
-      {/* Eigene RSVP */}
+      {/* Own RSVP card. */}
       <View style={{ backgroundColor: colors.card, borderRadius: theme.borderRadius.lg, borderWidth: 2, borderColor: colors.border + '33', overflow: 'hidden', marginBottom: theme.spacing.md }}>
         {deadlineFormatted && (
           <ThemedText style={{ fontSize: 12, color: colors.cardText + 'aa', paddingHorizontal: theme.spacing.md, paddingTop: theme.spacing.sm }}>
@@ -239,7 +272,8 @@ export default function RsvpTabScreen() {
         )}
       </View>
 
-      {/* Gruppenmitglieder */}
+      {/* Family members — collapsible rows, only mutable when the current
+          guest has themselves accepted and the deadline has not passed. */}
       {guest.type === 'family' && guest.group_members.length > 0 && (
         <View style={{ backgroundColor: colors.card, borderRadius: theme.borderRadius.lg, borderWidth: 2, borderColor: colors.border + '33', overflow: 'hidden' }}>
           <View style={{ padding: theme.spacing.md, borderBottomWidth: 1, borderBottomColor: colors.border + '30' }}>
@@ -256,6 +290,9 @@ export default function RsvpTabScreen() {
             const isSaving = savingMemberId === member.guest_id;
             const canSet = ownAccepted && !deadlinePassed;
             const isExpanded = expandedMemberId === member.guest_id;
+            // Set-by label: "by me" for own actions, "by <name>" for other
+            // family members, "by the organizer" as a fallback when the
+            // couple set it via the admin backend.
             const setByLabel = member.rsvp_set_by
               ? member.rsvp_set_by.guest_id === guest.guest_id
                 ? t('rsvp.setByMe')
