@@ -8,7 +8,7 @@
  * CLAUDE.md so future additions can copy-paste consistently.
  */
 import { useEffect, useState } from 'react';
-import { View, TouchableOpacity } from 'react-native';
+import { View, TouchableOpacity, Alert } from 'react-native';
 import { ThemedText } from '../../components/ThemedText';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -17,6 +17,8 @@ import { getSession, clearSession, GuestSession } from '../../lib/auth';
 import { useLanguage, Language } from '../../lib/LanguageContext';
 import { useEventTheme } from '../../lib/EventThemeContext';
 import { theme } from '../../constants/theme';
+import { requestErasure } from '../../lib/guest';
+import { saveErasureState } from '../../lib/erasure';
 
 export default function SettingsScreen() {
   const router = useRouter();
@@ -37,6 +39,56 @@ export default function SettingsScreen() {
   async function handleLogout() {
     await clearSession();
     router.replace('/');
+  }
+
+  /**
+   * Art. 17 GDPR erasure entry point — double-confirmed via `Alert.alert`
+   * (same pattern as RSVP decline). On confirm we persist the recovery
+   * token BEFORE any session clearing so the pending screen can still read
+   * it once the sanctum bearer has been revoked backend-side. Local session
+   * is wiped via `SecureStore.deleteItemAsync` directly (not `clearSession`)
+   * because the backend has already revoked our token — calling
+   * `/api/auth/logout` would 401.
+   */
+  function askDeleteAccount() {
+    Alert.alert(
+      t('erasure.confirmTitle'),
+      t('erasure.confirmBody'),
+      [
+        { text: t('common.cancel'), style: 'cancel' },
+        {
+          text: t('erasure.confirmButton'),
+          style: 'destructive',
+          onPress: performDeleteAccount,
+        },
+      ],
+    );
+  }
+
+  async function performDeleteAccount() {
+    try {
+      const res = await requestErasure();
+      await saveErasureState({
+        recoveryToken: res.recovery_token,
+        scheduledAt: res.scheduled_erasure_at,
+        canRevokeUntil: res.can_revoke_until,
+      });
+      // Local session wipe — backend already revoked the bearer.
+      const SecureStore = await import('expo-secure-store');
+      await SecureStore.deleteItemAsync('guest_token');
+      await SecureStore.deleteItemAsync('guest_id');
+      await SecureStore.deleteItemAsync('guest_firstname');
+      await SecureStore.deleteItemAsync('guest_lastname');
+      await SecureStore.deleteItemAsync('guest_type');
+      await SecureStore.deleteItemAsync('guest_family_name');
+      router.replace('/erasure-pending');
+    } catch (e: any) {
+      const message =
+        e?.response?.status === 409
+          ? t('erasure.alreadyPending')
+          : t('erasure.errorMessage');
+      Alert.alert(t('erasure.errorTitle'), message);
+    }
   }
 
   return (
@@ -130,6 +182,47 @@ export default function SettingsScreen() {
             {t('settings.consents')}
           </ThemedText>
           <Ionicons name="chevron-forward" size={16} color={colors.cardText + 'aa'} />
+        </TouchableOpacity>
+
+        {/* Art. 15 GDPR — data export. Additive row per Phase 7. Sits
+            below the consents row so the DSGVO block stays grouped. */}
+        <TouchableOpacity
+          onPress={() => router.push('/data-export')}
+          style={{
+            paddingHorizontal: theme.spacing.md,
+            paddingVertical: theme.spacing.md,
+            borderTopWidth: 1,
+            borderTopColor: colors.border + '30',
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+          }}
+        >
+          <ThemedText style={{ color: colors.cardText, fontSize: 15 }}>
+            {t('settings.exportData')}
+          </ThemedText>
+          <Ionicons name="chevron-forward" size={16} color={colors.cardText + 'aa'} />
+        </TouchableOpacity>
+
+        {/* Art. 17 GDPR — account erasure. Additive row per Phase 7. Uses
+            the semantic error colour so the destructive nature is visually
+            obvious without a separate design pass. */}
+        <TouchableOpacity
+          onPress={askDeleteAccount}
+          style={{
+            paddingHorizontal: theme.spacing.md,
+            paddingVertical: theme.spacing.md,
+            borderTopWidth: 1,
+            borderTopColor: colors.border + '30',
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+          }}
+        >
+          <ThemedText style={{ color: theme.colors.error, fontSize: 15, fontWeight: '500' }}>
+            {t('settings.deleteAccount')}
+          </ThemedText>
+          <Ionicons name="chevron-forward" size={16} color={theme.colors.error + 'aa'} />
         </TouchableOpacity>
       </View>
     </View>

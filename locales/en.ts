@@ -92,6 +92,8 @@ const en = {
     english: 'English',
     privacy: 'Privacy policy',
     consents: 'Manage consents',
+    exportData: 'Export my data',
+    deleteAccount: 'Delete my account',
   },
   legal: {
     privacy: {
@@ -173,6 +175,66 @@ const en = {
     fromLibrary: 'From library',
     libraryPermission: 'Please allow access to your photos in settings.',
     cameraPermission: 'Please allow camera access in settings.',
+  },
+  dataExport: {
+    title: 'My data',
+    subtitle:
+      'Everything we have on record about you (Art. 15 GDPR).',
+    loading: 'Loading your data…',
+    errorTitle: 'Unavailable',
+    errorMessage:
+      "Your data couldn't be loaded. Please check your connection and try again.",
+    retry: 'Retry',
+    copyJson: 'Copy JSON to clipboard',
+    copied: 'Copied to clipboard',
+    share: 'Share',
+    generatedAt: 'Generated on %{date}',
+    sections: {
+      guest: 'You',
+      familyMembers: 'Family members',
+      photos: 'Your photos',
+      drinkLogs: 'Your drink entries',
+      photoGame: 'Your photo task',
+      empty: '— no entries —',
+    },
+  },
+  erasure: {
+    triggerTitle: 'Delete account',
+    confirmTitle: 'Really delete your account?',
+    confirmBody:
+      'Your data (RSVP, photos, drinks, photo task) will be automatically deleted after a 30-day grace period. Within this window you can revoke the request with your recovery code. After the window, restoration is no longer possible.',
+    confirmButton: 'Yes, delete my account',
+    submitting: 'Submitting deletion request…',
+    errorTitle: 'Error',
+    errorMessage:
+      "The deletion request couldn't be submitted. Please try again.",
+    alreadyPending: 'A deletion request is already active.',
+    pending: {
+      title: 'Deletion pending',
+      subtitle:
+        'Your data will be deleted automatically on %{date}. Until then, you can still revoke the request.',
+      canRevokeUntil: 'Revocation possible until %{date}',
+      recoveryTokenLabel: 'Your recovery code',
+      recoveryTokenHint:
+        "Write this code down or take a screenshot. Without it you can't revoke the deletion — for security reasons we only show it to you once.",
+      copyToken: 'Copy code',
+      copied: 'Code copied to clipboard',
+      revokeButton: 'Revoke deletion',
+      revokeConfirmTitle: 'Revoke deletion?',
+      revokeConfirmBody:
+        "After revoking your data will be kept and you can keep using the app. You'll need to log in with your QR code again.",
+      revokeConfirmButton: 'Yes, revoke',
+      revokeSubmitting: 'Revoking…',
+      revokeSuccessTitle: 'Revoked',
+      revokeSuccessBody:
+        'Your deletion request has been revoked. Please log in again.',
+      revokeErrorInvalidToken:
+        'Recovery code is invalid. Please check your input.',
+      revokeErrorExpired:
+        'The 30-day window has expired. Revocation is no longer possible.',
+      revokeErrorGeneric: "Revocation couldn't be completed. Please try again.",
+      logoutButton: 'Log out',
+    },
   },
 };
 

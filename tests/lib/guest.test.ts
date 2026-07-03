@@ -14,6 +14,9 @@ import {
   fetchPhotoGameStatus,
   assignPhotoGameTask,
   submitPhotoGamePhoto,
+  exportMyData,
+  requestErasure,
+  revokeErasure,
   isFullAccess,
   isDeclinedFlow,
 } from '../../lib/guest';
@@ -143,5 +146,54 @@ describe('lib/guest — mutators', () => {
     // The override disables axios' JSON serialisation — critical for
     // multipart uploads.
     expect(opts.transformRequest(passthrough)).toBe(passthrough);
+  });
+});
+
+describe('lib/guest — Art. 15 / Art. 17 GDPR endpoints', () => {
+  it('exportMyData hits /api/guest/export and returns the payload', async () => {
+    const payload = {
+      format_version: 1,
+      generated_at: '2026-07-03T12:00:00Z',
+      guest: { id: 1, firstname: 'A', lastname: 'B', family_name: null, language: 'de', rsvp_status: 'accepted', rsvp_set_at: null, created_at: '2026-01-01' },
+      family_members: [],
+      photos: [],
+      drink_logs: [],
+      photo_game_submission: null,
+    };
+    api.get.mockResolvedValueOnce({ data: payload });
+    const result = await exportMyData();
+    expect(api.get).toHaveBeenCalledWith('/api/guest/export');
+    expect(result).toEqual(payload);
+  });
+
+  it('requestErasure posts to /api/guest/erasure and returns the recovery token', async () => {
+    const payload = {
+      scheduled_erasure_at: '2026-08-02T12:00:00Z',
+      can_revoke_until: '2026-08-02T12:00:00Z',
+      recovery_token: 'plain-token-xyz',
+      recovery_delivery: 'response_only',
+      recovery_note: 'This code is shown once.',
+    };
+    api.post.mockResolvedValueOnce({ data: payload });
+    const result = await requestErasure();
+    expect(api.post).toHaveBeenCalledWith('/api/guest/erasure');
+    expect(result.recovery_token).toBe('plain-token-xyz');
+    expect(result.recovery_delivery).toBe('response_only');
+  });
+
+  it('revokeErasure sends the recovery token as body', async () => {
+    api.post.mockResolvedValueOnce({ data: { success: true } });
+    const result = await revokeErasure('plain-token-xyz');
+    expect(api.post).toHaveBeenCalledWith('/api/guest/erasure/revoke', {
+      recovery_token: 'plain-token-xyz',
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it('revokeErasure propagates a 410-expired error to the caller', async () => {
+    api.post.mockRejectedValueOnce({ response: { status: 410 } });
+    await expect(revokeErasure('expired-token')).rejects.toMatchObject({
+      response: { status: 410 },
+    });
   });
 });
