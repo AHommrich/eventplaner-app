@@ -738,13 +738,28 @@ without console errors, coverage thresholds passed, CI green.
 
 ## Follow-ups (populated as phases surface non-scope items)
 
-- [ ] _Filled in during execution._
+Surfaced during **Phase 0** (2026-07-03) — lint runs discovered these on the
+existing tree. Under Phase 0's "no code changes" rule they were parked, not
+fixed. Each is a candidate for its own future phase.
 
-Known future rounds:
-
-- `react-hooks/exhaustive-deps` cleanup — Phase 0 sets rule to `warn`;
-  upgrading to `error` requires touching real code.
-- `@typescript-eslint/no-explicit-any` cleanup — same story.
+- [ ] **`app/declined.tsx:119`** — `useSafeAreaInsets()` is called after an
+  early `return` at line 111 (`react-hooks/rules-of-hooks`). Fix: hoist the
+  hook call above the loading branch. Real bug; may cause hook-order crashes
+  if the loading state flips.
+- [ ] **`app/_layout.tsx:49`** — font-loading setup accesses refs during
+  render (`react-hooks/refs`). Fix: move ref access into an effect.
+- [ ] **Several files** — React-19 `set-state-in-effect` warnings on bootstrap
+  effects (`app/declined.tsx`, `lib/EventThemeContext.tsx`, potentially
+  others). Rule currently off. Fix: rewrite bootstrap effects to use lazy
+  initialiser or `useSyncExternalStore` pattern.
+- [ ] **~18 `react-hooks/exhaustive-deps` warnings** across `app/*` and `lib/*`
+  — Phase 0 sets rule to `warn`; upgrading to `error` requires touching real
+  code and gets its own phase.
+- [ ] **Existing files are not Prettier-formatted** — Phase 0 keeps `prettier`
+  as a separate `format:check` / `format` script instead of gating `lint` on
+  it, so today's tree passes CI without a reformat. A one-shot
+  `npm run format` commit (large diff, zero behaviour change) would clean this
+  up; deferred so the diff doesn't drown out real changes.
 
 ---
 

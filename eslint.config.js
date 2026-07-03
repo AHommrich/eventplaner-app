@@ -1,0 +1,38 @@
+// Flat-config wrapper around eslint-config-expo. The Expo preset already ships
+// TypeScript + React + React-Native + import defaults, so we intentionally do
+// NOT re-declare those plugins here. Every rule downgrade below has a matching
+// entry in docs/REFACTOR_PLAN.md Follow-ups — the goal of phase 0 is a passing
+// lint run on the untouched tree, real fixes are their own phase.
+const expoConfig = require('eslint-config-expo/flat');
+
+module.exports = [
+  ...expoConfig,
+  {
+    rules: {
+      // Existing hooks may not satisfy exhaustive-deps.
+      'react-hooks/exhaustive-deps': 'warn',
+      // declined.tsx calls useSafeAreaInsets after an early return — a real
+      // rules-of-hooks violation that must be fixed in a dedicated commit,
+      // not silently reformatted here.
+      'react-hooks/rules-of-hooks': 'warn',
+      // React 19 introduced an aggressive set-state-in-effect check that the
+      // existing bootstrap effects trip. Rule stays off until we have a
+      // dedicated refactor phase to address it.
+      'react-hooks/set-state-in-effect': 'off',
+      // Same for the react-19 refs-during-render check — app/_layout.tsx
+      // trips it inside the font-loading setup; fix belongs to a later phase.
+      'react-hooks/refs': 'off',
+    },
+  },
+  {
+    ignores: [
+      'node_modules/**',
+      '.expo/**',
+      'dist/**',
+      'build/**',
+      'ios/**',
+      'android/**',
+      'coverage/**',
+    ],
+  },
+];
