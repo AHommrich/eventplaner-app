@@ -67,15 +67,20 @@ export default function PrivacyScreen() {
   }, [load]);
 
   return (
-    <View style={{ flex: 1, backgroundColor: colors.screenBg, paddingTop: insets.top }}>
-      {/* Header row — simple back arrow + title, no native navigation bar. */}
-      <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: theme.spacing.md, paddingVertical: theme.spacing.sm }}>
-        <TouchableOpacity onPress={() => router.back()} style={{ padding: theme.spacing.xs }}>
-          <Ionicons name="chevron-back" size={24} color={colors.cardText} />
-        </TouchableOpacity>
-        <ThemedText style={{ fontSize: 18, fontWeight: '600', color: colors.cardText, marginLeft: theme.spacing.xs }}>
-          {t('legal.privacy.title')}
-        </ThemedText>
+    <View style={{ flex: 1, backgroundColor: colors.screenBg }}>
+      {/* Header card — same treatment as consents/data-export: wraps the
+          back arrow + title in a card-coloured strip so `colors.cardText`
+          stays legible even when it happens to be close to
+          `colors.screenBg` in the current palette. */}
+      <View style={{ backgroundColor: colors.card, paddingTop: insets.top, borderBottomWidth: 1, borderBottomColor: colors.border + '33' }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: theme.spacing.md, paddingVertical: theme.spacing.sm }}>
+          <TouchableOpacity onPress={() => router.back()} style={{ padding: theme.spacing.xs }}>
+            <Ionicons name="chevron-back" size={24} color={colors.cardText} />
+          </TouchableOpacity>
+          <ThemedText style={{ fontSize: 18, fontWeight: '600', color: colors.cardText, marginLeft: theme.spacing.xs }}>
+            {t('legal.privacy.title')}
+          </ThemedText>
+        </View>
       </View>
 
       {loading ? (

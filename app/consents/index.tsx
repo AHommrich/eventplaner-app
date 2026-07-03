@@ -73,29 +73,42 @@ export default function ConsentsScreen() {
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: colors.screenBg, paddingTop: insets.top }}>
-      {/* Header row — simple back arrow + title (no native nav bar). */}
+    <View style={{ flex: 1, backgroundColor: colors.screenBg }}>
+      {/* Header card — wraps the back arrow + title in a card-coloured
+          strip so `colors.cardText` is guaranteed legible regardless of
+          how similar `colors.cardText` and `colors.screenBg` happen to be
+          in the current event palette. Padding-top from safe-area lives
+          inside the card so the tinted background reaches to the notch. */}
       <View
         style={{
-          flexDirection: 'row',
-          alignItems: 'center',
-          paddingHorizontal: theme.spacing.md,
-          paddingVertical: theme.spacing.sm,
+          backgroundColor: colors.card,
+          paddingTop: insets.top,
+          borderBottomWidth: 1,
+          borderBottomColor: colors.border + '33',
         }}
       >
-        <TouchableOpacity onPress={() => router.back()} style={{ padding: theme.spacing.xs }}>
-          <Ionicons name="chevron-back" size={24} color={colors.cardText} />
-        </TouchableOpacity>
-        <ThemedText
+        <View
           style={{
-            fontSize: 18,
-            fontWeight: '600',
-            color: colors.cardText,
-            marginLeft: theme.spacing.xs,
+            flexDirection: 'row',
+            alignItems: 'center',
+            paddingHorizontal: theme.spacing.md,
+            paddingVertical: theme.spacing.sm,
           }}
         >
-          {t('consents.title')}
-        </ThemedText>
+          <TouchableOpacity onPress={() => router.back()} style={{ padding: theme.spacing.xs }}>
+            <Ionicons name="chevron-back" size={24} color={colors.cardText} />
+          </TouchableOpacity>
+          <ThemedText
+            style={{
+              fontSize: 18,
+              fontWeight: '600',
+              color: colors.cardText,
+              marginLeft: theme.spacing.xs,
+            }}
+          >
+            {t('consents.title')}
+          </ThemedText>
+        </View>
       </View>
       <ScrollView
         contentContainerStyle={{
