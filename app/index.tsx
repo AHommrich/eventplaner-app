@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
-import { View, TouchableOpacity, Alert, StyleSheet, Modal, FlatList } from 'react-native';
+import { View, Image, Text, TouchableOpacity, Alert, StyleSheet, Modal, FlatList } from 'react-native';
 import { ThemedText } from '../components/ThemedText';
-import { Image } from 'expo-image';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system/legacy';
@@ -13,6 +13,8 @@ import { QrFromImageView } from '../lib/QrFromImage';
 import api from '../lib/api';
 import { useEventTheme } from '../lib/EventThemeContext';
 import { theme } from '../constants/theme';
+
+const SPLASH_COLORS = ['#FF6B8A', '#FF8C5A', '#FFD166', '#72D4C8'] as const;
 
 type ApiGuest = { guest_id: number; firstname: string; lastname: string; token: string | null; is_active: boolean };
 type ApiResponse = { type: 'solo' | 'family'; family_name: string | null; guests: ApiGuest[] };
@@ -144,16 +146,24 @@ export default function WelcomeScreen() {
   }
 
   return (
-    <View style={styles.bg}>
-      <Image
-        source={require('../assets/house_party.jpg')}
-        style={StyleSheet.absoluteFill}
-        contentFit="cover"
-        cachePolicy="memory"
-      />
-      <View style={styles.overlay}>
+    <LinearGradient
+      colors={SPLASH_COLORS}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 1 }}
+      style={styles.bg}
+    >
+      <View style={styles.logoWrap}>
+        <Image
+          source={require('../assets/eve-logo.png')}
+          style={styles.logoImage}
+          resizeMode="contain"
+        />
+        <Text style={styles.logoTagline}>eveplan</Text>
+      </View>
+
+      <View style={styles.content}>
         {!checking && (
-          <View style={styles.content}>
+          <>
             <ThemedText style={styles.title}>{t('welcome.title')}</ThemedText>
             <ThemedText style={styles.subtitle}>{t('welcome.subtitle')}</ThemedText>
 
@@ -170,10 +180,10 @@ export default function WelcomeScreen() {
               onPress={handlePickImage}
               disabled={loading}
             >
-              <Ionicons name="image-outline" size={18} color="#fff" />
+              <Ionicons name="image-outline" size={18} color="rgba(255,255,255,0.9)" />
               <ThemedText style={styles.galleryButtonText}>{t('scan.fromGallery')}</ThemedText>
             </TouchableOpacity>
-          </View>
+          </>
         )}
       </View>
 
@@ -209,24 +219,37 @@ export default function WelcomeScreen() {
           </View>
         </View>
       </Modal>
-    </View>
+    </LinearGradient>
   );
 }
 
 const styles = StyleSheet.create({
   bg: {
     flex: 1,
-    backgroundColor: '#000',
   },
-  overlay: {
+  logoWrap: {
+    position: 'absolute',
+    top: '22%',
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+  },
+  logoImage: {
+    width: 420,
+    height: 200,
+  },
+  logoTagline: {
+    color: 'rgba(255,255,255,0.85)',
+    fontSize: 13,
+    letterSpacing: 4,
+    textTransform: 'uppercase',
+    marginTop: -60,
+  },
+  content: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.58)',
     justifyContent: 'flex-end',
     paddingBottom: 64,
     paddingHorizontal: 28,
-  },
-  content: {
-    width: '100%',
   },
   title: {
     fontSize: 34,
@@ -236,20 +259,22 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     fontSize: 15,
-    color: 'rgba(255,255,255,0.8)',
+    color: 'rgba(255,255,255,0.85)',
     lineHeight: 22,
     marginBottom: 40,
   },
   scanButton: {
-    backgroundColor: '#fff',
+    backgroundColor: 'rgba(255,255,255,0.28)',
+    borderWidth: 1.5,
+    borderColor: 'rgba(255,255,255,0.55)',
     width: '100%',
     paddingVertical: 16,
     borderRadius: theme.borderRadius.md,
     alignItems: 'center',
   },
   scanButtonText: {
-    color: theme.colors.primary,
-    fontSize: 16,
+    color: '#fff',
+    fontSize: 19,
     fontWeight: '600',
   },
   galleryButton: {
@@ -261,8 +286,8 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
   },
   galleryButtonText: {
-    color: '#fff',
-    fontSize: 15,
+    color: 'rgba(255,255,255,0.9)',
+    fontSize: 19,
     fontWeight: '500',
   },
   modalBackdrop: {

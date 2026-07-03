@@ -1,7 +1,9 @@
-import { useEffect } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { Animated, Image, StyleSheet, Text, View } from 'react-native';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useFonts } from 'expo-font';
+import { LinearGradient } from 'expo-linear-gradient';
 import {
   PlayfairDisplay_400Regular,
   PlayfairDisplay_700Bold,
@@ -19,6 +21,8 @@ import {
   DancingScript_700Bold,
 } from '@expo-google-fonts/dancing-script';
 import { GreatVibes_400Regular } from '@expo-google-fonts/great-vibes';
+import { Comfortaa_700Bold } from '@expo-google-fonts/comfortaa';
+import { Nunito_700Bold } from '@expo-google-fonts/nunito';
 import {
   Raleway_400Regular,
   Raleway_700Bold,
@@ -35,11 +39,14 @@ import '../global.css';
 import { LanguageProvider } from '../lib/LanguageContext';
 import { EventThemeProvider } from '../lib/EventThemeContext';
 import { BlockedFeaturesProvider } from '../lib/BlockedFeaturesContext';
-import { Asset } from 'expo-asset';
 
 SplashScreen.preventAutoHideAsync();
 
+const SPLASH_COLORS = ['#FF6B8A', '#FF8C5A', '#FFD166', '#72D4C8'] as const;
+
 export default function RootLayout() {
+  const [splashVisible, setSplashVisible] = useState(true);
+  const fadeAnim = useRef(new Animated.Value(1)).current;
   const [fontsLoaded] = useFonts({
     PlayfairDisplay_400Regular,
     PlayfairDisplay_700Bold,
@@ -54,19 +61,24 @@ export default function RootLayout() {
     Raleway_700Bold,
     Lora_400Regular,
     Lora_700Bold,
+    Comfortaa_700Bold,
+    Nunito_700Bold,
     JosefinSans_400Regular,
     JosefinSans_700Bold,
   });
 
   useEffect(() => {
-    Asset.loadAsync(require('../assets/house_party.jpg'));
-  }, []);
-
-  useEffect(() => {
-    if (fontsLoaded) SplashScreen.hideAsync();
+    if (!fontsLoaded) return;
+    SplashScreen.hideAsync();
+    const timer = setTimeout(() => {
+      Animated.timing(fadeAnim, {
+        toValue: 0,
+        duration: 500,
+        useNativeDriver: true,
+      }).start(() => setSplashVisible(false));
+    }, 1500);
+    return () => clearTimeout(timer);
   }, [fontsLoaded]);
-
-  if (!fontsLoaded) return null;
 
   return (
     <LanguageProvider>
@@ -80,8 +92,47 @@ export default function RootLayout() {
             <Stack.Screen name="blocked" />
             <Stack.Screen name="(tabs)" />
           </Stack>
+          {splashVisible && (
+            <Animated.View style={[StyleSheet.absoluteFill, { opacity: fadeAnim }]} pointerEvents="none">
+              <LinearGradient
+                colors={SPLASH_COLORS}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={StyleSheet.absoluteFill}
+              />
+              <View style={styles.splashLogoWrap}>
+                <Image
+                  source={require('../assets/eve-logo.png')}
+                  style={styles.splashLogo}
+                  resizeMode="contain"
+                />
+                <Text style={styles.splashTagline}>eveplan</Text>
+              </View>
+            </Animated.View>
+          )}
         </BlockedFeaturesProvider>
       </EventThemeProvider>
     </LanguageProvider>
   );
 }
+
+const styles = StyleSheet.create({
+  splashLogoWrap: {
+    position: 'absolute',
+    top: '22%',
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+  },
+  splashLogo: {
+    width: 420,
+    height: 200,
+  },
+  splashTagline: {
+    color: 'rgba(255,255,255,0.85)',
+    fontSize: 13,
+    letterSpacing: 4,
+    textTransform: 'uppercase',
+    marginTop: -60,
+  },
+});
