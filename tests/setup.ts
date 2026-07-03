@@ -19,8 +19,10 @@ jest.mock('expo-secure-store', () => {
 // --- expo-router ---
 // The real router requires a mounted Stack. Mocked functions record calls so
 // tests can assert `router.replace('/(tabs)/home')` was invoked without
-// spinning up a navigator.
+// spinning up a navigator. `useFocusEffect` is routed through `useEffect`
+// (deferred to mount) so the callback's `setState` never fires during render.
 jest.mock('expo-router', () => {
+  const React = require('react');
   const router = {
     push: jest.fn(),
     replace: jest.fn(),
@@ -32,7 +34,9 @@ jest.mock('expo-router', () => {
     router,
     useRouter: () => router,
     useSegments: () => [],
-    useFocusEffect: (cb: () => void) => cb(),
+    useFocusEffect: (cb: () => void | (() => void)) => {
+      React.useEffect(() => cb(), []);
+    },
     Stack: ({ children }: any) => children,
     Tabs: Object.assign(({ children }: any) => children, {
       Screen: () => null,
@@ -117,11 +121,25 @@ jest.mock('expo-linear-gradient', () => {
   return { LinearGradient: (props: any) => React.createElement(View, props) };
 });
 
+// --- expo-image ---
+// Same shape as `expo-linear-gradient`: the native image renderer is stubbed
+// to a plain `<View>` so any screen that renders remote thumbnails mounts in
+// tests without a real image pipeline.
+jest.mock('expo-image', () => {
+  const React = require('react');
+  const { View } = require('react-native');
+  return { Image: (props: any) => React.createElement(View, props) };
+});
+
 // --- expo-font ---
 // Fonts are always "loaded" in tests so `_layout.tsx` doesn't stall waiting
-// for `useFonts` to resolve.
+// for `useFonts` to resolve. `@expo/vector-icons` calls `Font.isLoaded` /
+// `Font.loadAsync` at module load, so we stub the full surface it touches.
 jest.mock('expo-font', () => ({
   useFonts: () => [true],
+  isLoaded: jest.fn(() => true),
+  loadAsync: jest.fn(async () => {}),
+  processFontFamily: (name: string) => name,
 }));
 
 // --- expo-splash-screen ---

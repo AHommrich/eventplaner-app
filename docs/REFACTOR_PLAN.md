@@ -761,6 +761,30 @@ fixed. Each is a candidate for its own future phase.
   `npm run format` commit (large diff, zero behaviour change) would clean this
   up; deferred so the diff doesn't drown out real changes.
 
+Surfaced during **Phase 9** (2026-07-04) — screen coverage is at 62 % lines /
+59 % branches, below the 80 % target in this phase's brief. Every screen has
+at least happy + one failure covered; the remaining gap sits in flows that
+are hard to reach from a unit test without either mocking the underlying
+Expo module deeper or moving the code around:
+
+- [ ] **Raise `app/**` line coverage from 62 % → 80 %.** Concrete gaps:
+  - `app/(tabs)/photos.tsx` upload path (image-picker + `expo-image-manipulator`
+    + manual multipart body) — needs a picker-plus-uploader integration harness.
+  - `app/(tabs)/photo-game.tsx` `pickAndSubmit` — same shape as above.
+  - `app/(tabs)/drinks.tsx` size expansion, single-vs-multi-size branch,
+    cooldown warning, binge-penalty banner — every branch is small on its
+    own but the file is 927 LoC and each needs seeded stats fixtures.
+  - `app/index.tsx` gallery-QR fallback + family-picker second step.
+  - `app/scan.tsx` DEV-only token input branch.
+  - Tab-layout `app/(tabs)/_layout.tsx` visibility rules (RSVP tab hides when
+    accepted, Drinks tab hides when disabled) — currently excluded from
+    `collectCoverageFrom`.
+- [ ] **`app/declined.tsx` and `app/(tabs)/home.tsx` hoisted-hook fix.**
+  Tests currently stub `useSafeAreaInsets` per file to sidestep the parked
+  hook-order bug (see the first Phase-0 follow-up above). Once the source
+  fix lands the stub can be dropped and the tests re-enabled with real
+  safe-area math.
+
 ---
 
 ## Estimated effort
