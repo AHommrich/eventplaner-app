@@ -9,10 +9,6 @@ module.exports = [
   ...expoConfig,
   {
     rules: {
-      // React 19 introduced an aggressive set-state-in-effect check that the
-      // existing bootstrap effects trip. Rule stays off until we have a
-      // dedicated refactor phase to address it.
-      'react-hooks/set-state-in-effect': 'off',
       // Every rule downgraded during Phase 0 has since been paid down:
       //   - `react-hooks/rules-of-hooks`: declined.tsx reads
       //      useSafeAreaInsets() ABOVE the early `if (loading) return …`.
@@ -23,7 +19,11 @@ module.exports = [
       //      effect carries a per-line disable with a justification. New
       //      violations must either add the missing dep or add a similar
       //      disable-line — silent suppression is not allowed.
-      // All three rules run at their default `error` level. Future
+      //   - `react-hooks/set-state-in-effect`: fires on every setState
+      //      inside an effect, even async ones that only touch state in
+      //      a resolved-promise microtask. Bootstrap fetches carry a
+      //      per-line disable with the same justification pattern.
+      // All four rules run at their default `error` level. Future
       // regressions fail lint in CI.
     },
   },

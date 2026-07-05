@@ -166,9 +166,13 @@ export default function HomeScreen() {
 
   // 1 Hz ticker for the countdown pill — cheap because `calcCountdown` is
   // pure arithmetic; teardown on eventInfo change so a fresh date doesn't
-  // race the old interval.
+  // race the old interval. The synchronous `setCountdown` seeds the pill
+  // BEFORE the first interval tick so the guest never sees a 1 s "empty"
+  // frame — React 19's `set-state-in-effect` check is overzealous here
+  // (same-value updates bail out of scheduling), so we opt out per line.
   useEffect(() => {
     if (!eventInfo?.date) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setCountdown(calcCountdown(eventInfo.date));
     intervalRef.current = setInterval(() => setCountdown(calcCountdown(eventInfo!.date)), 1000);
     return () => {

@@ -63,6 +63,10 @@ export default function PrivacyScreen() {
   }, [language]);
 
   useEffect(() => {
+    // Bootstrap fetch → setNotice / setError / setLoading. Same shape as
+    // `app/consents/index.tsx`: state updates happen in the resolved-promise
+    // microtask, not synchronously within the effect body.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     load();
   }, [load]);
 

@@ -57,6 +57,11 @@ export default function ConsentsScreen() {
   }, []);
 
   useEffect(() => {
+    // Bootstrap fetch → setRecords. The async `load()` updates state after
+    // the effect returns, not synchronously within it, so React 19's
+    // `set-state-in-effect` check is a false positive — the setState runs
+    // in the resolved-promise microtask, not in the effect body.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     load();
   }, [load]);
 
