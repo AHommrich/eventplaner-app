@@ -1,0 +1,34 @@
+# Logout flow — assumes a signed-in guest sits on the home tab.
+#
+# Chained after `solo-login.yaml` when running the full suite (see
+# .maestro/README.md). Kept as a standalone file so it can also be pointed
+# at manually after an interactive login (family QR, live camera scan) to
+# assert the clean-slate teardown.
+#
+# What this flow verifies:
+#   1. Settings tab is reachable and renders the logout button.
+#   2. Logout clears the local session AND fires the backend logout — after
+#      the redirect, the welcome screen is shown again (session probe sees
+#      an empty SecureStore, no fetchGuestMe kicks in).
+appId: com.ahommrichsorganization.eveplan
+---
+- launchApp:
+    stopApp: false
+
+# --- 1. Navigate to Settings via the bottom-tab bar. ---
+# The tab is labelled with `t('nav.settings')` — "Einstellungen" in German.
+- tapOn: 'Einstellungen'
+
+# --- 2. Sanity-check we're on Settings and hit Logout. ---
+- assertVisible: 'Sprache'
+- assertVisible: 'Ausloggen'
+- tapOn: 'Ausloggen'
+
+# --- 3. Post-logout we land back on the welcome screen. ---
+# `router.replace('/')` triggers the session probe in `app/index.tsx`; with
+# SecureStore cleared it stops at the welcome card instead of redirecting
+# to home.
+- extendedWaitUntil:
+    visible: 'Herzlich willkommen'
+    timeout: 10000
+- assertVisible: 'QR-Code scannen'

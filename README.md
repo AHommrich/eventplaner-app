@@ -158,8 +158,10 @@ components/         Shared UI wrappers (ThemedText, RefreshToast, ConsentGate)
 lib/                Non-UI modules — the "backend of the client" (api, auth, guest, legal, consents, erasure, ...)
 constants/          Static design tokens + env (`theme.ts`, `env.ts`, `fonts.ts`)
 locales/            de + en translation dictionaries
-docs/               ARCHITECTURE, REFACTOR_PLAN, dependencies audit, storage-keys audit
-tests/              setup + mirrored test tree
+docs/               ARCHITECTURE, REFACTOR_PLAN, dependencies audit, storage-keys audit, e2e strategy
+tests/              setup + mirrored test tree (Jest)
+.maestro/           E2E flow suite (Maestro) — login + logout smoke
+scripts/            One-off maintenance scripts (jsQR vendor sync)
 ```
 
 ---
@@ -174,7 +176,15 @@ tests/              setup + mirrored test tree
   [`docs/REFACTOR_PLAN.md → Follow-ups`](docs/REFACTOR_PLAN.md).
 - **Regressions** — [`tests/regressions/no-tracking.test.ts`](tests/regressions/no-tracking.test.ts)
   fails CI if any known analytics or crash-reporting SDK sneaks into
-  `package.json`.
+  `package.json`, or if a public-CDN hostname reappears in the source tree.
+- **Vendor sync** — [`tests/vendor/jsqr-source-sync.test.ts`](tests/vendor/jsqr-source-sync.test.ts)
+  fails CI if the vendored jsQR copy under
+  [`lib/vendor/`](lib/vendor/) drifts from the installed npm version.
+  Regenerated via `node scripts/vendor-jsqr.mjs`.
+- **End-to-end** — [`.maestro/`](.maestro/) hosts a small Maestro flow
+  suite that drives a real device through the golden login + logout path.
+  Design rationale in [`docs/e2e.md`](docs/e2e.md), how-to in
+  [`.maestro/README.md`](.maestro/README.md).
 
 More detail (what is and isn't tested, why no visual snapshots): see
 [`tests/README.md`](tests/README.md).
@@ -234,7 +244,11 @@ here — it is part of the design.
 - [`docs/storage-keys.md`](docs/storage-keys.md) — every `expo-secure-store`
   key: purpose, retention, cleared-on-logout status.
 - [`SECURITY.md`](SECURITY.md) — vulnerability reporting policy.
-- [`tests/README.md`](tests/README.md) — what the suite tests and why.
+- [`tests/README.md`](tests/README.md) — what the Jest suite tests and why.
+- [`docs/e2e.md`](docs/e2e.md) — end-to-end strategy, layer boundaries, and
+  the reasoning behind the Maestro flows.
+- [`.maestro/README.md`](.maestro/README.md) — Maestro setup + how to run
+  the E2E flows locally.
 
 ---
 

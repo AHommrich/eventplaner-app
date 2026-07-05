@@ -190,6 +190,16 @@ docs/
   ARCHITECTURE.md      Layer-Diagramm, Auth-Flow, Screen-Regeln, DSGVO-Design
   dependencies.md      Runtime-Dep-Audit — "phont home?" pro Package
   storage-keys.md      Jede SecureStore-Key: Zweck, Retention, cleared on logout?
+  e2e.md               End-to-End-Strategie (Maestro), Layer-Grenzen, "was NICHT E2E"
+
+.maestro/
+  config.yaml          Maestro appId (bundle identifier)
+  solo-login.yaml      Cold-start → DEV-Token → home
+  logout.yaml          Settings-Tab → Logout → welcome
+  README.md            Setup, Selektor-Strategie, wie lokal ausführen
+
+scripts/
+  vendor-jsqr.mjs      Regeneriert lib/vendor/jsQRSource.ts aus node_modules/jsqr
 
 tests/
   setup.ts             jest-expo Mocks (SecureStore, expo-router, image-picker, camera, ...)

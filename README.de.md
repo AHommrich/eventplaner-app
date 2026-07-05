@@ -165,8 +165,10 @@ components/         Geteilte UI-Wrapper (ThemedText, RefreshToast, ConsentGate)
 lib/                Nicht-UI-Module — das „Backend des Clients“ (api, auth, guest, legal, consents, erasure, ...)
 constants/          Statische Design-Tokens + Env (`theme.ts`, `env.ts`, `fonts.ts`)
 locales/            de + en Übersetzungs-Dictionaries
-docs/               ARCHITECTURE, REFACTOR_PLAN, Dep-Audit, Storage-Keys-Audit
-tests/              Setup + gespiegelter Test-Baum
+docs/               ARCHITECTURE, REFACTOR_PLAN, Dep-Audit, Storage-Keys-Audit, E2E-Strategie
+tests/              Setup + gespiegelter Test-Baum (Jest)
+.maestro/           E2E-Flow-Suite (Maestro) — Login- + Logout-Smoke
+scripts/            Einmalige Wartungs-Skripte (jsQR-Vendor-Sync)
 ```
 
 ---
@@ -182,7 +184,17 @@ tests/              Setup + gespiegelter Test-Baum
 - **Regressionen** —
   [`tests/regressions/no-tracking.test.ts`](tests/regressions/no-tracking.test.ts)
   lässt CI fehlschlagen, sobald eine bekannte Analytics- oder Crash-
-  Reporting-SDK in `package.json` auftaucht.
+  Reporting-SDK in `package.json` auftaucht oder ein öffentlicher CDN-
+  Hostname im Source-Tree wieder erscheint.
+- **Vendor-Sync** —
+  [`tests/vendor/jsqr-source-sync.test.ts`](tests/vendor/jsqr-source-sync.test.ts)
+  schlägt fehl, wenn die vendored jsQR-Kopie unter
+  [`lib/vendor/`](lib/vendor/) vom installierten npm-Paket abweicht.
+  Regeneriert via `node scripts/vendor-jsqr.mjs`.
+- **End-to-End** — [`.maestro/`](.maestro/) enthält eine kleine
+  Maestro-Flow-Suite, die ein echtes Gerät durch den goldenen Login- und
+  Logout-Pfad steuert. Design-Rationale in [`docs/e2e.md`](docs/e2e.md),
+  Anleitung in [`.maestro/README.md`](.maestro/README.md).
 
 Mehr Detail (was getestet wird und was nicht, warum keine Visual-Snapshots):
 siehe [`tests/README.md`](tests/README.md).
@@ -246,7 +258,11 @@ keine Checkbox — sie ist Teil des Designs.
 - [`docs/storage-keys.md`](docs/storage-keys.md) — jeder
   `expo-secure-store`-Key: Zweck, Aufbewahrung, „cleared on logout“-Status.
 - [`SECURITY.md`](SECURITY.md) — Meldeprozess für Sicherheitslücken.
-- [`tests/README.md`](tests/README.md) — was die Suite testet und warum.
+- [`tests/README.md`](tests/README.md) — was die Jest-Suite testet und warum.
+- [`docs/e2e.md`](docs/e2e.md) — End-to-End-Strategie, Layer-Grenzen und
+  die Rationale hinter den Maestro-Flows.
+- [`.maestro/README.md`](.maestro/README.md) — Maestro-Setup + wie man die
+  E2E-Flows lokal ausführt.
 
 ---
 
