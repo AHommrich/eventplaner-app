@@ -114,6 +114,30 @@ negatively by `tests/regressions/no-tracking.test.ts`. The same test also
 fails if a CDN hostname (jsDelivr, unpkg, Google Fonts) reappears in the
 source tree.
 
+## Vulnerability posture
+
+`npm audit` reports 25 advisories as of the last refactor pass. Two rules
+govern how they get handled:
+
+1. **Runtime deps get fixed immediately.** `axios` was pinned at
+   `^1.13.6`, ran into the November 2025 wave of SSRF / prototype-
+   pollution / ReDoS advisories, and was bumped to `^1.18.1`
+   (`>= 1.16.0` clears every one). Nothing else on the _runtime_ list
+   currently has an open advisory.
+
+2. **Expo-toolchain transitive deps stay where they are.** The remaining
+   25 advisories all sit under `@expo/cli`, `@expo/config`,
+   `@expo/config-plugins`, `expo-splash-screen`'s prebuild chain,
+   `@xmldom/xmldom`, `ws`, `shell-quote`, `xcode`, etc. — these run at
+   bundle time and never ship to a guest phone. Bumping `expo` or
+   `expo-constants` past the Expo Go SDK 54 pin would break the
+   runtime (see the pinned-versions table in `CLAUDE.md`). Dependabot's
+   `expo-native-runtime` group surfaces future SDK upgrades as isolated
+   PRs so the review knows exactly what changed.
+
+Any _new_ runtime dep that appears above must go through the same audit
+and follow rule 1.
+
 ## When this file must be updated
 
 - Any addition or removal of a runtime dependency in `package.json`.

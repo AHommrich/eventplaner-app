@@ -798,6 +798,17 @@ Expo module deeper or moving the code around:
     Thresholds in `jest.config.js` now reflect the calibrated floor
     (`lines: 61 / branches: 57`) so any regression under today's level
     fails CI without demanding untestable paths.
+- [x] **npm audit** — Direct-dep `axios` bumped from `^1.13.6` to `^1.18.1`,
+      which clears every axios-specific advisory (SSRF, prototype
+      pollution, ReDoS, header injection, proxy leaks). The remaining 25
+      advisories all sit in transitive dependencies of the Expo dev
+      toolchain (`@expo/cli`, `@expo/config-plugins`, `xcode`,
+      `@xmldom/xmldom`, `ws`, `shell-quote`, ...) — build-time code that
+      never ships to a guest phone. The three direct-dep advisories
+      (`expo`, `expo-constants`, `expo-splash-screen`) are Expo Go
+      SDK 54-pinned and cannot be bumped without breaking the app
+      runtime; Dependabot's `expo-native-runtime` group surfaces future
+      SDK upgrades as isolated PRs. See `docs/dependencies.md`.
 - [x] **`app/declined.tsx` and `app/(tabs)/home.tsx` hoisted-hook fix.**
       Source fix landed. Test stubs kept in place with an updated comment —
       the real reason for the stub was that the Jest render tree does not
