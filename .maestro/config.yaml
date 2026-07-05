@@ -1,0 +1,9 @@
+# Maestro flow configuration for the wedding-guest app.
+#
+# See .maestro/README.md for setup, the local backend contract, and how to
+# run the flows on iOS Simulator, Android emulator, or a physical device.
+#
+# The `appId` below points at the app's bundle identifier as declared in
+# `app.json`. When running through Expo Go (no native build), point maestro
+# at `host.exp.Exponent` instead and rely on the deep link — see the README.
+appId: com.ahommrichsorganization.eveplan

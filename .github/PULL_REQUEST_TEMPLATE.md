@@ -27,8 +27,12 @@ section. -->
 - [ ] `npm run lint` green (warnings allowed for now — see follow-ups).
 - [ ] `npm run test` green.
 - [ ] `npm run test:coverage` green (thresholds in `jest.config.js`).
+- [ ] If the change touches a Maestro selector (button label, screen title,
+      tab name), the affected `.maestro/*.yaml` flow updated to match.
 - [ ] Manual smoke on Expo Go (iOS or Android) — walk through
-      `scan → login → RSVP → home → all tabs`. Note anything unusual below.
+      `scan → login → RSVP → home → all tabs`. For anything auth-adjacent,
+      run `maestro test .maestro/solo-login.yaml .maestro/logout.yaml`
+      once. Note anything unusual below.
 
 ## DSGVO gate
 

@@ -1,0 +1,61 @@
+# Happy-path end-to-end login for a solo guest.
+#
+# Preconditions:
+#   - Development build of the app is installed (Expo Go or a native dev
+#     client — see .maestro/README.md).
+#   - Backend (staging or local Laravel) reachable at `constants/env.ts::API_BASE`.
+#   - `MAESTRO_SOLO_TOKEN` env var set to a **local-only** solo QR token
+#     (see CLAUDE.md — the checked-in token `GbuyIYNTncT9tflws9vFcezcuFUyQvOE`
+#     works against the local backend, NOT against staging). Never store a
+#     real production token in a flow file.
+#
+# What this flow verifies end-to-end:
+#   1. Launching the app renders the welcome screen (session probe finds no
+#      persisted guest, so we do NOT get auto-redirected to home).
+#   2. Tapping "QR-Code scannen" opens `/scan` and the DEV-only token input
+#      is reachable (guarded by `__DEV__` — never rendered in production
+#      builds).
+#   3. Entering a valid solo token + submitting completes the two-step auth
+#      handshake, the backend returns a per-guest bearer, and the app lands
+#      on the home tab.
+#
+# Written for German UI copy — the app defaults to `de` per `LanguageContext`.
+appId: com.ahommrichsorganization.eveplan
+env:
+  SOLO_TOKEN: ${MAESTRO_SOLO_TOKEN}
+---
+- launchApp:
+    # Cold-start every run so the session probe in `app/index.tsx` observes
+    # an empty SecureStore. `clearState` would nuke Expo Go's own state too,
+    # so we rely on the previous flow's logout to leave us signed out.
+    stopApp: true
+
+# --- 1. Welcome screen renders and can be scrolled to the scan button. ---
+- assertVisible: 'Herzlich willkommen'
+- assertVisible: 'QR-Code scannen'
+- tapOn: 'QR-Code scannen'
+
+# --- 2. Camera screen loads — dev token toggle is available. ---
+# `expo-camera` may pop a permission dialog on first launch; accept it if it
+# appears. Maestro's optional-tap doesn't fail the flow when the dialog is
+# already dismissed on subsequent runs.
+- runFlow:
+    when:
+      visible: 'Zugriff erlauben'
+    commands:
+      - tapOn: 'Zugriff erlauben'
+- assertVisible: 'DEV: Token manuell eingeben'
+- tapOn: 'DEV: Token manuell eingeben'
+
+# --- 3. DEV token input — submit the solo QR token. ---
+- assertVisible: 'Dev: Token eingeben'
+- tapOn: 'QR-Token...'
+- inputText: ${SOLO_TOKEN}
+- tapOn: 'Einloggen'
+
+# --- 4. Home tab renders. The welcome greeting embeds the guest first name;
+#     we assert the generic countdown label instead so the flow is not tied
+#     to whichever seeded guest the token maps to. ---
+- extendedWaitUntil:
+    visible: 'Noch'
+    timeout: 15000
