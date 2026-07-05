@@ -7,6 +7,13 @@
 [![test](https://github.com/AHommrich/eventplaner-app/actions/workflows/test.yml/badge.svg?branch=main)](https://github.com/AHommrich/eventplaner-app/actions/workflows/test.yml)
 [![License](https://img.shields.io/badge/License-All%20Rights%20Reserved-red.svg)](LICENSE)
 
+> **Status: portfolio-ready.** The 12-phase refactor documented in
+> [`docs/REFACTOR_PLAN.md`](docs/REFACTOR_PLAN.md) is complete and every
+> follow-up is closed. The repo is not under active feature work — future
+> changes will land as isolated PRs (Dependabot bumps, occasional polish).
+> For a reviewer-oriented tour of the four decisions that shaped the code,
+> start at [`docs/showcase/`](docs/showcase/).
+
 A wedding-guest companion app. Guests receive a QR-code invitation, scan it
 once and land in a small event hub — RSVP, home screen with countdown and
 venue navigation, photo gallery, photo game, drinks log, and a settings tab
@@ -14,9 +21,10 @@ that also houses the DSGVO surfaces (privacy notice, consents, data export,
 erasure request). No passwords, no accounts, no third-party trackers.
 
 The app is built as the client to a Laravel 12 backend that the same author
-maintains in a separate repository. The wedding is real, the couple is
-André & Tabea Hommrich, and the code is made publicly viewable for portfolio
-and reference purposes after the phased refactor documented in
+maintains at [github.com/AHommrich/eventplaner](https://github.com/AHommrich/eventplaner).
+The wedding is real, the couple is André & Tabea Hommrich, and the code is
+made publicly viewable for portfolio and reference purposes after the
+phased refactor documented in
 [`docs/REFACTOR_PLAN.md`](docs/REFACTOR_PLAN.md).
 
 ---
@@ -82,18 +90,18 @@ commit so the repo does not ship placeholder art.
 
 ## 2. Tech stack
 
-| Layer        | Choice                                               | Why this one                                                                                        |
-| ------------ | ---------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
-| Framework    | Expo SDK 54 + Expo Router v6                         | File-based routing keeps the redirect matrix (session → RSVP → home) close to the file tree.        |
-| Language     | TypeScript (strict)                                  | Every backend response has an interface; every provider a shape.                                    |
-| Styling      | NativeWind v4 + Tailwind v3                          | Tailwind tokens for structure, `useEventTheme()` colours for brand.                                 |
-| HTTP         | Axios + Bearer interceptor                           | Single client in [`lib/api.ts`](lib/api.ts); screens never import axios directly.                   |
-| Auth storage | `expo-secure-store`                                  | Keychain / Keystore only — never AsyncStorage — because tokens never expire on the backend.         |
-| Icons        | `@expo/vector-icons` (Ionicons)                      | Single icon family, ships offline.                                                                  |
-| i18n         | `i18n-js` + `LanguageContext`                        | Two locales (DE + EN), device-detected on first launch, switchable in Settings.                     |
-| Test runner  | Jest + `jest-expo` + `@testing-library/react-native` | Official Expo test preset, no custom transformer.                                                   |
-| Fonts        | `@expo-google-fonts/*` (10 families)                 | Bundled locally, zero CDN traffic.                                                                  |
-| Backend      | Laravel 12 + Sanctum                                 | Separate repository; wedding-app-specific tokens with `app_blocked` / `drinks_blocked` soft-blocks. |
+| Layer        | Choice                                               | Why this one                                                                                                                                        |
+| ------------ | ---------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Framework    | Expo SDK 54 + Expo Router v6                         | File-based routing keeps the redirect matrix (session → RSVP → home) close to the file tree.                                                        |
+| Language     | TypeScript (strict)                                  | Every backend response has an interface; every provider a shape.                                                                                    |
+| Styling      | NativeWind v4 + Tailwind v3                          | Tailwind tokens for structure, `useEventTheme()` colours for brand.                                                                                 |
+| HTTP         | Axios + Bearer interceptor                           | Single client in [`lib/api.ts`](lib/api.ts); screens never import axios directly.                                                                   |
+| Auth storage | `expo-secure-store`                                  | Keychain / Keystore only — never AsyncStorage — because tokens never expire on the backend.                                                         |
+| Icons        | `@expo/vector-icons` (Ionicons)                      | Single icon family, ships offline.                                                                                                                  |
+| i18n         | `i18n-js` + `LanguageContext`                        | Two locales (DE + EN), device-detected on first launch, switchable in Settings.                                                                     |
+| Test runner  | Jest + `jest-expo` + `@testing-library/react-native` | Official Expo test preset, no custom transformer.                                                                                                   |
+| Fonts        | `@expo-google-fonts/*` (10 families)                 | Bundled locally, zero CDN traffic.                                                                                                                  |
+| Backend      | Laravel 12 + Sanctum                                 | [`AHommrich/eventplaner`](https://github.com/AHommrich/eventplaner); wedding-app-specific tokens with `app_blocked` / `drinks_blocked` soft-blocks. |
 
 Pinned dependency versions for Expo Go SDK 54 compatibility (touching these
 crashes the JSI bridge — do not upgrade in isolation):

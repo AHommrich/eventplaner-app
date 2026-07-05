@@ -27,6 +27,10 @@ import * as SecureStore from 'expo-secure-store';
 import { router } from 'expo-router';
 import { API_BASE } from '../constants/env';
 
+// `axios.create` is the officially blessed factory for a custom instance.
+// The named `create` re-export exists too, but the `axios.<method>` shape
+// keeps the call site consistent with `axios.get`/`axios.post`.
+// eslint-disable-next-line import/no-named-as-default-member
 const api = axios.create({
   baseURL: API_BASE,
   headers: {
