@@ -66,6 +66,10 @@ export function BlockedFeaturesProvider({ children }: { children: React.ReactNod
       clearDrinksBlockedHandler();
       stopPolling();
     };
+    // Provider bootstrap — installs the axios interceptor and starts the
+    // polling loop exactly once. Re-mounting on parent re-render would
+    // register duplicate handlers and stack intervals.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (

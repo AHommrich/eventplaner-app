@@ -115,7 +115,7 @@ export default function RootLayout() {
       }).start(() => setSplashVisible(false));
     }, 1500);
     return () => clearTimeout(timer);
-  }, [fontsLoaded]);
+  }, [fontsLoaded, fadeAnim]);
 
   return (
     <LanguageProvider>

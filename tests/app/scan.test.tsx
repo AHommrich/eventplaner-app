@@ -10,7 +10,7 @@
  *   - 409 on family select: alert + row greyed out
  */
 import React from 'react';
-import { Alert, View } from 'react-native';
+import { Alert } from 'react-native';
 import { act, fireEvent, render, waitFor } from '@testing-library/react-native';
 import { router } from 'expo-router';
 

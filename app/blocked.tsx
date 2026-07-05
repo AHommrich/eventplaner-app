@@ -43,6 +43,9 @@ export default function BlockedScreen() {
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
+    // Bootstrap poll — the `check` closure captures whatever refs it needs
+    // and this effect must run exactly once per mount, not on every render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (

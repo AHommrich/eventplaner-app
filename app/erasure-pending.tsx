@@ -73,6 +73,10 @@ export default function ErasurePendingScreen() {
       // back etc.) and nothing on this screen has meaning.
       if (!s) router.replace('/');
     });
+    // Bootstrap probe — the redirect only makes sense once, on mount. The
+    // `router` reference from expo-router is stable enough that adding it
+    // as a dep would still be correct, but the intent is "run once".
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const now = new Date();

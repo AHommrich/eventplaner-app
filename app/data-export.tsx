@@ -56,6 +56,9 @@ export default function DataExportScreen() {
 
   useEffect(() => {
     loadData();
+    // Bootstrap load — screen only cares about the initial fetch; pull-to-
+    // refresh handles subsequent reloads through its own handler.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   async function loadData() {

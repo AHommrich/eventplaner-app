@@ -62,6 +62,10 @@ export default function RsvpScreen() {
       })
       .catch(() => Alert.alert(t('common.error')))
       .finally(() => setLoading(false));
+    // Bootstrap load — the onboarding RSVP screen only fetches once. If the
+    // language switches mid-render, the error alert copy simply lags behind
+    // by one action; that's acceptable versus re-fetching on every t change.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   /** Double-confirm dialog — decline is destructive, we surface that explicitly. */

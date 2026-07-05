@@ -35,6 +35,12 @@ jest.mock('expo-router', () => {
     useRouter: () => router,
     useSegments: () => [],
     useFocusEffect: (cb: () => void | (() => void)) => {
+      // Mock: real `useFocusEffect` fires on route focus events; in Jest
+      // the tree only mounts once so an on-mount `useEffect` is a
+      // functionally equivalent stand-in. `cb` intentionally NOT in deps
+      // — the real hook captures the callback once per focus, not per
+      // render of the caller.
+      // eslint-disable-next-line react-hooks/exhaustive-deps
       React.useEffect(() => cb(), []);
     },
     Stack: ({ children }: any) => children,

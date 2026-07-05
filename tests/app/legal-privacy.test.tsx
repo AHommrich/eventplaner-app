@@ -7,7 +7,7 @@
  *   - retry after failure re-runs the fetch.
  */
 import React from 'react';
-import { fireEvent, render, waitFor } from '@testing-library/react-native';
+import { fireEvent, render } from '@testing-library/react-native';
 
 const mockFetchPrivacyNotice = jest.fn();
 jest.mock('../../lib/legal', () => {

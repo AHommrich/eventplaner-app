@@ -72,6 +72,10 @@ export default function PhotoGameScreen() {
 
   useFocusEffect(useCallback(() => {
     loadStatus();
+    // Same rationale as the other tab screens: the focus-effect callback
+    // is captured once so `useFocusEffect` fires on route focus, not on
+    // every render caused by an unrelated state change.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []));
 
   const { refreshing, refreshed, onRefresh } = useRefreshToast(loadStatus);

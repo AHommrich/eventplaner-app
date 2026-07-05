@@ -755,9 +755,10 @@ fixed. Each is a candidate for its own future phase.
   effects (`app/declined.tsx`, `lib/EventThemeContext.tsx`, potentially
   others). Rule currently off. Fix: rewrite bootstrap effects to use lazy
   initialiser or `useSyncExternalStore` pattern.
-- [ ] **~18 `react-hooks/exhaustive-deps` warnings** across `app/*` and `lib/*`
-  — Phase 0 sets rule to `warn`; upgrading to `error` requires touching real
-  code and gets its own phase.
+- [x] **~18 `react-hooks/exhaustive-deps` warnings** across `app/*` and `lib/*`
+  — Fixed. Every intentional mount-only effect now carries a per-line
+  `// eslint-disable-next-line` with a specific justification. Rule runs
+  at default `error` level. Tree is at 0 lint warnings.
 - [ ] **Existing files are not Prettier-formatted** — Phase 0 keeps `prettier`
   as a separate `format:check` / `format` script instead of gating `lint` on
   it, so today's tree passes CI without a reformat. A one-shot

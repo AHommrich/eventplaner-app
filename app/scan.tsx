@@ -69,6 +69,11 @@ export default function ScanScreen() {
 
   useEffect(() => {
     if (!permission?.granted) requestPermission();
+    // Bootstrap permission ask — `requestPermission` shows the OS dialog
+    // once. Re-firing on subsequent renders (which happens if we list
+    // `permission?.granted` as a dep) would loop the request state
+    // machine when the guest denies and the render pipeline updates.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   /**
