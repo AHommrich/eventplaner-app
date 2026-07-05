@@ -45,6 +45,13 @@ npm run test:watch               # watch mode during development
 npm run test:coverage            # coverage report + threshold enforcement
 ```
 
+Both `test` and `test:coverage` pass `--runInBand` so Jest runs the suite in
+one process. The parallel worker pool holds on to a native handle from the
+Reanimated / Gesture-Handler bridging chain that `--detectOpenHandles`
+cannot surface; single-process execution sidesteps it and keeps the CI log
+clean. The added wall clock is ~3 s (2 s → 5 s) for the current 152 tests —
+a fair trade for a zero-warning run.
+
 ## Coverage thresholds
 
 Enforced by `jest.config.js` and by the CI `test.yml` workflow:
