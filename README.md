@@ -5,7 +5,7 @@
 [![lint](https://github.com/AHommrich/eventplaner-app/actions/workflows/lint.yml/badge.svg?branch=main)](https://github.com/AHommrich/eventplaner-app/actions/workflows/lint.yml)
 [![typecheck](https://github.com/AHommrich/eventplaner-app/actions/workflows/typecheck.yml/badge.svg?branch=main)](https://github.com/AHommrich/eventplaner-app/actions/workflows/typecheck.yml)
 [![test](https://github.com/AHommrich/eventplaner-app/actions/workflows/test.yml/badge.svg?branch=main)](https://github.com/AHommrich/eventplaner-app/actions/workflows/test.yml)
-![license](https://img.shields.io/badge/license-MIT-blue)
+[![License](https://img.shields.io/badge/License-All%20Rights%20Reserved-red.svg)](LICENSE)
 
 A wedding-guest companion app. Guests receive a QR-code invitation, scan it
 once and land in a small event hub — RSVP, home screen with countdown and
@@ -15,8 +15,8 @@ erasure request). No passwords, no accounts, no third-party trackers.
 
 The app is built as the client to a Laravel 12 backend that the same author
 maintains in a separate repository. The wedding is real, the couple is
-André & Tabea Hommrich, and the code is open-sourced under the MIT license
-after the phased refactor documented in
+André & Tabea Hommrich, and the code is made publicly viewable for portfolio
+and reference purposes after the phased refactor documented in
 [`docs/REFACTOR_PLAN.md`](docs/REFACTOR_PLAN.md).
 
 ---
@@ -240,6 +240,7 @@ here — it is part of the design.
 
 ## 9. License
 
-MIT — see [`LICENSE`](LICENSE). The wedding photos and any personal data
-that flow through the running app are of course not covered by the code
-license.
+All rights reserved. See [`LICENSE`](LICENSE). Publicly viewable for
+portfolio purposes; no reuse, fork, or redistribution without written
+permission. The wedding photos and any personal data that flow through
+the running app are of course not covered by the code license.

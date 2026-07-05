@@ -35,6 +35,9 @@ module.exports = {
     // `QrFromImage.tsx` renders a real WebView + jsQR bridge — meaningful
     // coverage needs an actual WebView harness rather than a unit stub.
     '!lib/QrFromImage.tsx',
+    // Vendored jsQR source (auto-generated from node_modules/jsqr). Sync
+    // is checked separately by tests/vendor/jsqr-source-sync.test.ts.
+    '!lib/vendor/**',
     // Route layouts wire providers together and mount routes; behaviour is
     // observed indirectly through every screen test that renders under
     // them, so per-line coverage on the layouts themselves would just

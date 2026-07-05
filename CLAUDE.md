@@ -163,7 +163,9 @@ lib/
   LanguageContext.tsx  useLanguage() Hook, Persistenz via SecureStore
   EventThemeContext.tsx useEventTheme() — Farben + EventInfo aus /api/event/info
   BlockedFeaturesContext.tsx useBlockedFeatures() — drinksBlocked State + Polling
-  QrFromImage.tsx      WebView-basierter QR-Decoder für Galerie-Bilder
+  QrFromImage.tsx      WebView-basierter QR-Decoder für Galerie-Bilder (vendored jsQR, kein CDN)
+  vendor/
+    jsQRSource.ts      Vendored jsQR (Apache-2.0), regeneriert via scripts/vendor-jsqr.mjs
   useRefreshToast.ts   Hook: { refreshing, refreshed, onRefresh } — zentrales Pull-to-Refresh + Toast-Logik
   legal.ts             fetchPrivacyNotice(locale) + 24h SecureStore-Cache (legal_privacy_cache_<locale>)
   consents.ts          ConsentKey (photo_upload | photo_game | camera_scan) + get/grant/revoke (SecureStore consent_<key>)
@@ -294,7 +296,12 @@ if (loading && !guest) return <ActivityIndicator ... />;             // rsvp
 - Kein LinearGradient — einfacher `View` mit `backgroundColor + opacity`
 - Sitzt zwischen Cover-Bild und Text-Content (`pointerEvents="none"`)
 
-**Fonts** — 8 Google Fonts lokal gebündelt (`@expo-google-fonts/*`), DSGVO-konform (kein CDN zur Laufzeit). Backend liefert `font_heading` Key, `ThemedText` wendet automatisch regular/bold Variante an. Tab-Bar Labels erhalten Font via `tabBarLabelStyle: { fontFamily: colors.fontFamily.regular }`.
+**Fonts** — 10 Google Fonts lokal gebündelt (`@expo-google-fonts/*`), DSGVO-konform (kein CDN zur Laufzeit). Backend liefert `font_heading` Key, `ThemedText` wendet automatisch regular/bold Variante an. Tab-Bar Labels erhalten Font via `tabBarLabelStyle: { fontFamily: colors.fontFamily.regular }`.
+
+**Zero Runtime-CDN** — Alle Third-Party-Assets sind lokal:
+- Fonts: `@expo-google-fonts/*` als Assets im Bundle
+- jsQR (Galerie-QR-Decoder): vendored in `lib/vendor/jsQRSource.ts`, regeneriert via `node scripts/vendor-jsqr.mjs` bei jedem jsqr-Bump
+- Enforced durch `tests/regressions/no-tracking.test.ts` — CDN-Hostnamen dürfen im source-tree (app/lib/components/constants) nicht vorkommen
 
 **NativeWind Setup** (nicht anfassen):
 - `babel.config.js`: `jsxImportSource: 'nativewind'` — KEIN `nativewind/babel` Preset
