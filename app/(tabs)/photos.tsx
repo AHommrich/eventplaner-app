@@ -95,6 +95,13 @@ export default function PhotosScreen() {
   const insets = useSafeAreaInsets();
   const { refreshing, refreshed, onRefresh } = useRefreshToast(async () => { await fetchPhotos(); loadTheme(); });
 
+  /**
+   * Load the photo list from the backend. Swallows errors on purpose:
+   * `fetchPhotos` is called both by the initial mount effect AND by the
+   * 30-second polling interval, so a transient network hiccup should not
+   * pop an alert or clear the currently-rendered list. The next poll or a
+   * pull-to-refresh retries.
+   */
   async function fetchPhotos() {
     try {
       const res = await api.get<{ data: Photo[] }>('/api/photos');
@@ -147,6 +154,13 @@ export default function PhotosScreen() {
     }
   }
 
+  /**
+   * Library picker path. Runs the OS permission dialog on first tap; on
+   * refusal we surface the localised message rather than silently ignoring
+   * (the guest may have blocked permission at OS level and needs to know).
+   * On successful pick we hand the URI to `uploadAsset` — which owns the
+   * multipart body construction.
+   */
   async function handleUpload() {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permission.granted) {
@@ -162,6 +176,12 @@ export default function PhotosScreen() {
     await uploadAsset(result.assets[0].uri);
   }
 
+  /**
+   * Camera path. Same permission + upload shape as `handleUpload`, but
+   * `launchCameraAsync` instead of `launchImageLibraryAsync`. Kept as a
+   * separate function rather than parameterised so the intent is obvious
+   * at the call site and the two permission strings stay distinct.
+   */
   async function handleCamera() {
     const permission = await ImagePicker.requestCameraPermissionsAsync();
     if (!permission.granted) {
@@ -176,10 +196,15 @@ export default function PhotosScreen() {
     await uploadAsset(result.assets[0].uri);
   }
 
+  /**
+   * FAB tap handler. Gates the whole upload flow behind the
+   * `photo_upload` consent (Art. 6/7 (a) — see `docs/showcase/dsgvo-first.md`)
+   * and then presents a native alert with camera + library options. When
+   * consent is already granted `ensureConsent` resolves synchronously and
+   * the alert appears without a modal in between, so returning guests see
+   * no friction.
+   */
   async function showUploadOptions() {
-    // GDPR Art. 6/7 (a) explicit consent gate — resolves true instantly when
-    // already granted, so the interaction stays byte-identical after the
-    // first grant.
     if (!(await ensureConsent('photo_upload'))) return;
     Alert.alert(t('photos.addPhoto'), '', [
       { text: t('photos.camera'), onPress: handleCamera },
