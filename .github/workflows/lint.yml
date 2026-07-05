@@ -1,10 +1,11 @@
-# Runs ESLint over the whole tree on every push and PR to main.
+# Runs ESLint + Prettier over the whole tree on every push and PR to main.
 #
-# The rule set in `eslint.config.js` downgrades several React-19 checks to
-# `warn` because they trip on pre-refactor code — the tightening path is
-# tracked in `docs/REFACTOR_PLAN.md → Follow-ups`. ESLint itself only fails
-# on `error`-level findings by default, so warnings do not break CI while
-# still surfacing in the run log.
+# The rule set in `eslint.config.js` runs every React-hooks check at its
+# default `error` level (only `set-state-in-effect` stays disabled — see
+# the config comment). ESLint itself fails on `error`-level findings, so a
+# regression breaks CI immediately. Prettier is enforced via
+# `npm run format:check` — reformatting on CI would silently rewrite files
+# without the author noticing, so we fail the run instead.
 name: lint
 
 on:
@@ -38,3 +39,6 @@ jobs:
 
       - name: ESLint
         run: npm run lint
+
+      - name: Prettier
+        run: npm run format:check

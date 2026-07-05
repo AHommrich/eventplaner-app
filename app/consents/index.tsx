@@ -49,7 +49,7 @@ export default function ConsentsScreen() {
 
   const load = useCallback(async () => {
     const entries = await Promise.all(
-      ALL_PURPOSES.map(async (p) => [p, await getConsent(p)] as const),
+      ALL_PURPOSES.map(async (p) => [p, await getConsent(p)] as const)
     );
     const next: Record<ConsentKey, ConsentRecord | null> = { photo_upload: null, photo_game: null };
     for (const [p, r] of entries) next[p] = r;

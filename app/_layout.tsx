@@ -38,29 +38,14 @@ import {
   CormorantGaramond_400Regular,
   CormorantGaramond_700Bold,
 } from '@expo-google-fonts/cormorant-garamond';
-import {
-  Cinzel_400Regular,
-  Cinzel_700Bold,
-} from '@expo-google-fonts/cinzel';
-import {
-  DancingScript_400Regular,
-  DancingScript_700Bold,
-} from '@expo-google-fonts/dancing-script';
+import { Cinzel_400Regular, Cinzel_700Bold } from '@expo-google-fonts/cinzel';
+import { DancingScript_400Regular, DancingScript_700Bold } from '@expo-google-fonts/dancing-script';
 import { GreatVibes_400Regular } from '@expo-google-fonts/great-vibes';
 import { Comfortaa_700Bold } from '@expo-google-fonts/comfortaa';
 import { Nunito_700Bold } from '@expo-google-fonts/nunito';
-import {
-  Raleway_400Regular,
-  Raleway_700Bold,
-} from '@expo-google-fonts/raleway';
-import {
-  Lora_400Regular,
-  Lora_700Bold,
-} from '@expo-google-fonts/lora';
-import {
-  JosefinSans_400Regular,
-  JosefinSans_700Bold,
-} from '@expo-google-fonts/josefin-sans';
+import { Raleway_400Regular, Raleway_700Bold } from '@expo-google-fonts/raleway';
+import { Lora_400Regular, Lora_700Bold } from '@expo-google-fonts/lora';
+import { JosefinSans_400Regular, JosefinSans_700Bold } from '@expo-google-fonts/josefin-sans';
 import '../global.css';
 import { LanguageProvider } from '../lib/LanguageContext';
 import { EventThemeProvider } from '../lib/EventThemeContext';
@@ -122,36 +107,39 @@ export default function RootLayout() {
       <EventThemeProvider>
         <BlockedFeaturesProvider>
           <ConsentGateProvider>
-          <Stack screenOptions={{ headerShown: false }}>
-            <Stack.Screen name="index" />
-            <Stack.Screen name="scan" />
-            <Stack.Screen name="rsvp" />
-            <Stack.Screen name="declined" />
-            <Stack.Screen name="blocked" />
-            <Stack.Screen name="(tabs)" />
-            <Stack.Screen name="legal/privacy" />
-            <Stack.Screen name="consents/index" />
-            <Stack.Screen name="data-export" />
-            <Stack.Screen name="erasure-pending" />
-          </Stack>
-          {splashVisible && (
-            <Animated.View style={[StyleSheet.absoluteFill, { opacity: fadeAnim }]} pointerEvents="none">
-              <LinearGradient
-                colors={SPLASH_COLORS}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={StyleSheet.absoluteFill}
-              />
-              <View style={styles.splashLogoWrap}>
-                <Image
-                  source={require('../assets/eve-logo.png')}
-                  style={styles.splashLogo}
-                  resizeMode="contain"
+            <Stack screenOptions={{ headerShown: false }}>
+              <Stack.Screen name="index" />
+              <Stack.Screen name="scan" />
+              <Stack.Screen name="rsvp" />
+              <Stack.Screen name="declined" />
+              <Stack.Screen name="blocked" />
+              <Stack.Screen name="(tabs)" />
+              <Stack.Screen name="legal/privacy" />
+              <Stack.Screen name="consents/index" />
+              <Stack.Screen name="data-export" />
+              <Stack.Screen name="erasure-pending" />
+            </Stack>
+            {splashVisible && (
+              <Animated.View
+                style={[StyleSheet.absoluteFill, { opacity: fadeAnim }]}
+                pointerEvents="none"
+              >
+                <LinearGradient
+                  colors={SPLASH_COLORS}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={StyleSheet.absoluteFill}
                 />
-                <Text style={styles.splashTagline}>eveplan</Text>
-              </View>
-            </Animated.View>
-          )}
+                <View style={styles.splashLogoWrap}>
+                  <Image
+                    source={require('../assets/eve-logo.png')}
+                    style={styles.splashLogo}
+                    resizeMode="contain"
+                  />
+                  <Text style={styles.splashTagline}>eveplan</Text>
+                </View>
+              </Animated.View>
+            )}
           </ConsentGateProvider>
         </BlockedFeaturesProvider>
       </EventThemeProvider>

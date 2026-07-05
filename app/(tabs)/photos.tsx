@@ -93,7 +93,10 @@ export default function PhotosScreen() {
   const [selected, setSelected] = useState<Photo | null>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const insets = useSafeAreaInsets();
-  const { refreshing, refreshed, onRefresh } = useRefreshToast(async () => { await fetchPhotos(); loadTheme(); });
+  const { refreshing, refreshed, onRefresh } = useRefreshToast(async () => {
+    await fetchPhotos();
+    loadTheme();
+  });
 
   /**
    * Load the photo list from the backend. Swallows errors on purpose:
@@ -128,11 +131,10 @@ export default function PhotosScreen() {
    * the new photo appears at the top before the backend even confirms.
    */
   async function uploadAsset(uri: string) {
-    const jpeg = await ImageManipulator.manipulateAsync(
-      uri,
-      [],
-      { compress: 0.8, format: ImageManipulator.SaveFormat.JPEG }
-    );
+    const jpeg = await ImageManipulator.manipulateAsync(uri, [], {
+      compress: 0.8,
+      format: ImageManipulator.SaveFormat.JPEG,
+    });
     const formData = new FormData();
     formData.append('photo', {
       uri: jpeg.uri,
@@ -215,7 +217,15 @@ export default function PhotosScreen() {
 
   if (loading) {
     return (
-      <View style={{ flex: 1, backgroundColor: colors.screenBg, alignItems: 'center', justifyContent: 'center', paddingTop: insets.top }}>
+      <View
+        style={{
+          flex: 1,
+          backgroundColor: colors.screenBg,
+          alignItems: 'center',
+          justifyContent: 'center',
+          paddingTop: insets.top,
+        }}
+      >
         <ActivityIndicator color={theme.colors.primary} />
       </View>
     );
@@ -229,7 +239,14 @@ export default function PhotosScreen() {
         numColumns={COLUMNS}
         contentContainerStyle={{ padding: GAP }}
         columnWrapperStyle={{ gap: GAP }}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.tabTint} colors={[colors.tabTint]} />}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={colors.tabTint}
+            colors={[colors.tabTint]}
+          />
+        }
         ItemSeparatorComponent={() => <View style={{ height: GAP }} />}
         ListEmptyComponent={
           <View className="flex-1 items-center justify-center mt-32">
@@ -254,12 +271,19 @@ export default function PhotosScreen() {
 
       {/* Detail modal — fades in and out so the transition doesn't clash with
           the FlatList scroll position. */}
-      <Modal visible={!!selected} transparent animationType="fade" onRequestClose={() => setSelected(null)}>
+      <Modal
+        visible={!!selected}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setSelected(null)}
+      >
         <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.95)', justifyContent: 'center' }}>
           {selected && <ZoomableImage key={selected.id} uri={selected.url} />}
           {selected && (
             <View style={{ alignItems: 'center', marginTop: 16 }}>
-              <ThemedText style={{ color: '#fff', fontSize: 14, opacity: 0.7 }}>{selected.guest_name}</ThemedText>
+              <ThemedText style={{ color: '#fff', fontSize: 14, opacity: 0.7 }}>
+                {selected.guest_name}
+              </ThemedText>
             </View>
           )}
           <Pressable

@@ -40,7 +40,7 @@ const pkg = JSON.parse(readFileSync(PKG_PATH, 'utf-8'));
 if (source.includes('`') || source.includes('${')) {
   console.error(
     'ERROR: jsQR source contains backticks or ${...}. It cannot be embedded ' +
-      'as a bare template literal. Vendor strategy must be revised.',
+      'as a bare template literal. Vendor strategy must be revised.'
   );
   process.exit(1);
 }
@@ -73,6 +73,4 @@ export const JSQR_VERSION = ${JSON.stringify(pkg.version)};
 const out = header + source + footer;
 writeFileSync(TARGET_PATH, out, 'utf-8');
 
-console.log(
-  `Wrote ${TARGET_PATH} (${out.length} bytes, jsQR v${pkg.version}).`,
-);
+console.log(`Wrote ${TARGET_PATH} (${out.length} bytes, jsQR v${pkg.version}).`);

@@ -21,7 +21,11 @@
  * hall polling in parallel does not hammer the backend.
  */
 import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
-import api, { registerDrinksBlockedHandler, clearDrinksBlockedHandler, resetDrinksBlocked } from './api';
+import api, {
+  registerDrinksBlockedHandler,
+  clearDrinksBlockedHandler,
+  resetDrinksBlocked,
+} from './api';
 
 type BlockedFeaturesContextType = {
   drinksBlocked: boolean;
@@ -46,11 +50,14 @@ export function BlockedFeaturesProvider({ children }: { children: React.ReactNod
   function startPolling() {
     stopPolling();
     pollRef.current = setInterval(() => {
-      api.get('/api/drinks').then(() => {
-        resetDrinksBlocked();
-        setDrinksBlocked(false);
-        stopPolling();
-      }).catch(() => {});
+      api
+        .get('/api/drinks')
+        .then(() => {
+          resetDrinksBlocked();
+          setDrinksBlocked(false);
+          stopPolling();
+        })
+        .catch(() => {});
     }, POLL_INTERVAL_MS);
   }
 

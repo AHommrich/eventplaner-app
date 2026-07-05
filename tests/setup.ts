@@ -11,8 +11,12 @@ jest.mock('expo-secure-store', () => {
   (globalThis as any).__secureStore = store;
   return {
     getItemAsync: jest.fn(async (key: string) => (store.has(key) ? store.get(key)! : null)),
-    setItemAsync: jest.fn(async (key: string, value: string) => { store.set(key, value); }),
-    deleteItemAsync: jest.fn(async (key: string) => { store.delete(key); }),
+    setItemAsync: jest.fn(async (key: string, value: string) => {
+      store.set(key, value);
+    }),
+    deleteItemAsync: jest.fn(async (key: string) => {
+      store.delete(key);
+    }),
   };
 });
 

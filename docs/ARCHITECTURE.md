@@ -113,23 +113,23 @@ matrix cannot drift between the session probe and the post-login path.
 
 ## 5. Screens and their non-obvious rules
 
-| Route | Purpose | Non-obvious rule |
-|---|---|---|
-| `app/index.tsx` | Welcome + session probe + gallery-QR fallback | Also probes for a pending Art. 17 erasure — if one exists we route to `/erasure-pending` without showing the welcome screen. |
-| `app/scan.tsx` | Live QR scanner + DEV token input | Wrapped in `<ConsentGate purpose="camera_scan">` so the DSGVO consent shows before the OS camera dialog. |
-| `app/rsvp.tsx` | First-time RSVP after login | The tab bar is not yet mounted here — this is the one place where a full-screen route sits outside `(tabs)`. |
-| `app/declined.tsx` | Declined guest surface | Offers revocation. Known issue: `useSafeAreaInsets` is called after an early return (see `docs/REFACTOR_PLAN.md` follow-ups). |
-| `app/blocked.tsx` | Global app-block screen | Polls the backend for re-enable and calls `clearBlocked()` from `lib/api.ts` before navigating home. |
-| `app/(tabs)/home.tsx` | Landing tab | Cover image + countdown + tap-to-navigate venue. `openInMaps` prefers coordinates over addresses because `geo:lat,lng?q=<addr>` on Android silently drops the coordinates. |
-| `app/(tabs)/rsvp.tsx` | Group RSVP tab | Only visible when `rsvp_status === 'accepted_pending'`. Tab visibility is a static prop in `_layout.tsx`. |
-| `app/(tabs)/photos.tsx` | Gallery + upload | Upload button wrapped in `<ConsentGate purpose="photo_upload">`. |
-| `app/(tabs)/photo-game.tsx` | Foto-game with 4 states | Submit button wrapped in `<ConsentGate purpose="photo_game">`. |
-| `app/(tabs)/drinks.tsx` | Drink log + ranking | Hidden when the backend flips `drink_game_enabled: false`. |
-| `app/(tabs)/settings.tsx` | Logout, language, DSGVO surfaces | Additive extension point: every new DSGVO screen appends a row here, never re-orders. |
-| `app/legal/privacy.tsx` | Art. 13 privacy notice | Reads through a 24 h SecureStore cache so airplane-mode still shows text. |
-| `app/consents/index.tsx` | Art. 7 (3) consent management | Lists granted consents with timestamps; revocation is one tap. |
-| `app/data-export.tsx` | Art. 15 export | Streams the JSON to `expo-sharing` — never lands on disk unencrypted. |
-| `app/erasure-pending.tsx` | Art. 17 in-window state | Reachable without a session so a guest can always revoke. |
+| Route                       | Purpose                                       | Non-obvious rule                                                                                                                                                           |
+| --------------------------- | --------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `app/index.tsx`             | Welcome + session probe + gallery-QR fallback | Also probes for a pending Art. 17 erasure — if one exists we route to `/erasure-pending` without showing the welcome screen.                                               |
+| `app/scan.tsx`              | Live QR scanner + DEV token input             | Wrapped in `<ConsentGate purpose="camera_scan">` so the DSGVO consent shows before the OS camera dialog.                                                                   |
+| `app/rsvp.tsx`              | First-time RSVP after login                   | The tab bar is not yet mounted here — this is the one place where a full-screen route sits outside `(tabs)`.                                                               |
+| `app/declined.tsx`          | Declined guest surface                        | Offers revocation. Known issue: `useSafeAreaInsets` is called after an early return (see `docs/REFACTOR_PLAN.md` follow-ups).                                              |
+| `app/blocked.tsx`           | Global app-block screen                       | Polls the backend for re-enable and calls `clearBlocked()` from `lib/api.ts` before navigating home.                                                                       |
+| `app/(tabs)/home.tsx`       | Landing tab                                   | Cover image + countdown + tap-to-navigate venue. `openInMaps` prefers coordinates over addresses because `geo:lat,lng?q=<addr>` on Android silently drops the coordinates. |
+| `app/(tabs)/rsvp.tsx`       | Group RSVP tab                                | Only visible when `rsvp_status === 'accepted_pending'`. Tab visibility is a static prop in `_layout.tsx`.                                                                  |
+| `app/(tabs)/photos.tsx`     | Gallery + upload                              | Upload button wrapped in `<ConsentGate purpose="photo_upload">`.                                                                                                           |
+| `app/(tabs)/photo-game.tsx` | Foto-game with 4 states                       | Submit button wrapped in `<ConsentGate purpose="photo_game">`.                                                                                                             |
+| `app/(tabs)/drinks.tsx`     | Drink log + ranking                           | Hidden when the backend flips `drink_game_enabled: false`.                                                                                                                 |
+| `app/(tabs)/settings.tsx`   | Logout, language, DSGVO surfaces              | Additive extension point: every new DSGVO screen appends a row here, never re-orders.                                                                                      |
+| `app/legal/privacy.tsx`     | Art. 13 privacy notice                        | Reads through a 24 h SecureStore cache so airplane-mode still shows text.                                                                                                  |
+| `app/consents/index.tsx`    | Art. 7 (3) consent management                 | Lists granted consents with timestamps; revocation is one tap.                                                                                                             |
+| `app/data-export.tsx`       | Art. 15 export                                | Streams the JSON to `expo-sharing` — never lands on disk unencrypted.                                                                                                      |
+| `app/erasure-pending.tsx`   | Art. 17 in-window state                       | Reachable without a session so a guest can always revoke.                                                                                                                  |
 
 ## 6. Design system
 

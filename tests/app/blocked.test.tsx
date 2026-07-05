@@ -32,7 +32,7 @@ function renderScreen() {
   return render(
     <LanguageProvider>
       <BlockedScreen />
-    </LanguageProvider>,
+    </LanguageProvider>
   );
 }
 

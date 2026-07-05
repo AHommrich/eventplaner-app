@@ -14,16 +14,16 @@
 export const theme = {
   colors: {
     // --- Brand fallbacks (only used if the backend palette is incomplete) ---
-    primary: '#7B1E1E',    // Deep burgundy — default heading/text tone
-    secondary: '#FFFFFF',  // White — text on dark backgrounds
-    accent: '#C47B20',     // Warm amber — buttons, FAB, highlights
+    primary: '#7B1E1E', // Deep burgundy — default heading/text tone
+    secondary: '#FFFFFF', // White — text on dark backgrounds
+    accent: '#C47B20', // Warm amber — buttons, FAB, highlights
     terracotta: '#C4421A', // Terracotta — secondary buttons, borders, dividers
     // --- Semantic states (never overridden by the backend) ---
-    sage: '#5A7A4A',       // Sage green — success states, RSVP accepted
+    sage: '#5A7A4A', // Sage green — success states, RSVP accepted
     background: '#EAE5DC', // Linen white — global screen background fallback
-    surface: '#F5F2EC',    // Warm white — card surfaces, tab bar
-    muted: '#7A6A5A',      // Warm grey — secondary text, disabled labels
-    error: '#BF4020',      // Terracotta red — error alerts, decline actions
+    surface: '#F5F2EC', // Warm white — card surfaces, tab bar
+    muted: '#7A6A5A', // Warm grey — secondary text, disabled labels
+    error: '#BF4020', // Terracotta red — error alerts, decline actions
   },
   fontFamily: {
     /** Neutral placeholder used before the event font has resolved. */

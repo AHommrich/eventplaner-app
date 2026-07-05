@@ -69,16 +69,16 @@ Refactor öffentlich einsehbar gemacht — zu Portfolio- und Referenzzwecken.
 6. **Tab-Sichtbarkeit über Backend-Flags.** Der Getränke-Tab verschwindet,
    wenn das Paar ihn mitten im Event deaktiviert; der RSVP-Tab
    verschwindet, sobald die Zusage bestätigt ist. Umsetzung:
-   [`app/(tabs)/_layout.tsx`](app/(tabs)/_layout.tsx),
+   [`app/(tabs)/_layout.tsx`](<app/(tabs)/_layout.tsx>),
    [`lib/BlockedFeaturesContext.tsx`](lib/BlockedFeaturesContext.tsx).
 7. **Foto-Spiel mit vierstufigem Client-Automat.** Noch keine Aufgabe →
    zugeteilt → eingereicht → erledigt. Umsetzung:
-   [`app/(tabs)/photo-game.tsx`](app/(tabs)/photo-game.tsx).
+   [`app/(tabs)/photo-game.tsx`](<app/(tabs)/photo-game.tsx>).
 8. **Native Maps-Übergabe mit Koordinaten-first-URL.** iOS zeigt einen
    App-Picker (Apple Maps / Google Maps) mit Google-Maps-Fallback auf Apple
    Maps; Android nutzt `geo:lat,lng` — nie `geo:lat,lng?q=<adresse>`, weil
    das `q=` die Koordinaten überschreibt. Umsetzung: `openInMaps` in
-   [`app/(tabs)/home.tsx`](app/(tabs)/home.tsx).
+   [`app/(tabs)/home.tsx`](<app/(tabs)/home.tsx>).
 
 Screenshots liegen in [`docs/screenshots/`](docs/screenshots), sobald ein
 stabiler Staging-Stand aufgenommen ist; der Ordner bleibt beim ersten
@@ -88,18 +88,18 @@ Commit leer, damit das Repo keine Platzhalter-Grafiken ausliefert.
 
 ## 2. Tech-Stack
 
-| Schicht | Wahl | Warum |
-|---|---|---|
-| Framework | Expo SDK 54 + Expo Router v6 | Datei-basiertes Routing hält die Redirect-Matrix (Session → RSVP → Home) nah am Dateibaum. |
-| Sprache | TypeScript (strict) | Jede Backend-Antwort hat ein Interface, jeder Provider eine Shape. |
-| Styling | NativeWind v4 + Tailwind v3 | Tailwind-Tokens für Struktur, `useEventTheme()`-Farben für Brand. |
-| HTTP | Axios + Bearer-Interceptor | Ein Client in [`lib/api.ts`](lib/api.ts); Screens importieren nie direkt axios. |
-| Auth-Storage | `expo-secure-store` | Nur Keychain / Keystore — nie AsyncStorage — weil Tokens backend-seitig nicht ablaufen. |
-| Icons | `@expo/vector-icons` (Ionicons) | Eine Icon-Familie, offline-verfügbar. |
-| i18n | `i18n-js` + `LanguageContext` | Zwei Locales (DE + EN), beim ersten Start Device-detected, in Settings umschaltbar. |
-| Test-Runner | Jest + `jest-expo` + `@testing-library/react-native` | Offizielles Expo-Test-Preset, kein Custom-Transformer. |
-| Fonts | `@expo-google-fonts/*` (10 Familien) | Lokal gebündelt, kein CDN-Traffic. |
-| Backend | Laravel 12 + Sanctum | Separates Repository; hochzeits-app-spezifische Tokens mit `app_blocked` / `drinks_blocked` Soft-Blocks. |
+| Schicht      | Wahl                                                 | Warum                                                                                                    |
+| ------------ | ---------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| Framework    | Expo SDK 54 + Expo Router v6                         | Datei-basiertes Routing hält die Redirect-Matrix (Session → RSVP → Home) nah am Dateibaum.               |
+| Sprache      | TypeScript (strict)                                  | Jede Backend-Antwort hat ein Interface, jeder Provider eine Shape.                                       |
+| Styling      | NativeWind v4 + Tailwind v3                          | Tailwind-Tokens für Struktur, `useEventTheme()`-Farben für Brand.                                        |
+| HTTP         | Axios + Bearer-Interceptor                           | Ein Client in [`lib/api.ts`](lib/api.ts); Screens importieren nie direkt axios.                          |
+| Auth-Storage | `expo-secure-store`                                  | Nur Keychain / Keystore — nie AsyncStorage — weil Tokens backend-seitig nicht ablaufen.                  |
+| Icons        | `@expo/vector-icons` (Ionicons)                      | Eine Icon-Familie, offline-verfügbar.                                                                    |
+| i18n         | `i18n-js` + `LanguageContext`                        | Zwei Locales (DE + EN), beim ersten Start Device-detected, in Settings umschaltbar.                      |
+| Test-Runner  | Jest + `jest-expo` + `@testing-library/react-native` | Offizielles Expo-Test-Preset, kein Custom-Transformer.                                                   |
+| Fonts        | `@expo-google-fonts/*` (10 Familien)                 | Lokal gebündelt, kein CDN-Traffic.                                                                       |
+| Backend      | Laravel 12 + Sanctum                                 | Separates Repository; hochzeits-app-spezifische Tokens mit `app_blocked` / `drinks_blocked` Soft-Blocks. |
 
 Fixierte Dep-Versionen für Expo Go SDK 54 (Anfassen crasht die JSI-Bridge —
 nicht isoliert hochziehen):
@@ -135,18 +135,18 @@ Release-Build umstellen.
 
 ## 4. Skripte
 
-| Skript | Was es tut |
-|---|---|
-| `npm start` | `expo start` — Metro + Pairing-QR. |
-| `npm run ios` / `npm run android` / `npm run web` | Wie oben mit Plattform-Preset. |
-| `npm run lint` | ESLint über den Baum. Warnings sind erlaubt — der Verschärfungs-Pfad ist in `docs/REFACTOR_PLAN.md` dokumentiert. |
-| `npm run lintfix` | ESLint `--fix`. **Nicht** ungeprüft gegen Prä-Refactor-Code laufen lassen. |
-| `npm run format:check` | Prettier nur prüfen. |
-| `npm run format` | Prettier schreiben. Gleicher „nicht gegen Prä-Refactor“-Vorbehalt. |
-| `npm run typecheck` | `tsc --noEmit`, strict. |
-| `npm test` | Jest ein Lauf. |
-| `npm run test:watch` | Jest Watch-Modus. |
-| `npm run test:coverage` | Jest mit Coverage; erzwingt die Schwellen pro Ordner aus [`jest.config.js`](jest.config.js). |
+| Skript                                            | Was es tut                                                                                                        |
+| ------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| `npm start`                                       | `expo start` — Metro + Pairing-QR.                                                                                |
+| `npm run ios` / `npm run android` / `npm run web` | Wie oben mit Plattform-Preset.                                                                                    |
+| `npm run lint`                                    | ESLint über den Baum. Warnings sind erlaubt — der Verschärfungs-Pfad ist in `docs/REFACTOR_PLAN.md` dokumentiert. |
+| `npm run lintfix`                                 | ESLint `--fix`. **Nicht** ungeprüft gegen Prä-Refactor-Code laufen lassen.                                        |
+| `npm run format:check`                            | Prettier nur prüfen.                                                                                              |
+| `npm run format`                                  | Prettier schreiben. Gleicher „nicht gegen Prä-Refactor“-Vorbehalt.                                                |
+| `npm run typecheck`                               | `tsc --noEmit`, strict.                                                                                           |
+| `npm test`                                        | Jest ein Lauf.                                                                                                    |
+| `npm run test:watch`                              | Jest Watch-Modus.                                                                                                 |
+| `npm run test:coverage`                           | Jest mit Coverage; erzwingt die Schwellen pro Ordner aus [`jest.config.js`](jest.config.js).                      |
 
 ---
 

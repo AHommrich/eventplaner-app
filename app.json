@@ -15,10 +15,7 @@
     "ios": {
       "supportsTablet": true,
       "infoPlist": {
-        "LSApplicationQueriesSchemes": [
-          "comgooglemaps",
-          "comgooglemaps"
-        ],
+        "LSApplicationQueriesSchemes": ["comgooglemaps", "comgooglemaps"],
         "ITSAppUsesNonExemptEncryption": false
       },
       "bundleIdentifier": "com.ahommrichsorganization.eveplan"
@@ -31,9 +28,7 @@
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
       "predictiveBackGestureEnabled": false,
-      "permissions": [
-        "android.permission.CAMERA"
-      ]
+      "permissions": ["android.permission.CAMERA"]
     },
     "web": {
       "favicon": "./assets/favicon.png"

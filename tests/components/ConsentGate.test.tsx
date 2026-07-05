@@ -39,7 +39,7 @@ function renderProvider(onResult: (v: boolean) => void) {
           <Harness onResult={onResult} />
         </ConsentGateProvider>
       </EventThemeProvider>
-    </LanguageProvider>,
+    </LanguageProvider>
   );
 }
 
@@ -51,7 +51,7 @@ describe('components/ConsentGate', () => {
   it('resolves true immediately when consent was previously granted', async () => {
     await SecureStore.setItemAsync(
       'consent_photo_upload',
-      JSON.stringify({ granted_at: new Date().toISOString() }),
+      JSON.stringify({ granted_at: new Date().toISOString() })
     );
     const onResult = jest.fn();
     const { getByTestId } = renderProvider(onResult);

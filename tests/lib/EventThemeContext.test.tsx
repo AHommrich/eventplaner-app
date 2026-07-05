@@ -40,7 +40,7 @@ describe('lib/EventThemeContext', () => {
     const { getByTestId } = render(
       <EventThemeProvider>
         <Probe />
-      </EventThemeProvider>,
+      </EventThemeProvider>
     );
     // Fallback burgundy from the file header.
     await waitFor(() => expect(getByTestId('primary').props.children).toBe('#7c2d3e'));
@@ -62,7 +62,7 @@ describe('lib/EventThemeContext', () => {
     const { getByTestId } = render(
       <EventThemeProvider>
         <Probe />
-      </EventThemeProvider>,
+      </EventThemeProvider>
     );
 
     await waitFor(() => expect(getByTestId('primary').props.children).toBe('#000001'));
@@ -85,7 +85,7 @@ describe('lib/EventThemeContext', () => {
     const { getByTestId } = render(
       <EventThemeProvider>
         <Probe />
-      </EventThemeProvider>,
+      </EventThemeProvider>
     );
 
     await waitFor(() => expect(getByTestId('name').props.children).toBe('Partial theme'));
@@ -103,7 +103,7 @@ describe('lib/EventThemeContext', () => {
     const { getByTestId } = render(
       <EventThemeProvider>
         <Probe />
-      </EventThemeProvider>,
+      </EventThemeProvider>
     );
 
     await waitFor(() => expect(getByTestId('primary').props.children).toBe('#111111'));
@@ -123,7 +123,7 @@ describe('lib/EventThemeContext', () => {
     const { getByTestId } = render(
       <EventThemeProvider>
         <Probe />
-      </EventThemeProvider>,
+      </EventThemeProvider>
     );
 
     // No re-fetch was triggered by loadTheme in this test — the initial

@@ -13,7 +13,7 @@ on GitHub — nothing about the design can be safely hidden behind
 obscurity. Everything a compliance auditor would want to see must be
 visible in the tree.
 
-That framing has consequences that were made *before* a single screen was
+That framing has consequences that were made _before_ a single screen was
 laid out.
 
 ## The four subsystems
@@ -43,10 +43,10 @@ Design decisions worth calling out:
 - **Timestamped in SecureStore, not just a boolean.** The
   [`lib/consents.ts`](../../lib/consents.ts) module writes `granted_at`
   alongside every `true`. That timestamp is what makes the consent
-  "provable" — Art. 7 (1) requires you to be able to show *when* consent
-  was given, not just *that* it was.
+  "provable" — Art. 7 (1) requires you to be able to show _when_ consent
+  was given, not just _that_ it was.
 - **Revocation is a first-class screen** — `Settings → Einwilligungen
-  verwalten` at [`app/consents/index.tsx`](../../app/consents/index.tsx).
+verwalten` at [`app/consents/index.tsx`](../../app/consents/index.tsx).
   Art. 7 (3) says revocation must be as easy as granting; a hidden setting
   or a "contact us" address does not clear that bar.
 - **One modal at a time.** The Provider only holds one pending promise;
@@ -64,7 +64,7 @@ Design decisions worth calling out:
   session.
 
 - **Art. 17 (erasure)** — [`app/erasure-pending.tsx`](../../app/erasure-pending.tsx)
-  is the interesting one. Immediate hard delete is *not* what a wedding
+  is the interesting one. Immediate hard delete is _not_ what a wedding
   guest actually wants — they may hit the button by accident and lose
   their RSVP + uploaded photos with no recourse. The design chosen
   instead:
@@ -77,7 +77,7 @@ Design decisions worth calling out:
      screen — `POST /api/guest/erasure/revoke` restores the account.
   5. After the window, retention jobs on the backend actually purge the
      data.
-  
+
   The 30-day soft delete is longer than DSGVO strictly requires, but it
   matches what users expect from mainstream apps and preserves the
   ability to fix accidents. That's the trade the design bets on.
@@ -98,7 +98,7 @@ absolutist: **zero third-party runtime traffic**.
   QR from a photo the guest picked from their library. There is no
   first-party native module that does this on both platforms, so an
   invisible `WebView` is used. Previously the WebView pulled jsQR from
-  `cdn.jsdelivr.net`; that was the *only* runtime third-party network
+  `cdn.jsdelivr.net`; that was the _only_ runtime third-party network
   call the app made. It's now vendored offline as
   [`lib/vendor/jsQRSource.ts`](../../lib/vendor/jsQRSource.ts), inlined
   into the WebView HTML at bundle time. See

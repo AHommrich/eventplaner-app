@@ -75,7 +75,7 @@ function renderScreen() {
       <EventThemeProvider>
         <DeclinedScreen />
       </EventThemeProvider>
-    </LanguageProvider>,
+    </LanguageProvider>
   );
 }
 

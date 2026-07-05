@@ -2,12 +2,7 @@
  * `lib/consents` — Art. 6/7 (a) explicit consent persistence.
  */
 import * as SecureStore from 'expo-secure-store';
-import {
-  getConsent,
-  grantConsent,
-  revokeConsent,
-  ALL_PURPOSES,
-} from '../../lib/consents';
+import { getConsent, grantConsent, revokeConsent, ALL_PURPOSES } from '../../lib/consents';
 
 describe('lib/consents', () => {
   beforeEach(async () => {

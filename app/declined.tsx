@@ -16,7 +16,14 @@
  * screen without needing to reopen the app.
  */
 import { useEffect, useRef, useState } from 'react';
-import { View, TouchableOpacity, ActivityIndicator, Alert, ScrollView, RefreshControl } from 'react-native';
+import {
+  View,
+  TouchableOpacity,
+  ActivityIndicator,
+  Alert,
+  ScrollView,
+  RefreshControl,
+} from 'react-native';
 import { ThemedText } from '../components/ThemedText';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -24,13 +31,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useLanguage } from '../lib/LanguageContext';
 import { useEventTheme } from '../lib/EventThemeContext';
 import { clearSession } from '../lib/auth';
-import {
-  fetchGuestMe,
-  fetchEventInfo,
-  postRevoke,
-  RsvpStatus,
-  isFullAccess,
-} from '../lib/guest';
+import { fetchGuestMe, fetchEventInfo, postRevoke, RsvpStatus, isFullAccess } from '../lib/guest';
 import { theme } from '../constants/theme';
 
 /** Poll interval — matches the "check every 30 s" pattern of the photos tab. */
@@ -146,7 +147,14 @@ export default function DeclinedScreen() {
 
   if (loading) {
     return (
-      <View style={{ flex: 1, backgroundColor: colors.screenBg, alignItems: 'center', justifyContent: 'center' }}>
+      <View
+        style={{
+          flex: 1,
+          backgroundColor: colors.screenBg,
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
         <ActivityIndicator color={theme.colors.primary} />
       </View>
     );
@@ -159,106 +167,120 @@ export default function DeclinedScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.screenBg }}>
-    <ScrollView
-      style={{ flex: 1 }}
-      contentContainerStyle={{ flexGrow: 1, padding: theme.spacing.lg, justifyContent: 'center' }}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={colors.primary} />}
-    >
-      <View style={{ alignItems: 'center', marginBottom: theme.spacing.xl }}>
-        <Ionicons
-          name="close-circle-outline"
-          size={64}
-          color={isFinal ? theme.colors.muted : theme.colors.error}
-        />
-      </View>
-
-      <ThemedText
-        style={{
-          fontSize: 24,
-          fontWeight: 'bold',
-          color: colors.primary,
-          textAlign: 'center',
-          marginBottom: theme.spacing.md,
-        }}
+      <ScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={{ flexGrow: 1, padding: theme.spacing.lg, justifyContent: 'center' }}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
+            tintColor={colors.primary}
+          />
+        }
       >
-        {isFinal ? t('declined.titleFinal') : t('declined.titlePending')}
-      </ThemedText>
+        <View style={{ alignItems: 'center', marginBottom: theme.spacing.xl }}>
+          <Ionicons
+            name="close-circle-outline"
+            size={64}
+            color={isFinal ? theme.colors.muted : theme.colors.error}
+          />
+        </View>
 
-      {deadlineFormatted && (
-        <ThemedText style={{ fontSize: 14, color: theme.colors.muted, textAlign: 'center', marginBottom: theme.spacing.sm }}>
-          {t('declined.deadline', { date: deadlineFormatted })}
-        </ThemedText>
-      )}
-
-
-      <ThemedText
-        style={{
-          fontSize: 15,
-          color: theme.colors.muted,
-          textAlign: 'center',
-          lineHeight: 22,
-          marginBottom: theme.spacing.xl,
-        }}
-      >
-        {isRevocationRequested
-          ? t('declined.revocationPending')
-          : isFinal
-          ? t('declined.subtitleFinal')
-          : t('declined.subtitlePending')}
-      </ThemedText>
-
-      {/* Request revocation — only reachable from `declined_pending`. */}
-      {isPending && (
-        <TouchableOpacity
-          onPress={handleRevoke}
-          disabled={revoking}
+        <ThemedText
           style={{
-            borderWidth: 1,
-            borderColor: colors.primary,
-            borderRadius: theme.borderRadius.md,
-            paddingVertical: theme.spacing.md,
-            alignItems: 'center',
+            fontSize: 24,
+            fontWeight: 'bold',
+            color: colors.primary,
+            textAlign: 'center',
             marginBottom: theme.spacing.md,
           }}
         >
-          {revoking ? (
-            <ActivityIndicator color={colors.primary} />
-          ) : (
-            <ThemedText style={{ color: colors.primary, fontWeight: '600' }}>
-              {t('declined.revokeButton')}
-            </ThemedText>
-          )}
-        </TouchableOpacity>
-      )}
-
-      {/* Logout — always available from this screen. */}
-      <TouchableOpacity
-        onPress={handleLogout}
-        style={{
-          borderWidth: 1,
-          borderColor: theme.colors.error,
-          borderRadius: theme.borderRadius.md,
-          paddingVertical: theme.spacing.md,
-          alignItems: 'center',
-        }}
-      >
-        <ThemedText style={{ color: theme.colors.error, fontWeight: '600' }}>
-          {t('declined.logout')}
+          {isFinal ? t('declined.titleFinal') : t('declined.titlePending')}
         </ThemedText>
-      </TouchableOpacity>
-    </ScrollView>
+
+        {deadlineFormatted && (
+          <ThemedText
+            style={{
+              fontSize: 14,
+              color: theme.colors.muted,
+              textAlign: 'center',
+              marginBottom: theme.spacing.sm,
+            }}
+          >
+            {t('declined.deadline', { date: deadlineFormatted })}
+          </ThemedText>
+        )}
+
+        <ThemedText
+          style={{
+            fontSize: 15,
+            color: theme.colors.muted,
+            textAlign: 'center',
+            lineHeight: 22,
+            marginBottom: theme.spacing.xl,
+          }}
+        >
+          {isRevocationRequested
+            ? t('declined.revocationPending')
+            : isFinal
+              ? t('declined.subtitleFinal')
+              : t('declined.subtitlePending')}
+        </ThemedText>
+
+        {/* Request revocation — only reachable from `declined_pending`. */}
+        {isPending && (
+          <TouchableOpacity
+            onPress={handleRevoke}
+            disabled={revoking}
+            style={{
+              borderWidth: 1,
+              borderColor: colors.primary,
+              borderRadius: theme.borderRadius.md,
+              paddingVertical: theme.spacing.md,
+              alignItems: 'center',
+              marginBottom: theme.spacing.md,
+            }}
+          >
+            {revoking ? (
+              <ActivityIndicator color={colors.primary} />
+            ) : (
+              <ThemedText style={{ color: colors.primary, fontWeight: '600' }}>
+                {t('declined.revokeButton')}
+              </ThemedText>
+            )}
+          </TouchableOpacity>
+        )}
+
+        {/* Logout — always available from this screen. */}
+        <TouchableOpacity
+          onPress={handleLogout}
+          style={{
+            borderWidth: 1,
+            borderColor: theme.colors.error,
+            borderRadius: theme.borderRadius.md,
+            paddingVertical: theme.spacing.md,
+            alignItems: 'center',
+          }}
+        >
+          <ThemedText style={{ color: theme.colors.error, fontWeight: '600' }}>
+            {t('declined.logout')}
+          </ThemedText>
+        </TouchableOpacity>
+      </ScrollView>
 
       {/* Pull-to-refresh toast — absolute-positioned centred pill. */}
       {refreshed && (
-        <View style={{
-          position: 'absolute',
-          top: insets.top + 12,
-          alignSelf: 'center',
-          backgroundColor: colors.primary,
-          paddingHorizontal: 16,
-          paddingVertical: 8,
-          borderRadius: theme.borderRadius.full,
-        }}>
+        <View
+          style={{
+            position: 'absolute',
+            top: insets.top + 12,
+            alignSelf: 'center',
+            backgroundColor: colors.primary,
+            paddingHorizontal: 16,
+            paddingVertical: 8,
+            borderRadius: theme.borderRadius.full,
+          }}
+        >
           <ThemedText style={{ color: '#fff', fontSize: 13, fontWeight: '600' }}>
             ✓ {t('common.refreshed')}
           </ThemedText>

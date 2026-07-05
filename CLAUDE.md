@@ -3,6 +3,7 @@
 React Native / Expo App für Hochzeitsgäste. Gäste erhalten eine Einladungskarte mit QR-Code — Scan = Login. Kein Passwort, kein Account.
 
 ## Kommunikation
+
 - Immer auf **Deutsch** antworten
 - Kurz und direkt, kein Blabla
 - Offene Fragen **vor** der Implementierung auflisten
@@ -12,77 +13,85 @@ React Native / Expo App für Hochzeitsgäste. Gäste erhalten eine Einladungskar
 
 ## Tech Stack
 
-| | |
-|---|---|
-| Framework | Expo SDK 54 + Expo Router v6 (file-based routing) |
-| Sprache | TypeScript |
-| Styling | NativeWind v4 + Tailwind CSS v3 |
-| HTTP | Axios mit Bearer-Interceptor (`lib/api.ts`) |
-| Auth-Storage | expo-secure-store |
-| Icons | @expo/vector-icons (Ionicons) |
-| i18n | i18n-js + LanguageContext (`lib/LanguageContext.tsx`) |
+|              |                                                       |
+| ------------ | ----------------------------------------------------- |
+| Framework    | Expo SDK 54 + Expo Router v6 (file-based routing)     |
+| Sprache      | TypeScript                                            |
+| Styling      | NativeWind v4 + Tailwind CSS v3                       |
+| HTTP         | Axios mit Bearer-Interceptor (`lib/api.ts`)           |
+| Auth-Storage | expo-secure-store                                     |
+| Icons        | @expo/vector-icons (Ionicons)                         |
+| i18n         | i18n-js + LanguageContext (`lib/LanguageContext.tsx`) |
 
 ## Wichtige Dependency-Versionen (Expo Go SDK 54 — NICHT ändern!)
+
 ```
 react-native-screens: ~4.16.0
 react-native-reanimated: ~4.1.1
 react-native-gesture-handler: ~2.28.0
 react-native-safe-area-context: ~5.6.0
 ```
+
 Diese müssen exakt mit Expo Go's native modules übereinstimmen — sonst JSI-Crash.
 
 ## npm installs
+
 Immer `--legacy-peer-deps` verwenden (React 19 peer dep conflicts).
 
 ## Node
+
 Node 20 required — `nvm use` im Projektroot ausführen.
 
 ---
 
 ## Backend
 
-| | |
-|---|---|
-| Framework | Laravel 12 + Sanctum |
-| Staging | `https://beta.hommrich.app` ← immer gegen Staging entwickeln |
-| Production | `https://hommrich.app` |
-| Config | `constants/env.ts` → `API_BASE` |
+|            |                                                              |
+| ---------- | ------------------------------------------------------------ |
+| Framework  | Laravel 12 + Sanctum                                         |
+| Staging    | `https://beta.hommrich.app` ← immer gegen Staging entwickeln |
+| Production | `https://hommrich.app`                                       |
+| Config     | `constants/env.ts` → `API_BASE`                              |
 
 Staging-Tokens funktionieren NICHT auf Production (separate Datenbanken).
 
 ### Test-Tokens (lokal — NICHT Staging)
+
 - Familie Caspari (4 Gäste): `zkcZnmgxwH4Kmy27pTxjgNkbGvPvNIte`
 - Solo-Gast: `GbuyIYNTncT9tflws9vFcezcuFUyQvOE`
 
 ### Implementierte API-Endpoints
-| Endpoint | Methode | Zweck |
-|---|---|---|
-| `/api/auth/qr/{token}` | GET | QR-Login Schritt 1 |
-| `/api/auth/qr/{token}/select` | POST | QR-Login Schritt 2 (Familie) `{ guest_id }` |
-| `/api/auth/logout` | DELETE | Logout (Bearer) |
-| `/api/photos` | GET | Fotos laden |
-| `/api/photos` | POST | Foto hochladen (multipart/form-data) |
-| `/api/guest/me` | GET | Eingeloggten Gast + Gruppe laden |
-| `/api/event/info` | GET | Event-Infos + RSVP-Deadline + Theme-Farben |
-| `/api/guest/rsvp` | POST | Eigene RSVP setzen `{ attending: bool }` |
-| `/api/guest/{id}/rsvp` | POST | RSVP für Gruppenmitglied setzen |
-| `/api/guest/rsvp/revoke` | POST | Rücknahme einer Absage beantragen |
-| `/api/drinks` | GET | Getränkeliste laden |
-| `/api/drinks/log` | POST | Getränk loggen `{ drink_id }` |
-| `/api/drinks/stats` | GET | Getränke-Statistiken + Rangliste |
-| `/api/game/photo/status` | GET | Foto-Spiel Status + Assignment laden |
-| `/api/game/photo/assign` | POST | Zufällige Aufgabe zuteilen (kein Body) |
-| `/api/game/photo/submit` | POST | Foto einreichen (multipart/form-data, Feld: `photo`) |
-| `/api/legal/privacy` | GET | Datenschutzerklärung (Markdown-Sections pro Locale) |
-| `/api/guest/export` | GET | DSGVO Art. 15 — komplette Datenkopie als JSON |
-| `/api/guest/erasure` | POST | DSGVO Art. 17 — Löschung anfordern (30-Tage-Fenster) |
-| `/api/guest/erasure/revoke` | POST | Löschung innerhalb des Fensters zurücknehmen |
+
+| Endpoint                      | Methode | Zweck                                                |
+| ----------------------------- | ------- | ---------------------------------------------------- |
+| `/api/auth/qr/{token}`        | GET     | QR-Login Schritt 1                                   |
+| `/api/auth/qr/{token}/select` | POST    | QR-Login Schritt 2 (Familie) `{ guest_id }`          |
+| `/api/auth/logout`            | DELETE  | Logout (Bearer)                                      |
+| `/api/photos`                 | GET     | Fotos laden                                          |
+| `/api/photos`                 | POST    | Foto hochladen (multipart/form-data)                 |
+| `/api/guest/me`               | GET     | Eingeloggten Gast + Gruppe laden                     |
+| `/api/event/info`             | GET     | Event-Infos + RSVP-Deadline + Theme-Farben           |
+| `/api/guest/rsvp`             | POST    | Eigene RSVP setzen `{ attending: bool }`             |
+| `/api/guest/{id}/rsvp`        | POST    | RSVP für Gruppenmitglied setzen                      |
+| `/api/guest/rsvp/revoke`      | POST    | Rücknahme einer Absage beantragen                    |
+| `/api/drinks`                 | GET     | Getränkeliste laden                                  |
+| `/api/drinks/log`             | POST    | Getränk loggen `{ drink_id }`                        |
+| `/api/drinks/stats`           | GET     | Getränke-Statistiken + Rangliste                     |
+| `/api/game/photo/status`      | GET     | Foto-Spiel Status + Assignment laden                 |
+| `/api/game/photo/assign`      | POST    | Zufällige Aufgabe zuteilen (kein Body)               |
+| `/api/game/photo/submit`      | POST    | Foto einreichen (multipart/form-data, Feld: `photo`) |
+| `/api/legal/privacy`          | GET     | Datenschutzerklärung (Markdown-Sections pro Locale)  |
+| `/api/guest/export`           | GET     | DSGVO Art. 15 — komplette Datenkopie als JSON        |
+| `/api/guest/erasure`          | POST    | DSGVO Art. 17 — Löschung anfordern (30-Tage-Fenster) |
+| `/api/guest/erasure/revoke`   | POST    | Löschung innerhalb des Fensters zurücknehmen         |
 
 ### Geplante Endpoints (noch nicht gebaut)
+
 - `GET /api/event/menu`
 - `POST /api/guest/menu`
 
 ### EventInfo-Felder (`GET /api/event/info`)
+
 ```typescript
 name: string
 date: string                    // ISO datetime
@@ -110,17 +119,21 @@ font_heading: string | null
 ```
 
 ### Auth-Flow (zweistufig)
+
 **Schritt 1** — QR scan → `GET /api/auth/qr/{token}`
+
 - Response: `{ type: 'solo'|'family', family_name, guests[] }`
 - Solo (`type: 'solo'`): `guests[0].token` ist gesetzt → direkt Session speichern, weiterleiten
 - Familie (`type: 'family'`): alle `token`-Felder sind `null` → Namens-Picker anzeigen
 
 **Schritt 2** — Nur Familie: Gast antippt → `POST /api/auth/qr/{token}/select` `{ guest_id }`
+
 - `200` → `{ guest_id, firstname, lastname, token }` → Session speichern, weiterleiten
 - `409` → Gast bereits eingeloggt → Alert + Eintrag als `is_active: true` markieren
 - `is_active: true` → Eintrag grau + nicht antippbar
 
 **Nach Login:** `index.tsx` prüft `rsvp_status` via `GET /api/guest/me`:
+
 - `null` → `/rsvp` (Onboarding-RSVP)
 - `accepted_pending` / `accepted` → `/(tabs)/home`
 - declined/revocation → `/declined`
@@ -217,12 +230,14 @@ tests/
 ## Wichtige Patterns
 
 **Übersetzungen** — immer `useLanguage()` Hook, nie hardcodierte Strings:
+
 ```tsx
 const { t } = useLanguage();
-<Text>{t('home.welcome', { name: 'André' })}</Text>
+<Text>{t('home.welcome', { name: 'André' })}</Text>;
 ```
 
 **API-Calls** — immer `lib/api.ts` importieren (Bearer wird automatisch angehängt):
+
 ```tsx
 import api from '../../lib/api';
 const res = await api.get('/api/...');
@@ -231,34 +246,38 @@ const res = await api.get('/api/...');
 **RSVP-Logik** — Absagen immer mit `Alert.alert` Bestätigungsdialog absichern. Translations: `rsvp.declineConfirmTitle/Own/Member/Button`.
 
 **Design — zwei Ebenen:**
+
 - `constants/theme.ts` → statische Tokens: Spacing, Radius, semantische Farben (error, sage, muted)
 - `useEventTheme()` → dynamische Brand-Farben vom Backend, immer bevorzugen
 
 **Farb-Regel:**
+
 - Brand/Layout → `colors.*` aus `useEventTheme()` (dynamisch vom Backend)
 - Semantisch (Fehler, Erfolg, deaktiviert) → `theme.colors.error / .sage / .muted` (statisch)
 - NIE hardcodierte Hex-Werte in Screens
 
 **Farbvariablen (EventThemeColors):**
-| Variable | Verwendung |
-|---|---|
-| `colors.primary` | Hauptmarkenfarbe (Akzent) |
-| `colors.secondary` | Hintergrundfarbe (Palette) |
-| `colors.tertiary` | Kartenfarbe (Palette) |
-| `colors.screenBg` | Screen-Hintergrund |
-| `colors.card` | Card-Hintergrund |
-| `colors.cardText` | Text auf Cards |
-| `colors.cardButton` | Button-Hintergrund in Cards |
-| `colors.cardButtonText` | Text auf Card-Buttons |
-| `colors.border` | Card-Rahmen (`+ '33'`), Zeilen-Divider (`+ '30'`), Toggle-Border (`+ '55'`), Navbar-Top (`+ '33'`) |
-| `colors.fab` | FAB-Button Hintergrund (photos.tsx) |
-| `colors.fabIcon` | FAB-Icon Farbe (photos.tsx) |
-| `colors.tabTint` | Navbar Icons + Labels |
-| `colors.homeText` | Text auf Home-Cover (`null` wenn kein Cover/nicht gesetzt) |
-| `colors.homeShadow` | Schattenfarbe auf Home-Cover (default `#000000`) |
-| `colors.fontFamily` | `{ regular, bold }` — wird von ThemedText automatisch angewendet |
+
+| Variable                | Verwendung                                                                                         |
+| ----------------------- | -------------------------------------------------------------------------------------------------- |
+| `colors.primary`        | Hauptmarkenfarbe (Akzent)                                                                          |
+| `colors.secondary`      | Hintergrundfarbe (Palette)                                                                         |
+| `colors.tertiary`       | Kartenfarbe (Palette)                                                                              |
+| `colors.screenBg`       | Screen-Hintergrund                                                                                 |
+| `colors.card`           | Card-Hintergrund                                                                                   |
+| `colors.cardText`       | Text auf Cards                                                                                     |
+| `colors.cardButton`     | Button-Hintergrund in Cards                                                                        |
+| `colors.cardButtonText` | Text auf Card-Buttons                                                                              |
+| `colors.border`         | Card-Rahmen (`+ '33'`), Zeilen-Divider (`+ '30'`), Toggle-Border (`+ '55'`), Navbar-Top (`+ '33'`) |
+| `colors.fab`            | FAB-Button Hintergrund (photos.tsx)                                                                |
+| `colors.fabIcon`        | FAB-Icon Farbe (photos.tsx)                                                                        |
+| `colors.tabTint`        | Navbar Icons + Labels                                                                              |
+| `colors.homeText`       | Text auf Home-Cover (`null` wenn kein Cover/nicht gesetzt)                                         |
+| `colors.homeShadow`     | Schattenfarbe auf Home-Cover (default `#000000`)                                                   |
+| `colors.fontFamily`     | `{ regular, bold }` — wird von ThemedText automatisch angewendet                                   |
 
 **Pull-to-Refresh** — einheitlich über alle Tabs:
+
 ```tsx
 const { refreshing, refreshed, onRefresh } = useRefreshToast(async () => {
   await loadData();
@@ -269,12 +288,14 @@ const { refreshing, refreshed, onRefresh } = useRefreshToast(async () => {
 ```
 
 **Spinner beim Tab-Wechsel vermeiden** — Loading-Guard nur wenn noch keine Daten:
+
 ```tsx
 if (loading && data.length === 0) return <ActivityIndicator ... />;  // drinks
 if (loading && !guest) return <ActivityIndicator ... />;             // rsvp
 ```
 
 **Segmented Control / Tab-Switcher** — gemeinsamer Pill mit `overflow: hidden`:
+
 ```tsx
 <View style={{ flexDirection: 'row', borderRadius: ..., overflow: 'hidden', borderWidth: 1.5, borderColor: colors.cardText + '40' }}>
   <TouchableOpacity style={{ flex: 1, backgroundColor: active ? colors.cardButton : 'transparent', borderRightWidth: 1, borderRightColor: colors.cardText + '40' }}>
@@ -283,11 +304,13 @@ if (loading && !guest) return <ActivityIndicator ... />;             // rsvp
 ```
 
 **Button-Disable-Pattern** — volle Farbe = Aktion verfügbar, 0.4 Opacity = bereits erledigt:
+
 ```tsx
 <TouchableOpacity disabled={alreadyDone} style={{ backgroundColor: theme.colors.sage, opacity: alreadyDone ? 0.4 : 1 }}>
 ```
 
 **Maps-Navigation** — `openInMaps(event, t)` in `home.tsx`:
+
 - Lat/Lng vorhanden → pixelgenaue Koordinaten-URLs (höchste Priorität)
 - Nur Adresse → Geocoding-Query
 - iOS: Alert mit App-Auswahl (Karten / Google Maps), Google Maps Fallback auf Apple Maps
@@ -296,6 +319,7 @@ if (loading && !guest) return <ActivityIndicator ... />;             // rsvp
 - `geo:lat,lng?q=adresse` NICHT verwenden — `q=adresse` überschreibt Koordinaten!
 
 **Venue-Anzeige** (home.tsx) — gesteuert durch `venue_display_mode`:
+
 - `'name'`: venue_name + Pin-Icon, tappbar (wenn Navigationsdaten vorhanden)
 - `'address'`: Adresse + Pin-Icon, tappbar
 - `'both'`: venue_name oben, darunter Adresse + Pin-Icon — ein gemeinsamer Button, ein Icon
@@ -303,6 +327,7 @@ if (loading && !guest) return <ActivityIndicator ... />;             // rsvp
 - Dresscode: Label "Dresscode:" + Zeilenumbruch + Wert, opacity 0.7
 
 **Home-Screen Schatten** (Cover-Modus):
+
 - Konfigurierbar via `color_home_shadow` + `home_shadow_opacity` (0–100)
 - Kein LinearGradient — einfacher `View` mit `backgroundColor + opacity`
 - Sitzt zwischen Cover-Bild und Text-Content (`pointerEvents="none"`)
@@ -310,26 +335,31 @@ if (loading && !guest) return <ActivityIndicator ... />;             // rsvp
 **Fonts** — 10 Google Fonts lokal gebündelt (`@expo-google-fonts/*`), DSGVO-konform (kein CDN zur Laufzeit). Backend liefert `font_heading` Key, `ThemedText` wendet automatisch regular/bold Variante an. Tab-Bar Labels erhalten Font via `tabBarLabelStyle: { fontFamily: colors.fontFamily.regular }`.
 
 **Zero Runtime-CDN** — Alle Third-Party-Assets sind lokal:
+
 - Fonts: `@expo-google-fonts/*` als Assets im Bundle
 - jsQR (Galerie-QR-Decoder): vendored in `lib/vendor/jsQRSource.ts`, regeneriert via `node scripts/vendor-jsqr.mjs` bei jedem jsqr-Bump
 - Enforced durch `tests/regressions/no-tracking.test.ts` — CDN-Hostnamen dürfen im source-tree (app/lib/components/constants) nicht vorkommen
 
 **NativeWind Setup** (nicht anfassen):
+
 - `babel.config.js`: `jsxImportSource: 'nativewind'` — KEIN `nativewind/babel` Preset
 - `metro.config.js`: `withNativeWind(config, { input: './global.css' })`
 
 **ConsentGate** (DSGVO Art. 6/7) — jeder Verarbeitungs-Trigger wird gewrappt:
+
 ```tsx
 import { ConsentGate } from '../../components/ConsentGate';
 <ConsentGate purpose="photo_upload">
   <TouchableOpacity onPress={handleUpload}>...</TouchableOpacity>
-</ConsentGate>
+</ConsentGate>;
 ```
+
 - `ConsentKey` in `lib/consents.ts`: `photo_upload` | `photo_game` | `camera_scan`
 - Neue Purpose → Key ergänzen, Modal-Copy in `locales/de.ts`+`en.ts` unter `consents.<key>.*`
 - Widerruf via `Settings → Einwilligungen verwalten` (Art. 7 (3))
 
 **Test-Konventionen:**
+
 - Neue `lib/*.ts` → korrespondierender `tests/lib/*.test.ts` (≥ 90 % Lines/Branches)
 - Neue Screen-Datei → Happy Path + 1 wahrscheinlichster Failure in `tests/app/<screen>.test.tsx`
 - Neue `SecureStore.setItemAsync` → Key sofort in `docs/storage-keys.md`
@@ -339,6 +369,7 @@ import { ConsentGate } from '../../components/ConsentGate';
 ---
 
 ## Sprachen
+
 - Standard: Deutsch
 - Unterstützt: Deutsch + Englisch
 - Umschaltbar: beim Login (Bottom-Sheet nach QR-Scan) + jederzeit in den Settings
@@ -346,4 +377,5 @@ import { ConsentGate } from '../../components/ConsentGate';
 - Hook: `useLanguage()` → `{ t, language, setLanguage }`
 
 ## GitHub
+
 `https://github.com/AHommrich/eventplaner-app.git`

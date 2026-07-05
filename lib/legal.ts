@@ -59,7 +59,7 @@ export async function fetchPrivacyNotice(locale: string): Promise<PrivacyNotice>
     });
     await SecureStore.setItemAsync(
       CACHE_KEY_PREFIX + locale,
-      JSON.stringify({ fetched_at: Date.now(), notice: res.data }),
+      JSON.stringify({ fetched_at: Date.now(), notice: res.data })
     );
     return res.data;
   } catch (e) {
@@ -80,7 +80,7 @@ export async function fetchPrivacyNotice(locale: string): Promise<PrivacyNotice>
  */
 export async function readCachedPrivacyNotice(
   locale: string,
-  allowStale: boolean = false,
+  allowStale: boolean = false
 ): Promise<PrivacyNotice | null> {
   const raw = await SecureStore.getItemAsync(CACHE_KEY_PREFIX + locale);
   if (!raw) return null;

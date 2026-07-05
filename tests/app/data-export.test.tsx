@@ -38,7 +38,7 @@ function renderScreen() {
       <EventThemeProvider>
         <DataExportScreen />
       </EventThemeProvider>
-    </LanguageProvider>,
+    </LanguageProvider>
   );
 }
 

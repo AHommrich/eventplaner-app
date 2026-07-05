@@ -39,19 +39,29 @@ function renderScreen() {
       <EventThemeProvider>
         <RsvpTabScreen />
       </EventThemeProvider>
-    </LanguageProvider>,
+    </LanguageProvider>
   );
 }
 
 const soloGuest = {
-  guest_id: 1, firstname: 'Ada', lastname: 'L', type: 'solo',
-  family_name: null, rsvp_status: 'accepted_pending', rsvp_set_by: null,
+  guest_id: 1,
+  firstname: 'Ada',
+  lastname: 'L',
+  type: 'solo',
+  family_name: null,
+  rsvp_status: 'accepted_pending',
+  rsvp_set_by: null,
   group_members: [],
 };
 
 const familyGuest = {
-  guest_id: 1, firstname: 'Ada', lastname: 'L', type: 'family',
-  family_name: 'Caspari', rsvp_status: 'accepted_pending', rsvp_set_by: null,
+  guest_id: 1,
+  firstname: 'Ada',
+  lastname: 'L',
+  type: 'family',
+  family_name: 'Caspari',
+  rsvp_status: 'accepted_pending',
+  rsvp_set_by: null,
   group_members: [
     { guest_id: 2, firstname: 'Bea', lastname: 'C', rsvp_status: null, rsvp_set_by: null },
     { guest_id: 3, firstname: 'Cee', lastname: 'C', rsvp_status: null, rsvp_set_by: null },

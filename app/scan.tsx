@@ -121,7 +121,7 @@ export default function ScanScreen() {
   async function persistAndNavigate(
     guest: ApiGuest,
     type: 'solo' | 'family',
-    famName: string | null,
+    famName: string | null
   ) {
     if (!guest.token) return;
     const session: GuestSession = {
@@ -148,8 +148,15 @@ export default function ScanScreen() {
     if (guest.is_active) return;
     setLoading(true);
     try {
-      type SelectResponse = { guest_id: number; firstname: string; lastname: string; token: string };
-      const res = await api.post<SelectResponse>(`/api/auth/qr/${qrToken}/select`, { guest_id: guest.guest_id });
+      type SelectResponse = {
+        guest_id: number;
+        firstname: string;
+        lastname: string;
+        token: string;
+      };
+      const res = await api.post<SelectResponse>(`/api/auth/qr/${qrToken}/select`, {
+        guest_id: guest.guest_id,
+      });
       const { token, firstname, lastname } = res.data;
       const session: GuestSession = {
         token,
@@ -166,7 +173,9 @@ export default function ScanScreen() {
     } catch (e: any) {
       if (e?.response?.status === 409) {
         Alert.alert(t('common.error'), t('scan.alreadyLoggedIn'));
-        setGuests((prev) => prev.map((g) => g.guest_id === guest.guest_id ? { ...g, is_active: true } : g));
+        setGuests((prev) =>
+          prev.map((g) => (g.guest_id === guest.guest_id ? { ...g, is_active: true } : g))
+        );
       } else {
         Alert.alert(t('common.error'), e?.response?.data?.message ?? t('scan.invalidQrMessage'));
       }
@@ -180,9 +189,7 @@ export default function ScanScreen() {
   if (!permission.granted) {
     return (
       <View style={styles.container}>
-        <ThemedText style={styles.permissionText}>
-          {t('scan.cameraPermissionText')}
-        </ThemedText>
+        <ThemedText style={styles.permissionText}>{t('scan.cameraPermissionText')}</ThemedText>
         <TouchableOpacity style={styles.button} onPress={requestPermission}>
           <ThemedText style={styles.buttonText}>{t('scan.allowAccess')}</ThemedText>
         </TouchableOpacity>
@@ -226,7 +233,10 @@ export default function ScanScreen() {
                   try {
                     await loginWithToken(devToken.trim());
                   } catch (e: any) {
-                    Alert.alert(t('common.error'), e?.response?.data?.message ?? t('scan.invalidTokenMessage'));
+                    Alert.alert(
+                      t('common.error'),
+                      e?.response?.data?.message ?? t('scan.invalidTokenMessage')
+                    );
                     setScanned(false);
                   } finally {
                     setLoading(false);
@@ -237,10 +247,7 @@ export default function ScanScreen() {
               </TouchableOpacity>
             </View>
           ) : (
-            <TouchableOpacity
-              style={styles.devToggle}
-              onPress={() => setShowDevInput(true)}
-            >
+            <TouchableOpacity style={styles.devToggle} onPress={() => setShowDevInput(true)}>
               <ThemedText style={styles.devToggleText}>{t('scan.devToggle')}</ThemedText>
             </TouchableOpacity>
           )}
@@ -266,11 +273,15 @@ export default function ScanScreen() {
                       onPress={() => selectFamilyGuest(item)}
                       activeOpacity={item.is_active ? 1 : 0.7}
                     >
-                      <ThemedText style={[styles.guestName, item.is_active && styles.guestNameDisabled]}>
+                      <ThemedText
+                        style={[styles.guestName, item.is_active && styles.guestNameDisabled]}
+                      >
                         {item.firstname} {item.lastname}
                       </ThemedText>
                       {item.is_active && (
-                        <ThemedText style={styles.guestActiveHint}>{t('scan.alreadyLoggedIn')}</ThemedText>
+                        <ThemedText style={styles.guestActiveHint}>
+                          {t('scan.alreadyLoggedIn')}
+                        </ThemedText>
                       )}
                     </TouchableOpacity>
                   )}
@@ -296,7 +307,12 @@ export default function ScanScreen() {
                     style={[styles.langButton, language === lang && styles.langButtonActive]}
                     onPress={() => setLanguage(lang)}
                   >
-                    <ThemedText style={[styles.langButtonText, language === lang && styles.langButtonTextActive]}>
+                    <ThemedText
+                      style={[
+                        styles.langButtonText,
+                        language === lang && styles.langButtonTextActive,
+                      ]}
+                    >
                       {lang === 'de' ? '🇩🇪  Deutsch' : '🇬🇧  English'}
                     </ThemedText>
                   </TouchableOpacity>

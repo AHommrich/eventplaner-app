@@ -26,8 +26,14 @@
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
-  View, TouchableOpacity, ScrollView, RefreshControl,
-  ActivityIndicator, StyleSheet, Pressable, TextInput,
+  View,
+  TouchableOpacity,
+  ScrollView,
+  RefreshControl,
+  ActivityIndicator,
+  StyleSheet,
+  Pressable,
+  TextInput,
 } from 'react-native';
 import { ThemedText } from '../../components/ThemedText';
 import { useFocusEffect } from 'expo-router';
@@ -50,8 +56,8 @@ import { theme } from '../../constants/theme';
  * because logging must reference the SIZE, not the parent catalog.
  */
 type DrinkSize = {
-  drink_id: number;     // used for POST /api/drinks/log
-  id: number;           // size_id
+  drink_id: number; // used for POST /api/drinks/log
+  id: number; // size_id
   amount_liter: number | null;
   is_default: boolean;
   points: number | null;
@@ -63,7 +69,7 @@ type DrinkSize = {
  * loggable `drink_id`.
  */
 type DrinkCatalog = {
-  id: number;           // catalog_id (NOT for logging)
+  id: number; // catalog_id (NOT for logging)
   display_name: string;
   category: string;
   category_label: string;
@@ -141,7 +147,10 @@ export default function DrinksScreen() {
 
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const { refreshing, refreshed, onRefresh } = useRefreshToast(async () => { await loadStats(); loadTheme(); });
+  const { refreshing, refreshed, onRefresh } = useRefreshToast(async () => {
+    await loadStats();
+    loadTheme();
+  });
 
   // ── Session ────────────────────────────────────────────────────────────────
 
@@ -182,11 +191,19 @@ export default function DrinksScreen() {
   // last action, so we don't need to hammer stats there.
   useEffect(() => {
     if (view !== 'leaderboard') {
-      if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; }
+      if (pollRef.current) {
+        clearInterval(pollRef.current);
+        pollRef.current = null;
+      }
       return;
     }
     pollRef.current = setInterval(loadStats, 5_000);
-    return () => { if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; } };
+    return () => {
+      if (pollRef.current) {
+        clearInterval(pollRef.current);
+        pollRef.current = null;
+      }
+    };
     // Interval is tied to the `view === 'leaderboard'` mode only. Re-creating
     // the interval on every render (which listing `loadStats` as a dep would
     // do) would reset the 5 s polling clock on any state change.
@@ -195,17 +212,22 @@ export default function DrinksScreen() {
 
   // ── Initial load on focus ──────────────────────────────────────────────────
 
-  useFocusEffect(useCallback(() => {
-    loadInitial();
-    return () => {
-      if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; }
-    };
-    // Focus-effect callback intentionally re-runs on every focus, NOT every
-    // render — that's what `useCallback([])` + `useFocusEffect` guarantees
-    // together. Adding `loadInitial` as a dep would recreate the callback
-    // on each render and defeat the focus semantics.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []));
+  useFocusEffect(
+    useCallback(() => {
+      loadInitial();
+      return () => {
+        if (pollRef.current) {
+          clearInterval(pollRef.current);
+          pollRef.current = null;
+        }
+      };
+      // Focus-effect callback intentionally re-runs on every focus, NOT every
+      // render — that's what `useCallback([])` + `useFocusEffect` guarantees
+      // together. Adding `loadInitial` as a dep would recreate the callback
+      // on each render and defeat the focus semantics.
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [])
+  );
 
   // ── Data loading ───────────────────────────────────────────────────────────
 
@@ -295,7 +317,11 @@ export default function DrinksScreen() {
     if (amountLiter == null || isNaN(amountLiter)) return '?';
     if (amountLiter < 0.1) return `${Math.round(amountLiter * 100)} cl`;
     const sep = language === 'en' ? '.' : ',';
-    const str = amountLiter.toFixed(2).replace('.', sep).replace(/0+$/, '').replace(new RegExp(`\\${sep}$`), '');
+    const str = amountLiter
+      .toFixed(2)
+      .replace('.', sep)
+      .replace(/0+$/, '')
+      .replace(new RegExp(`\\${sep}$`), '');
     return `${str} l`;
   }
 
@@ -334,27 +360,46 @@ export default function DrinksScreen() {
               {catalog.sizes.map((size) => (
                 <TouchableOpacity
                   key={size.id}
-                  style={[styles.sizeButton, { backgroundColor: colors.cardButton, borderWidth: 1.5, borderColor: colors.cardButton, borderRadius: theme.borderRadius.lg - theme.spacing.xs }]}
+                  style={[
+                    styles.sizeButton,
+                    {
+                      backgroundColor: colors.cardButton,
+                      borderWidth: 1.5,
+                      borderColor: colors.cardButton,
+                      borderRadius: theme.borderRadius.lg - theme.spacing.xs,
+                    },
+                  ]}
                   onPress={() => handleLog(size)}
                   disabled={logging}
                   activeOpacity={0.8}
                 >
-                  {logging
-                    ? <ActivityIndicator color={colors.cardButtonText} size="small" />
-                    : <ThemedText style={[styles.sizeButtonText, { color: colors.cardButtonText }]}>{formatSize(size.amount_liter)}?</ThemedText>
-                  }
+                  {logging ? (
+                    <ActivityIndicator color={colors.cardButtonText} size="small" />
+                  ) : (
+                    <ThemedText style={[styles.sizeButtonText, { color: colors.cardButtonText }]}>
+                      {formatSize(size.amount_liter)}?
+                    </ThemedText>
+                  )}
                 </TouchableOpacity>
               ))}
             </View>
           ) : (
             <>
-              <ThemedText style={[styles.drinkName, { color: colors.cardText }]}>{catalog.display_name}</ThemedText>
+              <ThemedText style={[styles.drinkName, { color: colors.cardText }]}>
+                {catalog.display_name}
+              </ThemedText>
               <View style={{ flexDirection: 'row', gap: theme.spacing.xs }}>
                 {catalog.sizes.map((size) => {
                   if (size.points == null) return null;
                   const pos = size.points >= 0;
                   return (
-                    <View key={size.id} style={[styles.pointsBadge, { backgroundColor: pos ? colors.primary + '18' : '#00000010' }]}>
+                    <View
+                      key={size.id}
+                      style={[
+                        styles.pointsBadge,
+                        { backgroundColor: pos ? colors.primary + '18' : '#00000010' },
+                      ]}
+                    >
                       <ThemedText style={[styles.pointsText, { color: colors.cardText }]}>
                         {pos ? `+${size.points}` : `${size.points}`}
                       </ThemedText>
@@ -395,22 +440,40 @@ export default function DrinksScreen() {
         {isSelected ? (
           <View style={styles.sizeButtonRow}>
             <TouchableOpacity
-              style={[styles.sizeButton, { backgroundColor: colors.cardButton, borderWidth: 1.5, borderColor: colors.cardButton, borderRadius: theme.borderRadius.lg - theme.spacing.xs }]}
+              style={[
+                styles.sizeButton,
+                {
+                  backgroundColor: colors.cardButton,
+                  borderWidth: 1.5,
+                  borderColor: colors.cardButton,
+                  borderRadius: theme.borderRadius.lg - theme.spacing.xs,
+                },
+              ]}
               onPress={() => handleLog(size)}
               disabled={logging}
               activeOpacity={0.8}
             >
-              {logging
-                ? <ActivityIndicator color={colors.cardButtonText} size="small" />
-                : <ThemedText style={[styles.sizeButtonText, { color: colors.cardButtonText }]}>+1?</ThemedText>
-              }
+              {logging ? (
+                <ActivityIndicator color={colors.cardButtonText} size="small" />
+              ) : (
+                <ThemedText style={[styles.sizeButtonText, { color: colors.cardButtonText }]}>
+                  +1?
+                </ThemedText>
+              )}
             </TouchableOpacity>
           </View>
         ) : (
           <>
-            <ThemedText style={[styles.drinkName, { color: colors.cardText }]}>{catalog.display_name}</ThemedText>
+            <ThemedText style={[styles.drinkName, { color: colors.cardText }]}>
+              {catalog.display_name}
+            </ThemedText>
             {size?.points != null && (
-              <View style={[styles.pointsBadge, { backgroundColor: positive ? colors.primary + '18' : '#00000010' }]}>
+              <View
+                style={[
+                  styles.pointsBadge,
+                  { backgroundColor: positive ? colors.primary + '18' : '#00000010' },
+                ]}
+              >
                 <ThemedText style={[styles.pointsText, { color: colors.cardText }]}>
                   {positive ? `+${size.points}` : `${size.points}`}
                 </ThemedText>
@@ -426,7 +489,12 @@ export default function DrinksScreen() {
 
   if (loading && drinks.length === 0) {
     return (
-      <View style={[styles.container, { backgroundColor: colors.screenBg, justifyContent: 'center', alignItems: 'center' }]}>
+      <View
+        style={[
+          styles.container,
+          { backgroundColor: colors.screenBg, justifyContent: 'center', alignItems: 'center' },
+        ]}
+      >
         <ActivityIndicator color={colors.tabTint} />
       </View>
     );
@@ -434,17 +502,29 @@ export default function DrinksScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.screenBg, paddingTop: insets.top }]}>
-
       {/* Log-result toast — replaces the refresh toast while active. */}
       {toast && (
-        <View style={[styles.toast, { backgroundColor: colors.cardButton, borderWidth: 2, borderColor: colors.border + '33', borderRadius: theme.borderRadius.lg - theme.spacing.xs, top: insets.top + theme.spacing.sm }]}>
+        <View
+          style={[
+            styles.toast,
+            {
+              backgroundColor: colors.cardButton,
+              borderWidth: 2,
+              borderColor: colors.border + '33',
+              borderRadius: theme.borderRadius.lg - theme.spacing.xs,
+              top: insets.top + theme.spacing.sm,
+            },
+          ]}
+        >
           <ThemedText style={[styles.toastPoints, { color: colors.cardButtonText }]}>
             {toast.points >= 0
               ? t('drinks.pointsEarned', { points: toast.points })
               : t('drinks.pointsNeutral', { points: toast.points })}
           </ThemedText>
           {toast.bingePenalty && (
-            <ThemedText style={[styles.toastBinge, { color: colors.cardButtonText + 'cc' }]}>{t('drinks.bingeToast')}</ThemedText>
+            <ThemedText style={[styles.toastBinge, { color: colors.cardButtonText + 'cc' }]}>
+              {t('drinks.bingeToast')}
+            </ThemedText>
           )}
         </View>
       )}
@@ -452,29 +532,66 @@ export default function DrinksScreen() {
       {!toast && <RefreshToast visible={refreshed} refreshing={refreshing} />}
 
       {/* Card 1: view toggle + streak/game-end banner. */}
-      <View style={{ backgroundColor: colors.card, borderRadius: theme.borderRadius.lg, borderWidth: 2, borderColor: colors.border + '33', marginHorizontal: theme.spacing.lg, marginTop: theme.spacing.md, overflow: 'hidden' }}>
-
+      <View
+        style={{
+          backgroundColor: colors.card,
+          borderRadius: theme.borderRadius.lg,
+          borderWidth: 2,
+          borderColor: colors.border + '33',
+          marginHorizontal: theme.spacing.lg,
+          marginTop: theme.spacing.md,
+          overflow: 'hidden',
+        }}
+      >
         {/* Log / Leaderboard toggle. */}
-        <View style={{ flexDirection: 'row', margin: theme.spacing.xs, borderRadius: theme.borderRadius.lg - theme.spacing.xs, overflow: 'hidden', borderWidth: 1.5, borderColor: colors.border + '55' }}>
+        <View
+          style={{
+            flexDirection: 'row',
+            margin: theme.spacing.xs,
+            borderRadius: theme.borderRadius.lg - theme.spacing.xs,
+            overflow: 'hidden',
+            borderWidth: 1.5,
+            borderColor: colors.border + '55',
+          }}
+        >
           <TouchableOpacity
-            style={[styles.toggleBtn, {
-              backgroundColor: view === 'log' ? colors.cardButton : 'transparent',
-              borderRightWidth: 1,
-              borderRightColor: colors.border + '55',
-            }]}
+            style={[
+              styles.toggleBtn,
+              {
+                backgroundColor: view === 'log' ? colors.cardButton : 'transparent',
+                borderRightWidth: 1,
+                borderRightColor: colors.border + '55',
+              },
+            ]}
             onPress={() => setView('log')}
           >
-            <ThemedText style={[styles.toggleText, { color: view === 'log' ? colors.cardButtonText : colors.cardText }]}>
+            <ThemedText
+              style={[
+                styles.toggleText,
+                { color: view === 'log' ? colors.cardButtonText : colors.cardText },
+              ]}
+            >
               {t('drinks.logTab')}
             </ThemedText>
           </TouchableOpacity>
           <TouchableOpacity
-            style={[styles.toggleBtn, {
-              backgroundColor: view === 'leaderboard' ? colors.cardButton : 'transparent',
-            }]}
-            onPress={() => { setView('leaderboard'); loadStats(); }}
+            style={[
+              styles.toggleBtn,
+              {
+                backgroundColor: view === 'leaderboard' ? colors.cardButton : 'transparent',
+              },
+            ]}
+            onPress={() => {
+              setView('leaderboard');
+              loadStats();
+            }}
           >
-            <ThemedText style={[styles.toggleText, { color: view === 'leaderboard' ? colors.cardButtonText : colors.cardText }]}>
+            <ThemedText
+              style={[
+                styles.toggleText,
+                { color: view === 'leaderboard' ? colors.cardButtonText : colors.cardText },
+              ]}
+            >
               {t('drinks.leaderboardTab')}
             </ThemedText>
           </TouchableOpacity>
@@ -482,13 +599,21 @@ export default function DrinksScreen() {
 
         {/* Streak and binge-penalty banner — only shows in log view. */}
         {view === 'log' && stats && (stats.current_streak > 0 || stats.binge_penalty) && (
-          <View style={{ paddingHorizontal: theme.spacing.md, paddingVertical: theme.spacing.sm, borderTopWidth: 1, borderTopColor: colors.cardText + '20' }}>
+          <View
+            style={{
+              paddingHorizontal: theme.spacing.md,
+              paddingVertical: theme.spacing.sm,
+              borderTopWidth: 1,
+              borderTopColor: colors.cardText + '20',
+            }}
+          >
             {stats.current_streak > 0 && (
               <ThemedText style={[styles.bannerText, { color: colors.cardText }]}>
                 {t('drinks.streak', { n: stats.current_streak })}
                 {stats.current_streak >= 2 && !stats.binge_penalty && (
                   <ThemedText style={styles.bannerSub}>
-                    {'  '}{t('drinks.streakWarning', { n: 3 - stats.current_streak })}
+                    {'  '}
+                    {t('drinks.streakWarning', { n: 3 - stats.current_streak })}
                   </ThemedText>
                 )}
               </ThemedText>
@@ -503,9 +628,24 @@ export default function DrinksScreen() {
 
         {/* Game-end / end-time banner. */}
         {view === 'log' && endTime && (
-          <View style={{ paddingHorizontal: theme.spacing.md, paddingVertical: theme.spacing.sm, borderTopWidth: 1, borderTopColor: colors.cardText + '20', backgroundColor: gameEnded ? theme.colors.error + '22' : colors.primary + '18' }}>
-            <ThemedText style={[styles.gameEndText, { color: gameEnded ? theme.colors.error : colors.cardText }]}>
-              {gameEnded ? t('drinks.gameEnded') : t('drinks.endsAt', { time: formatEndTime(endTime) })}
+          <View
+            style={{
+              paddingHorizontal: theme.spacing.md,
+              paddingVertical: theme.spacing.sm,
+              borderTopWidth: 1,
+              borderTopColor: colors.cardText + '20',
+              backgroundColor: gameEnded ? theme.colors.error + '22' : colors.primary + '18',
+            }}
+          >
+            <ThemedText
+              style={[
+                styles.gameEndText,
+                { color: gameEnded ? theme.colors.error : colors.cardText },
+              ]}
+            >
+              {gameEnded
+                ? t('drinks.gameEnded')
+                : t('drinks.endsAt', { time: formatEndTime(endTime) })}
             </ThemedText>
           </View>
         )}
@@ -514,14 +654,41 @@ export default function DrinksScreen() {
       {/* ── LOG VIEW ── */}
       {view === 'log' && (
         <View style={[styles.flex, { marginTop: theme.spacing.md }]}>
-          <ScrollView style={styles.flex} contentContainerStyle={styles.scrollContent} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.tabTint} colors={[colors.tabTint]} />}>
-
+          <ScrollView
+            style={styles.flex}
+            contentContainerStyle={styles.scrollContent}
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={onRefresh}
+                tintColor={colors.tabTint}
+                colors={[colors.tabTint]}
+              />
+            }
+          >
             {/* Card 2: search + drink list. */}
-            <View style={{ backgroundColor: colors.card, borderRadius: theme.borderRadius.lg, borderWidth: 2, borderColor: colors.border + '33', overflow: 'hidden' }}>
-
+            <View
+              style={{
+                backgroundColor: colors.card,
+                borderRadius: theme.borderRadius.lg,
+                borderWidth: 2,
+                borderColor: colors.border + '33',
+                overflow: 'hidden',
+              }}
+            >
               {/* Search input — filters across name and category label. */}
-              <View style={[styles.searchRow, { borderBottomWidth: 1, borderBottomColor: colors.border + '30' }]}>
-                <Ionicons name="search-outline" size={16} color={colors.cardText} style={{ marginRight: 6 }} />
+              <View
+                style={[
+                  styles.searchRow,
+                  { borderBottomWidth: 1, borderBottomColor: colors.border + '30' },
+                ]}
+              >
+                <Ionicons
+                  name="search-outline"
+                  size={16}
+                  color={colors.cardText}
+                  style={{ marginRight: 6 }}
+                />
                 <TextInput
                   style={[styles.searchInput, { color: colors.cardText }]}
                   placeholder={t('drinks.searchPlaceholder')}
@@ -535,178 +702,285 @@ export default function DrinksScreen() {
               </View>
 
               {/* Drink list — either flat search results or category accordion. */}
-              {search.trim().length > 0 ? (
-                (() => {
-                  const q = search.trim().toLowerCase();
-                  const results = drinks.filter((d) =>
-                    d.display_name.toLowerCase().includes(q) ||
-                    d.category_label.toLowerCase().includes(q)
-                  );
-                  if (results.length === 0) {
-                    return (
-                      <ThemedText style={[styles.emptyText, { color: theme.colors.muted }]}>
-                        {t('drinks.searchNoResults')}
-                      </ThemedText>
+              {search.trim().length > 0
+                ? (() => {
+                    const q = search.trim().toLowerCase();
+                    const results = drinks.filter(
+                      (d) =>
+                        d.display_name.toLowerCase().includes(q) ||
+                        d.category_label.toLowerCase().includes(q)
                     );
-                  }
-                  return results.map(renderCatalogItem);
-                })()
-              ) : (
-                (() => {
-                  // Group drinks by category into insertion-ordered buckets so
-                  // the backend's category ordering is preserved.
-                  const categoryOrder: string[] = [];
-                  const categoryMap: Record<string, { label: string; items: DrinkCatalog[] }> = {};
-                  for (const catalog of drinks) {
-                    if (!categoryMap[catalog.category]) {
-                      categoryOrder.push(catalog.category);
-                      categoryMap[catalog.category] = { label: catalog.category_label, items: [] };
+                    if (results.length === 0) {
+                      return (
+                        <ThemedText style={[styles.emptyText, { color: theme.colors.muted }]}>
+                          {t('drinks.searchNoResults')}
+                        </ThemedText>
+                      );
                     }
-                    categoryMap[catalog.category].items.push(catalog);
-                  }
-                  return categoryOrder.map((cat) => {
-                    const { label, items } = categoryMap[cat];
-                    const isOpen = expandedCategories.has(cat);
-                    return (
-                      <View key={cat}>
-                        <TouchableOpacity
-                          style={[styles.categoryRow, { borderBottomWidth: 1, borderBottomColor: colors.border + '30' }]}
-                          onPress={() => {
-                            setExpandedCategories((prev) => {
-                              const next = new Set(prev);
-                              if (next.has(cat)) next.delete(cat); else next.add(cat);
-                              return next;
-                            });
-                            // Collapse category → clear a pending selection
-                            // that would otherwise belong to a hidden row.
-                            if (selectedSize && items.some((c) => c.sizes.some((s) => s.drink_id === selectedSize.drink_id))) {
-                              setSelectedSize(null);
-                            }
-                          }}
-                          activeOpacity={0.7}
-                        >
-                          <ThemedText style={[styles.categoryHeader, { color: colors.cardText }]}>{label}</ThemedText>
-                          <Ionicons name={isOpen ? 'chevron-up' : 'chevron-down'} size={16} color={colors.cardText} />
-                        </TouchableOpacity>
-                        {isOpen && (
-                          <View style={{ borderLeftWidth: 3, borderLeftColor: colors.primary + '50' }}>
-                            {items.map(renderCatalogItem)}
-                          </View>
-                        )}
-                      </View>
-                    );
-                  });
-                })()
-              )}
+                    return results.map(renderCatalogItem);
+                  })()
+                : (() => {
+                    // Group drinks by category into insertion-ordered buckets so
+                    // the backend's category ordering is preserved.
+                    const categoryOrder: string[] = [];
+                    const categoryMap: Record<string, { label: string; items: DrinkCatalog[] }> =
+                      {};
+                    for (const catalog of drinks) {
+                      if (!categoryMap[catalog.category]) {
+                        categoryOrder.push(catalog.category);
+                        categoryMap[catalog.category] = {
+                          label: catalog.category_label,
+                          items: [],
+                        };
+                      }
+                      categoryMap[catalog.category].items.push(catalog);
+                    }
+                    return categoryOrder.map((cat) => {
+                      const { label, items } = categoryMap[cat];
+                      const isOpen = expandedCategories.has(cat);
+                      return (
+                        <View key={cat}>
+                          <TouchableOpacity
+                            style={[
+                              styles.categoryRow,
+                              { borderBottomWidth: 1, borderBottomColor: colors.border + '30' },
+                            ]}
+                            onPress={() => {
+                              setExpandedCategories((prev) => {
+                                const next = new Set(prev);
+                                if (next.has(cat)) next.delete(cat);
+                                else next.add(cat);
+                                return next;
+                              });
+                              // Collapse category → clear a pending selection
+                              // that would otherwise belong to a hidden row.
+                              if (
+                                selectedSize &&
+                                items.some((c) =>
+                                  c.sizes.some((s) => s.drink_id === selectedSize.drink_id)
+                                )
+                              ) {
+                                setSelectedSize(null);
+                              }
+                            }}
+                            activeOpacity={0.7}
+                          >
+                            <ThemedText style={[styles.categoryHeader, { color: colors.cardText }]}>
+                              {label}
+                            </ThemedText>
+                            <Ionicons
+                              name={isOpen ? 'chevron-up' : 'chevron-down'}
+                              size={16}
+                              color={colors.cardText}
+                            />
+                          </TouchableOpacity>
+                          {isOpen && (
+                            <View
+                              style={{ borderLeftWidth: 3, borderLeftColor: colors.primary + '50' }}
+                            >
+                              {items.map(renderCatalogItem)}
+                            </View>
+                          )}
+                        </View>
+                      );
+                    });
+                  })()}
             </View>
-
           </ScrollView>
 
           {/* Cooldown banner — sits directly above the tab bar during cooldown. */}
           {cooldown > 0 && (
-            <View style={[styles.bottomAction, { backgroundColor: colors.cardButton, borderWidth: 2, borderColor: colors.border + '33', borderRadius: theme.borderRadius.lg - theme.spacing.xs, marginBottom: theme.spacing.sm, marginHorizontal: theme.spacing.lg }]}>
+            <View
+              style={[
+                styles.bottomAction,
+                {
+                  backgroundColor: colors.cardButton,
+                  borderWidth: 2,
+                  borderColor: colors.border + '33',
+                  borderRadius: theme.borderRadius.lg - theme.spacing.xs,
+                  marginBottom: theme.spacing.sm,
+                  marginHorizontal: theme.spacing.lg,
+                },
+              ]}
+            >
               <Ionicons name="time-outline" size={18} color={colors.cardButtonText} />
               <ThemedText style={[styles.cooldownText, { color: colors.cardButtonText }]}>
                 {t('drinks.cooldown', { s: cooldown })}
               </ThemedText>
             </View>
           )}
-
         </View>
       )}
 
-
       {/* ── LEADERBOARD VIEW ── */}
       {view === 'leaderboard' && (
-        <ScrollView contentContainerStyle={[styles.scrollContent, { paddingTop: theme.spacing.md, paddingBottom: tabBarHeight + theme.spacing.xxl }]} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.tabTint} colors={[colors.tabTint]} />}>
-
+        <ScrollView
+          contentContainerStyle={[
+            styles.scrollContent,
+            { paddingTop: theme.spacing.md, paddingBottom: tabBarHeight + theme.spacing.xxl },
+          ]}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              tintColor={colors.tabTint}
+              colors={[colors.tabTint]}
+            />
+          }
+        >
           {/* Ranking table. Podium rows carry a left accent strip. */}
-          <View style={{ backgroundColor: colors.card, borderRadius: theme.borderRadius.lg, borderWidth: 2, borderColor: colors.border + '33', padding: theme.spacing.md }}>
-          {stats?.guest_totals && stats.guest_totals.length > 0 ? (
-            <>
-              {/* Column headers. */}
-              <View style={styles.tableHeader}>
-                <ThemedText style={[styles.tableHeaderCell, { width: 40, color: colors.cardText }]}>{t('drinks.rank')}</ThemedText>
-                <ThemedText style={[styles.tableHeaderCell, { flex: 1, color: colors.cardText }]}>Name</ThemedText>
-                <ThemedText style={[styles.tableHeaderCell, { width: 52, textAlign: 'right', color: colors.cardText }]}>🍺</ThemedText>
-                <ThemedText style={[styles.tableHeaderCell, { width: 64, textAlign: 'right', color: colors.cardText }]}>Pts</ThemedText>
-              </View>
-
-              {stats.guest_totals.map((g, i) => {
-                const isMe = g.guest_id === session?.guestId;
-                const medal = MEDAL[i];
-                const medalColor = MEDAL_COLORS[i];
-                return (
-                  <View
-                    key={g.guest_id}
+          <View
+            style={{
+              backgroundColor: colors.card,
+              borderRadius: theme.borderRadius.lg,
+              borderWidth: 2,
+              borderColor: colors.border + '33',
+              padding: theme.spacing.md,
+            }}
+          >
+            {stats?.guest_totals && stats.guest_totals.length > 0 ? (
+              <>
+                {/* Column headers. */}
+                <View style={styles.tableHeader}>
+                  <ThemedText
+                    style={[styles.tableHeaderCell, { width: 40, color: colors.cardText }]}
+                  >
+                    {t('drinks.rank')}
+                  </ThemedText>
+                  <ThemedText style={[styles.tableHeaderCell, { flex: 1, color: colors.cardText }]}>
+                    Name
+                  </ThemedText>
+                  <ThemedText
                     style={[
-                      styles.tableRow,
-                      isMe && { backgroundColor: colors.primary + '15' },
-                      i < 3 && { borderLeftWidth: 3, borderLeftColor: medalColor ?? 'transparent' },
+                      styles.tableHeaderCell,
+                      { width: 52, textAlign: 'right', color: colors.cardText },
                     ]}
                   >
-                    <ThemedText style={[styles.rankCell, { width: 40 }]}>
-                      {medal ?? `#${i + 1}`}
-                    </ThemedText>
-                    <ThemedText
-                      style={[styles.nameCell, { flex: 1, color: colors.cardText }, isMe && { fontWeight: '700' }]}
-                      numberOfLines={1}
-                    >
-                      {g.firstname} {g.lastname}
-                    </ThemedText>
-                    <ThemedText style={[styles.dataCell, { width: 52, color: theme.colors.muted }]}>{g.total}</ThemedText>
-                    <ThemedText
+                    🍺
+                  </ThemedText>
+                  <ThemedText
+                    style={[
+                      styles.tableHeaderCell,
+                      { width: 64, textAlign: 'right', color: colors.cardText },
+                    ]}
+                  >
+                    Pts
+                  </ThemedText>
+                </View>
+
+                {stats.guest_totals.map((g, i) => {
+                  const isMe = g.guest_id === session?.guestId;
+                  const medal = MEDAL[i];
+                  const medalColor = MEDAL_COLORS[i];
+                  return (
+                    <View
+                      key={g.guest_id}
                       style={[
-                        styles.dataCell,
-                        { width: 64, color: g.points_total >= 0 ? colors.cardText : theme.colors.muted, fontWeight: '600' },
+                        styles.tableRow,
+                        isMe && { backgroundColor: colors.primary + '15' },
+                        i < 3 && {
+                          borderLeftWidth: 3,
+                          borderLeftColor: medalColor ?? 'transparent',
+                        },
                       ]}
                     >
-                      {g.points_total}
-                    </ThemedText>
-                  </View>
-                );
-              })}
-            </>
-          ) : (
-            <ThemedText style={[styles.emptyText, { color: theme.colors.muted }]}>{t('drinks.noData')}</ThemedText>
-          )}
-
-          {/* My-drinks breakdown — collapsible so it doesn't dominate the view. */}
-          {stats?.my_stats && (
-            <View style={[styles.myDrinksSection, { borderTopColor: colors.border + '30' }]}>
-              <Pressable
-                style={styles.myDrinksHeader}
-                onPress={() => setMyStatsExpanded((v) => !v)}
-              >
-                <ThemedText style={[styles.myDrinksTitle, { color: colors.cardText }]}>{t('drinks.myDrinks')}</ThemedText>
-                <Ionicons
-                  name={myStatsExpanded ? 'chevron-up' : 'chevron-down'}
-                  size={18}
-                  color={colors.cardText}
-                />
-              </Pressable>
-
-              {myStatsExpanded && (
-                stats.my_stats.length === 0 ? (
-                  <ThemedText style={[styles.emptyText, { color: theme.colors.muted, marginTop: theme.spacing.sm }]}>
-                    {t('drinks.noData')}
-                  </ThemedText>
-                ) : (
-                  stats.my_stats.map((item) => (
-                    <View key={item.drink_id} style={styles.myStatRow}>
-                      <ThemedText style={[styles.myStatName, { color: colors.cardText }]} numberOfLines={1}>
-                        {item.display_name}
+                      <ThemedText style={[styles.rankCell, { width: 40 }]}>
+                        {medal ?? `#${i + 1}`}
                       </ThemedText>
-                      <ThemedText style={[styles.myStatCount, { color: theme.colors.muted }]}>{item.count}×</ThemedText>
-                      <ThemedText style={[styles.myStatPoints, { color: item.points_total >= 0 ? colors.cardText : theme.colors.muted }]}>
-                        {item.points_total >= 0 ? `+${item.points_total}` : `${item.points_total}`} Pts
+                      <ThemedText
+                        style={[
+                          styles.nameCell,
+                          { flex: 1, color: colors.cardText },
+                          isMe && { fontWeight: '700' },
+                        ]}
+                        numberOfLines={1}
+                      >
+                        {g.firstname} {g.lastname}
+                      </ThemedText>
+                      <ThemedText
+                        style={[styles.dataCell, { width: 52, color: theme.colors.muted }]}
+                      >
+                        {g.total}
+                      </ThemedText>
+                      <ThemedText
+                        style={[
+                          styles.dataCell,
+                          {
+                            width: 64,
+                            color: g.points_total >= 0 ? colors.cardText : theme.colors.muted,
+                            fontWeight: '600',
+                          },
+                        ]}
+                      >
+                        {g.points_total}
                       </ThemedText>
                     </View>
-                  ))
-                )
-              )}
-            </View>
-          )}
+                  );
+                })}
+              </>
+            ) : (
+              <ThemedText style={[styles.emptyText, { color: theme.colors.muted }]}>
+                {t('drinks.noData')}
+              </ThemedText>
+            )}
+
+            {/* My-drinks breakdown — collapsible so it doesn't dominate the view. */}
+            {stats?.my_stats && (
+              <View style={[styles.myDrinksSection, { borderTopColor: colors.border + '30' }]}>
+                <Pressable
+                  style={styles.myDrinksHeader}
+                  onPress={() => setMyStatsExpanded((v) => !v)}
+                >
+                  <ThemedText style={[styles.myDrinksTitle, { color: colors.cardText }]}>
+                    {t('drinks.myDrinks')}
+                  </ThemedText>
+                  <Ionicons
+                    name={myStatsExpanded ? 'chevron-up' : 'chevron-down'}
+                    size={18}
+                    color={colors.cardText}
+                  />
+                </Pressable>
+
+                {myStatsExpanded &&
+                  (stats.my_stats.length === 0 ? (
+                    <ThemedText
+                      style={[
+                        styles.emptyText,
+                        { color: theme.colors.muted, marginTop: theme.spacing.sm },
+                      ]}
+                    >
+                      {t('drinks.noData')}
+                    </ThemedText>
+                  ) : (
+                    stats.my_stats.map((item) => (
+                      <View key={item.drink_id} style={styles.myStatRow}>
+                        <ThemedText
+                          style={[styles.myStatName, { color: colors.cardText }]}
+                          numberOfLines={1}
+                        >
+                          {item.display_name}
+                        </ThemedText>
+                        <ThemedText style={[styles.myStatCount, { color: theme.colors.muted }]}>
+                          {item.count}×
+                        </ThemedText>
+                        <ThemedText
+                          style={[
+                            styles.myStatPoints,
+                            {
+                              color: item.points_total >= 0 ? colors.cardText : theme.colors.muted,
+                            },
+                          ]}
+                        >
+                          {item.points_total >= 0
+                            ? `+${item.points_total}`
+                            : `${item.points_total}`}{' '}
+                          Pts
+                        </ThemedText>
+                      </View>
+                    ))
+                  ))}
+              </View>
+            )}
           </View>
         </ScrollView>
       )}

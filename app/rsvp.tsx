@@ -16,23 +16,12 @@
  * decided state.
  */
 import { useEffect, useState } from 'react';
-import {
-  View,
-  TouchableOpacity,
-  ActivityIndicator,
-  ScrollView,
-  Alert,
-} from 'react-native';
+import { View, TouchableOpacity, ActivityIndicator, ScrollView, Alert } from 'react-native';
 import { ThemedText } from '../components/ThemedText';
 import { useRouter } from 'expo-router';
 import { useLanguage } from '../lib/LanguageContext';
 import { useEventTheme } from '../lib/EventThemeContext';
-import {
-  fetchGuestMe,
-  fetchEventInfo,
-  postRsvp,
-  GuestMe,
-} from '../lib/guest';
+import { fetchGuestMe, fetchEventInfo, postRsvp, GuestMe } from '../lib/guest';
 import { theme } from '../constants/theme';
 
 /** Locale-aware deadline formatter — `de-DE` for German, `en-GB` for English. */
@@ -70,14 +59,14 @@ export default function RsvpScreen() {
 
   /** Double-confirm dialog — decline is destructive, we surface that explicitly. */
   function confirmDecline() {
-    Alert.alert(
-      t('rsvp.declineConfirmTitle'),
-      t('rsvp.declineConfirmOwn'),
-      [
-        { text: t('common.cancel'), style: 'cancel' },
-        { text: t('rsvp.declineConfirmButton'), style: 'destructive', onPress: () => handleOwnRsvp(false) },
-      ],
-    );
+    Alert.alert(t('rsvp.declineConfirmTitle'), t('rsvp.declineConfirmOwn'), [
+      { text: t('common.cancel'), style: 'cancel' },
+      {
+        text: t('rsvp.declineConfirmButton'),
+        style: 'destructive',
+        onPress: () => handleOwnRsvp(false),
+      },
+    ]);
   }
 
   async function handleOwnRsvp(attending: boolean) {
@@ -105,7 +94,14 @@ export default function RsvpScreen() {
 
   if (loading) {
     return (
-      <View style={{ flex: 1, backgroundColor: colors.screenBg, alignItems: 'center', justifyContent: 'center' }}>
+      <View
+        style={{
+          flex: 1,
+          backgroundColor: colors.screenBg,
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
         <ActivityIndicator color={theme.colors.primary} />
       </View>
     );
@@ -138,7 +134,9 @@ export default function RsvpScreen() {
         {t('rsvp.title')}
       </ThemedText>
       {deadlineFormatted && (
-        <ThemedText style={{ fontSize: 14, color: theme.colors.muted, marginBottom: theme.spacing.xl }}>
+        <ThemedText
+          style={{ fontSize: 14, color: theme.colors.muted, marginBottom: theme.spacing.xl }}
+        >
           {t('rsvp.subtitle', { deadline: deadlineFormatted })}
         </ThemedText>
       )}
@@ -152,7 +150,14 @@ export default function RsvpScreen() {
           marginBottom: theme.spacing.md,
         }}
       >
-        <ThemedText style={{ fontSize: 16, fontWeight: '600', color: colors.primary, marginBottom: theme.spacing.md }}>
+        <ThemedText
+          style={{
+            fontSize: 16,
+            fontWeight: '600',
+            color: colors.primary,
+            marginBottom: theme.spacing.md,
+          }}
+        >
           {guest.firstname} {guest.lastname}
         </ThemedText>
         {savingOwn ? (
@@ -173,7 +178,9 @@ export default function RsvpScreen() {
                 opacity: ownSet && !ownAccepted ? 0.4 : 1,
               }}
             >
-              <ThemedText style={{ fontWeight: '700', color: ownAccepted ? '#fff' : theme.colors.muted }}>
+              <ThemedText
+                style={{ fontWeight: '700', color: ownAccepted ? '#fff' : theme.colors.muted }}
+              >
                 {t('rsvp.accept')}
               </ThemedText>
             </TouchableOpacity>
