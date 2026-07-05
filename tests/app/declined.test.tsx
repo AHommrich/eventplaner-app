@@ -35,12 +35,10 @@ jest.mock('../../lib/auth', () => ({
   clearSession: (...args: any[]) => mockClearSession(...args),
 }));
 
-// `app/declined.tsx` currently calls `useSafeAreaInsets` after an early
-// return (parked as a follow-up in `docs/REFACTOR_PLAN.md`), which trips
-// React 19's hook-order check inside `react-test-renderer`. Stubbing the
-// hook with a plain function that returns a static value keeps the hook
-// count stable across renders so the tests here run against the actual
-// screen without the parked bug masking them.
+// The Jest render trees do NOT mount a `SafeAreaProvider`, so calling the
+// real `useSafeAreaInsets` returns a placeholder value the hook itself
+// warns about. Stubbing to a static `{ top: 0, … }` keeps the tests focused
+// on the screen's behaviour rather than the safe-area harness.
 jest.mock('react-native-safe-area-context', () => {
   const actual = jest.requireActual('react-native-safe-area-context');
   return {

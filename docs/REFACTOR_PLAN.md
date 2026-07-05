@@ -742,12 +742,15 @@ Surfaced during **Phase 0** (2026-07-03) — lint runs discovered these on the
 existing tree. Under Phase 0's "no code changes" rule they were parked, not
 fixed. Each is a candidate for its own future phase.
 
-- [ ] **`app/declined.tsx:119`** — `useSafeAreaInsets()` is called after an
-  early `return` at line 111 (`react-hooks/rules-of-hooks`). Fix: hoist the
-  hook call above the loading branch. Real bug; may cause hook-order crashes
-  if the loading state flips.
-- [ ] **`app/_layout.tsx:49`** — font-loading setup accesses refs during
-  render (`react-hooks/refs`). Fix: move ref access into an effect.
+- [x] **`app/declined.tsx:119`** — `useSafeAreaInsets()` is called after an
+  early `return` at line 111 (`react-hooks/rules-of-hooks`). Fixed by
+  hoisting the hook call above the loading branch. `eslint.config.js` no
+  longer downgrades the rule — future re-introductions fail lint.
+- [x] **`app/_layout.tsx:49`** — font-loading setup accesses refs during
+  render (`react-hooks/refs`). Fixed by switching from
+  `useRef(new Animated.Value(1)).current` to
+  `useState(() => new Animated.Value(1))[0]`. The `react-hooks/refs` rule
+  is no longer disabled — future re-introductions fail lint.
 - [ ] **Several files** — React-19 `set-state-in-effect` warnings on bootstrap
   effects (`app/declined.tsx`, `lib/EventThemeContext.tsx`, potentially
   others). Rule currently off. Fix: rewrite bootstrap effects to use lazy
@@ -779,11 +782,11 @@ Expo module deeper or moving the code around:
   - Tab-layout `app/(tabs)/_layout.tsx` visibility rules (RSVP tab hides when
     accepted, Drinks tab hides when disabled) — currently excluded from
     `collectCoverageFrom`.
-- [ ] **`app/declined.tsx` and `app/(tabs)/home.tsx` hoisted-hook fix.**
-  Tests currently stub `useSafeAreaInsets` per file to sidestep the parked
-  hook-order bug (see the first Phase-0 follow-up above). Once the source
-  fix lands the stub can be dropped and the tests re-enabled with real
-  safe-area math.
+- [x] **`app/declined.tsx` and `app/(tabs)/home.tsx` hoisted-hook fix.**
+  Source fix landed. Test stubs kept in place with an updated comment —
+  the real reason for the stub was that the Jest render tree does not
+  mount a `SafeAreaProvider`, not the hook-order bug. Confirmed by
+  removing the stub and observing the hook's own "no provider" warning.
 
 ---
 

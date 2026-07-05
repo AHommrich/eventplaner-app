@@ -34,10 +34,9 @@ jest.mock('@react-navigation/bottom-tabs', () => ({
   useBottomTabBarHeight: () => 48,
 }));
 
-// `home.tsx` currently calls `useSafeAreaInsets` after a `loading` early
-// return, tripping React 19's hook-order check. Stubbing to a static value
-// keeps the hook count stable across renders. Same rationale as
-// `tests/app/declined.test.tsx`.
+// Same rationale as `tests/app/declined.test.tsx` — the Jest tree has no
+// `SafeAreaProvider`, so the real hook would warn and return a placeholder.
+// Static insets keep the render deterministic.
 jest.mock('react-native-safe-area-context', () => {
   const actual = jest.requireActual('react-native-safe-area-context');
   return { ...actual, useSafeAreaInsets: () => ({ top: 0, right: 0, bottom: 0, left: 0 }) };
