@@ -144,6 +144,10 @@ export default function HomeScreen() {
   // image, updated deadline) is reflected without a pull-to-refresh.
   useFocusEffect(useCallback(() => {
     loadData();
+    // Focus-effect callback intentionally captured once — recreating it per
+    // render would defeat useFocusEffect's "run when route becomes active"
+    // semantic and re-fire on every parent render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []));
 
   // 1 Hz ticker for the countdown pill — cheap because `calcCountdown` is
@@ -154,6 +158,10 @@ export default function HomeScreen() {
     setCountdown(calcCountdown(eventInfo.date));
     intervalRef.current = setInterval(() => setCountdown(calcCountdown(eventInfo!.date)), 1000);
     return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
+    // We only need to reset the ticker when the actual date changes. The
+    // full `eventInfo` object would trigger on every unrelated theme /
+    // schedule tweak the backend returns.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [eventInfo?.date]);
 
   const { refreshing, refreshed, onRefresh } = useRefreshToast(loadData);

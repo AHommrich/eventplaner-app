@@ -87,6 +87,10 @@ export default function WelcomeScreen() {
         setChecking(false);
       }
     });
+    // Bootstrap session probe — the "who am I and where do I go" flow runs
+    // exactly once on mount. Any subsequent navigation is triggered by
+    // explicit user action (scan / pick image), not by this effect.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   /**

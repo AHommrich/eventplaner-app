@@ -124,6 +124,9 @@ export default function RsvpTabScreen() {
     }
   }
 
+  // Same focus-effect pattern as the other tab screens — captured once so
+  // it re-runs on route focus, not on every render.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useFocusEffect(useCallback(() => { loadData(); }, []));
 
   /** Double-confirm gate — decline is destructive so we surface a native alert. */

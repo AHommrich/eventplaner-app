@@ -15,7 +15,7 @@
  * makes in the admin backend so a re-invited guest lands on the correct
  * screen without needing to reopen the app.
  */
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { View, TouchableOpacity, ActivityIndicator, Alert, ScrollView, RefreshControl } from 'react-native';
 import { ThemedText } from '../components/ThemedText';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -116,6 +116,10 @@ export default function DeclinedScreen() {
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
+    // Bootstrap poll — captures `loadData` and `router` once. Re-running on
+    // every render would tear down and re-create the interval and could
+    // race the 30 s polling clock.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   /**

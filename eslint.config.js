@@ -9,20 +9,22 @@ module.exports = [
   ...expoConfig,
   {
     rules: {
-      // Existing hooks may not satisfy exhaustive-deps.
-      'react-hooks/exhaustive-deps': 'warn',
       // React 19 introduced an aggressive set-state-in-effect check that the
       // existing bootstrap effects trip. Rule stays off until we have a
       // dedicated refactor phase to address it.
       'react-hooks/set-state-in-effect': 'off',
-      // The two rules that were downgraded during Phase 0 have been fixed:
-      //   - `react-hooks/rules-of-hooks`: declined.tsx now reads
+      // Every rule downgraded during Phase 0 has since been paid down:
+      //   - `react-hooks/rules-of-hooks`: declined.tsx reads
       //      useSafeAreaInsets() ABOVE the early `if (loading) return …`.
-      //   - `react-hooks/refs`: _layout.tsx now stores the splash
+      //   - `react-hooks/refs`: _layout.tsx stores the splash
       //      `Animated.Value` in `useState(() => new Animated.Value(1))[0]`,
       //      not `useRef(new Animated.Value(1)).current`.
-      // Both rules run at their default `error` level now — future
-      // introductions of either pattern will fail lint in CI.
+      //   - `react-hooks/exhaustive-deps`: every intentional mount-only
+      //      effect carries a per-line disable with a justification. New
+      //      violations must either add the missing dep or add a similar
+      //      disable-line — silent suppression is not allowed.
+      // All three rules run at their default `error` level. Future
+      // regressions fail lint in CI.
     },
   },
   {

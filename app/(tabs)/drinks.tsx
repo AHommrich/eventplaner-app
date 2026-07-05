@@ -187,6 +187,10 @@ export default function DrinksScreen() {
     }
     pollRef.current = setInterval(loadStats, 5_000);
     return () => { if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; } };
+    // Interval is tied to the `view === 'leaderboard'` mode only. Re-creating
+    // the interval on every render (which listing `loadStats` as a dep would
+    // do) would reset the 5 s polling clock on any state change.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [view]);
 
   // ── Initial load on focus ──────────────────────────────────────────────────
@@ -196,6 +200,11 @@ export default function DrinksScreen() {
     return () => {
       if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; }
     };
+    // Focus-effect callback intentionally re-runs on every focus, NOT every
+    // render — that's what `useCallback([])` + `useFocusEffect` guarantees
+    // together. Adding `loadInitial` as a dep would recreate the callback
+    // on each render and defeat the focus semantics.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []));
 
   // ── Data loading ───────────────────────────────────────────────────────────
@@ -565,7 +574,7 @@ export default function DrinksScreen() {
                           onPress={() => {
                             setExpandedCategories((prev) => {
                               const next = new Set(prev);
-                              next.has(cat) ? next.delete(cat) : next.add(cat);
+                              if (next.has(cat)) next.delete(cat); else next.add(cat);
                               return next;
                             });
                             // Collapse category → clear a pending selection

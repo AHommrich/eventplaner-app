@@ -27,7 +27,6 @@ import { useEffect, useState } from 'react';
 import { Alert } from 'react-native';
 import { Tabs, useRouter, useSegments } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { theme } from '../../constants/theme';
 import { useLanguage } from '../../lib/LanguageContext';
 import { useEventTheme } from '../../lib/EventThemeContext';
 import { useBlockedFeatures } from '../../lib/BlockedFeaturesContext';
@@ -59,6 +58,11 @@ export default function TabLayout() {
       Alert.alert(t('drinks.blockedTitle'), t('drinks.blockedMessage'));
       router.replace('/(tabs)/home');
     }
+    // Only react to the *transition* into `drinksBlocked === true`, not to
+    // every re-render of the parent that hands us a new `router` / `segments`
+    // / `t` reference. Adding those as deps would re-fire the alert on
+    // every navigation change.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [drinksBlocked]);
 
   const showRsvpTab = rsvpStatus === 'accepted_pending';
