@@ -1,0 +1,47 @@
+# Runs the Jest suite with coverage on every push and PR to main.
+#
+# `npm run test:coverage` is intentional (not `npm test`) — the per-directory
+# thresholds in `jest.config.js` (`lib/` 90/90, `constants/` 100/100, `app/`
+# 60/45, `components/` 70/40) only get enforced when coverage collection is
+# on. Dropping to plain `jest` would let a regression below today's coverage
+# through unnoticed.
+name: test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: test-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps
+
+      - name: Jest with coverage
+        run: npm run test:coverage
+
+      # Keep the HTML report as a run artefact so a failing PR can be
+      # inspected without re-running the suite locally.
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage/
+          if-no-files-found: ignore
+          retention-days: 14

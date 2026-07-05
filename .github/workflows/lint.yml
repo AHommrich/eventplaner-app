@@ -1,0 +1,40 @@
+# Runs ESLint over the whole tree on every push and PR to main.
+#
+# The rule set in `eslint.config.js` downgrades several React-19 checks to
+# `warn` because they trip on pre-refactor code — the tightening path is
+# tracked in `docs/REFACTOR_PLAN.md → Follow-ups`. ESLint itself only fails
+# on `error`-level findings by default, so warnings do not break CI while
+# still surfacing in the run log.
+name: lint
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+# Cancel superseded runs on the same branch so a quick follow-up push does
+# not queue behind a stale one.
+concurrency:
+  group: lint-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'npm'
+
+      - name: Install dependencies
+        # `--legacy-peer-deps` is mandated by `CLAUDE.md` — React 19 vs. the
+        # RN 0.81 tree still has unresolved peer conflicts.
+        run: npm ci --legacy-peer-deps
+
+      - name: ESLint
+        run: npm run lint

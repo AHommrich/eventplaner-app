@@ -1,0 +1,63 @@
+# Dependabot configuration.
+#
+# Two ecosystems: npm (root) + github-actions (the three workflows above).
+#
+# Grouping strategy for npm:
+#   - `expo-native-runtime` isolates every package whose version is pinned to
+#     the Expo Go SDK 54 native modules (see `CLAUDE.md`). Bumping any of them
+#     without a matching Expo SDK upgrade crashes the JSI bridge on device,
+#     so this group is intentionally NOT auto-updated in bulk — Dependabot
+#     opens the PRs, a human reviews before merge.
+#   - `all-others` batches the rest to keep the PR queue small.
+version: 2
+
+updates:
+  - package-ecosystem: 'npm'
+    directory: '/'
+    schedule:
+      interval: 'weekly'
+      day: 'monday'
+    open-pull-requests-limit: 5
+    labels:
+      - 'dependencies'
+    groups:
+      expo-native-runtime:
+        patterns:
+          - 'expo'
+          - 'expo-*'
+          - '@expo/*'
+          - '@expo-google-fonts/*'
+          - 'react-native'
+          - 'react-native-*'
+          - '@react-native-*'
+      all-others:
+        patterns:
+          - '*'
+        exclude-patterns:
+          - 'expo'
+          - 'expo-*'
+          - '@expo/*'
+          - '@expo-google-fonts/*'
+          - 'react-native'
+          - 'react-native-*'
+          - '@react-native-*'
+    commit-message:
+      prefix: 'chore(deps)'
+      include: 'scope'
+
+  - package-ecosystem: 'github-actions'
+    directory: '/'
+    schedule:
+      interval: 'weekly'
+      day: 'monday'
+    open-pull-requests-limit: 3
+    labels:
+      - 'dependencies'
+      - 'ci'
+    groups:
+      actions-all:
+        patterns:
+          - '*'
+    commit-message:
+      prefix: 'ci(deps)'
+      include: 'scope'

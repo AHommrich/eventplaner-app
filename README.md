@@ -2,14 +2,9 @@
 
 > **[Deutsche Version → `README.de.md`](README.de.md)**
 
-<!--
-Badges are filled in Phase 11 once the corresponding GitHub Actions workflow
-files exist. Leaving them stubbed here keeps the visual placeholder without
-linking to a non-existent workflow run.
--->
-![lint](https://img.shields.io/badge/lint-pending%20Phase%2011-lightgrey)
-![typecheck](https://img.shields.io/badge/typecheck-pending%20Phase%2011-lightgrey)
-![tests](https://img.shields.io/badge/tests-pending%20Phase%2011-lightgrey)
+[![lint](https://github.com/AHommrich/eventplaner-app/actions/workflows/lint.yml/badge.svg?branch=main)](https://github.com/AHommrich/eventplaner-app/actions/workflows/lint.yml)
+[![typecheck](https://github.com/AHommrich/eventplaner-app/actions/workflows/typecheck.yml/badge.svg?branch=main)](https://github.com/AHommrich/eventplaner-app/actions/workflows/typecheck.yml)
+[![test](https://github.com/AHommrich/eventplaner-app/actions/workflows/test.yml/badge.svg?branch=main)](https://github.com/AHommrich/eventplaner-app/actions/workflows/test.yml)
 ![license](https://img.shields.io/badge/license-MIT-blue)
 
 A wedding-guest companion app. Guests receive a QR-code invitation, scan it
