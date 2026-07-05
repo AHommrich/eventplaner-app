@@ -6,11 +6,14 @@
  * screen when it flips to a terminal state.
  */
 import React from 'react';
-import { render, waitFor } from '@testing-library/react-native';
+import { Alert } from 'react-native';
+import { act, fireEvent, render, waitFor } from '@testing-library/react-native';
 import { router } from 'expo-router';
 
 const mockFetchGuestMe = jest.fn();
 const mockFetchEventInfo = jest.fn();
+const mockPostRsvp = jest.fn();
+const mockPostGroupRsvp = jest.fn();
 jest.mock('../../lib/guest', () => {
   const actual = jest.requireActual('../../lib/guest');
   return {
@@ -18,8 +21,8 @@ jest.mock('../../lib/guest', () => {
     ...actual,
     fetchGuestMe: (...args: any[]) => mockFetchGuestMe(...args),
     fetchEventInfo: (...args: any[]) => mockFetchEventInfo(...args),
-    postRsvp: jest.fn(),
-    postGroupRsvp: jest.fn(),
+    postRsvp: (...args: any[]) => mockPostRsvp(...args),
+    postGroupRsvp: (...args: any[]) => mockPostGroupRsvp(...args),
   };
 });
 
@@ -72,6 +75,8 @@ describe('app/(tabs)/rsvp', () => {
   beforeEach(() => {
     mockFetchGuestMe.mockReset();
     mockFetchEventInfo.mockReset();
+    mockPostRsvp.mockReset();
+    mockPostGroupRsvp.mockReset();
     (router.replace as jest.Mock).mockClear();
   });
 
@@ -110,5 +115,29 @@ describe('app/(tabs)/rsvp', () => {
 
     renderScreen();
     await waitFor(() => expect(router.replace).toHaveBeenCalledWith('/(tabs)/home'));
+  });
+
+  it('tapping Absagen fires the double-confirm alert', async () => {
+    mockFetchGuestMe.mockResolvedValue(soloGuest);
+    mockFetchEventInfo.mockResolvedValue({ rsvp_deadline: '2099-08-01T00:00:00Z' });
+    const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+
+    const { findByText } = renderScreen();
+    const decline = await findByText('Absagen');
+    fireEvent.press(decline);
+
+    expect(alertSpy).toHaveBeenCalled();
+    const [, , buttons] = alertSpy.mock.calls[0] as any;
+    expect(buttons[1].style).toBe('destructive');
+    // The destructive callback wraps handleOwnRsvp(false).
+    mockPostRsvp.mockResolvedValue('declined');
+    await act(async () => {
+      await buttons[1].onPress?.();
+    });
+    await waitFor(() => {
+      expect(mockPostRsvp).toHaveBeenCalledWith(false);
+      expect(router.replace).toHaveBeenCalledWith('/declined');
+    });
+    alertSpy.mockRestore();
   });
 });

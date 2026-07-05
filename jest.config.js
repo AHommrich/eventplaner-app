@@ -63,12 +63,16 @@ module.exports = {
       statements: 100,
     },
     // Screens — a floor set at today's coverage so a future regression
-    // fails CI. Raising this to the plan's 80 % target is tracked as a
-    // Follow-up in `docs/REFACTOR_PLAN.md`.
+    // fails CI. The plan's 80 % target is deliberately NOT pursued: the
+    // uncovered lines cluster in image-picker + multipart-upload flows
+    // (`app/index.tsx` gallery-QR fallback, `photos.tsx` / `photo-game.tsx`
+    // uploads) that would need a real WebView + FormData harness rather
+    // than a unit stub. Doing that badly buys percentage points and no
+    // confidence. See `docs/REFACTOR_PLAN.md → Follow-ups`.
     'app/': {
-      lines: 60,
-      branches: 45,
-      functions: 50,
+      lines: 61,
+      branches: 48,
+      functions: 56,
       statements: 55,
     },
     // Components — the two shared components (`ThemedText`,

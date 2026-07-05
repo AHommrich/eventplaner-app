@@ -8,6 +8,7 @@
  *   - Language switch updates the persisted `app_language` key.
  */
 import React from 'react';
+import { Alert } from 'react-native';
 import { fireEvent, render, waitFor } from '@testing-library/react-native';
 import * as SecureStore from 'expo-secure-store';
 import { router } from 'expo-router';
@@ -26,9 +27,24 @@ jest.mock('../../lib/auth', () => ({
   clearSession: (...a: any[]) => mockClearSession(...a),
 }));
 
+const mockRequestErasure = jest.fn();
 jest.mock('../../lib/guest', () => {
   const actual = jest.requireActual('../../lib/guest');
-  return { __esModule: true, ...actual, requestErasure: jest.fn() };
+  return {
+    __esModule: true,
+    ...actual,
+    requestErasure: (...a: any[]) => mockRequestErasure(...a),
+  };
+});
+
+const mockSaveErasureState = jest.fn();
+jest.mock('../../lib/erasure', () => {
+  const actual = jest.requireActual('../../lib/erasure');
+  return {
+    __esModule: true,
+    ...actual,
+    saveErasureState: (...a: any[]) => mockSaveErasureState(...a),
+  };
 });
 
 jest.mock('react-native-safe-area-context', () => {
@@ -51,10 +67,16 @@ function renderScreen() {
 }
 
 describe('app/(tabs)/settings', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     mockClearSession.mockReset();
+    mockRequestErasure.mockReset();
+    mockSaveErasureState.mockReset();
     (router.replace as jest.Mock).mockClear();
     (router.push as jest.Mock).mockClear();
+    // A previous test in this file may have persisted a non-default locale
+    // (see the language-switch test). Reset before every render so the
+    // assertions against DE copy stay reliable regardless of test order.
+    await SecureStore.deleteItemAsync('app_language');
   });
 
   it('renders the guest identity block from the current session', async () => {
@@ -105,5 +127,19 @@ describe('app/(tabs)/settings', () => {
       const stored = await SecureStore.getItemAsync('app_language');
       expect(stored).toBe('en');
     });
+  });
+
+  it('tapping "Konto löschen" surfaces the two-step confirm alert', async () => {
+    const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+    const { findByText } = renderScreen();
+    const row = await findByText('Konto löschen');
+    fireEvent.press(row);
+    // First arg is the confirm title; third arg is the button array with
+    // Cancel + Destructive-confirm.
+    expect(alertSpy).toHaveBeenCalled();
+    const [, , buttons] = alertSpy.mock.calls[0] as any;
+    expect(buttons).toHaveLength(2);
+    expect(buttons[1].style).toBe('destructive');
+    alertSpy.mockRestore();
   });
 });

@@ -9,20 +9,27 @@
  *   - Copy-token button writes to the clipboard.
  */
 import React from 'react';
+import { Alert } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
 import { fireEvent, render, waitFor } from '@testing-library/react-native';
 import { router } from 'expo-router';
 
 const mockGetErasureState = jest.fn();
+const mockClearErasureState = jest.fn(async () => undefined);
 jest.mock('../../lib/erasure', () => ({
   __esModule: true,
   getErasureState: (...a: any[]) => mockGetErasureState(...a),
-  clearErasureState: jest.fn(async () => {}),
+  clearErasureState: () => mockClearErasureState(),
 }));
 
+const mockRevokeErasure = jest.fn();
 jest.mock('../../lib/guest', () => {
   const actual = jest.requireActual('../../lib/guest');
-  return { __esModule: true, ...actual, revokeErasure: jest.fn() };
+  return {
+    __esModule: true,
+    ...actual,
+    revokeErasure: (...a: any[]) => mockRevokeErasure(...a),
+  };
 });
 
 jest.mock('expo-clipboard', () => ({
@@ -49,6 +56,8 @@ function renderScreen() {
 describe('app/erasure-pending', () => {
   beforeEach(() => {
     mockGetErasureState.mockReset();
+    mockRevokeErasure.mockReset();
+    mockClearErasureState.mockClear();
     (Clipboard.setStringAsync as jest.Mock).mockClear();
     (router.replace as jest.Mock).mockClear();
   });
@@ -90,6 +99,40 @@ describe('app/erasure-pending', () => {
 
     await waitFor(() => {
       expect(Clipboard.setStringAsync).toHaveBeenCalledWith('RECOVERY-XYZ-1234');
+    });
+  });
+
+  it('tapping revoke surfaces the double-confirm alert', async () => {
+    mockGetErasureState.mockResolvedValue({
+      recoveryToken: 'RECOVERY-XYZ-1234',
+      scheduledAt: '2026-06-01T00:00:00Z',
+      canRevokeUntil: '2099-06-01T00:00:00Z',
+    });
+    const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+
+    const { findByText } = renderScreen();
+    fireEvent.press(await findByText('Löschantrag widerrufen'));
+
+    expect(alertSpy).toHaveBeenCalled();
+    const [, , buttons] = alertSpy.mock.calls[0] as any;
+    expect(buttons).toHaveLength(2);
+    expect(buttons[1].style).toBe('destructive');
+    alertSpy.mockRestore();
+  });
+
+  it('logout from the erasure-pending screen clears state and routes to /', async () => {
+    mockGetErasureState.mockResolvedValue({
+      recoveryToken: 'RECOVERY-XYZ-1234',
+      scheduledAt: '2026-06-01T00:00:00Z',
+      canRevokeUntil: '2099-06-01T00:00:00Z',
+    });
+
+    const { findByText } = renderScreen();
+    fireEvent.press(await findByText('Ausloggen'));
+
+    await waitFor(() => {
+      expect(mockClearErasureState).toHaveBeenCalled();
+      expect(router.replace).toHaveBeenCalledWith('/');
     });
   });
 });
