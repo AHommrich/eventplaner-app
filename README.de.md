@@ -263,6 +263,10 @@ keine Checkbox — sie ist Teil des Designs.
   die Rationale hinter den Maestro-Flows.
 - [`.maestro/README.md`](.maestro/README.md) — Maestro-Setup + wie man die
   E2E-Flows lokal ausführt.
+- [`docs/showcase/`](docs/showcase/) — Engineering-Narratives für Leser,
+  die das Repo kalt aufmachen: die vier Entscheidungen, die es geformt
+  haben (DSGVO, Theme-Engine, QR-Auth, Test-Pyramide), samt den
+  verworfenen Alternativen.
 
 ---
 

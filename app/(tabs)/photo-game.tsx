@@ -51,6 +51,13 @@ export default function PhotoGameScreen() {
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  /**
+   * Fetch the current photo-game state (enabled? assignment already claimed?
+   * submitted?). Feeds the four-state UI in `<Content />`. Errors are shown
+   * inline on the screen rather than in an alert — the screen has an error
+   * card slot precisely for this, so a transient outage doesn't block the
+   * whole tab.
+   */
   async function loadStatus() {
     try {
       const data = await fetchPhotoGameStatus();

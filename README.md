@@ -249,6 +249,10 @@ here — it is part of the design.
   the reasoning behind the Maestro flows.
 - [`.maestro/README.md`](.maestro/README.md) — Maestro setup + how to run
   the E2E flows locally.
+- [`docs/showcase/`](docs/showcase/) — engineering narratives for a
+  reviewer reading the repo cold: the four decisions that shaped it
+  (DSGVO, theme engine, QR auth, testing pyramid) and the alternatives
+  that were rejected.
 
 ---
 

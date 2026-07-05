@@ -191,6 +191,7 @@ docs/
   dependencies.md      Runtime-Dep-Audit — "phont home?" pro Package
   storage-keys.md      Jede SecureStore-Key: Zweck, Retention, cleared on logout?
   e2e.md               End-to-End-Strategie (Maestro), Layer-Grenzen, "was NICHT E2E"
+  showcase/            Portfolio-Narratives (4 Files): DSGVO-first, Theme-Engine, QR-Auth, Test-Pyramide
 
 .maestro/
   config.yaml          Maestro appId (bundle identifier)
