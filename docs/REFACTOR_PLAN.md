@@ -217,7 +217,7 @@ At the end of each phase the agent produces:
 - [ ] Phase 7 — DSGVO: data export + erasure flow (Art. 15 / 17)
 - [ ] Phase 8 — DSGVO: data-minimisation regression test + docs
 - [ ] Phase 9 — Component + screen behaviour tests
-- [ ] Phase 10 — Documentation (README EN + DE, ARCHITECTURE, SECURITY, PR template)
+- [x] Phase 10 — Documentation (README EN + DE, ARCHITECTURE, SECURITY, PR template)
 - [ ] Phase 11 — CI (GitHub Actions + Dependabot + badges)
 - [ ] Phase 12 — Final verification on a fresh clone
 
