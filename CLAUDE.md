@@ -73,6 +73,10 @@ Staging-Tokens funktionieren NICHT auf Production (separate Datenbanken).
 | `/api/game/photo/status` | GET | Foto-Spiel Status + Assignment laden |
 | `/api/game/photo/assign` | POST | Zufällige Aufgabe zuteilen (kein Body) |
 | `/api/game/photo/submit` | POST | Foto einreichen (multipart/form-data, Feld: `photo`) |
+| `/api/legal/privacy` | GET | Datenschutzerklärung (Markdown-Sections pro Locale) |
+| `/api/guest/export` | GET | DSGVO Art. 15 — komplette Datenkopie als JSON |
+| `/api/guest/erasure` | POST | DSGVO Art. 17 — Löschung anfordern (30-Tage-Fenster) |
+| `/api/guest/erasure/revoke` | POST | Löschung innerhalb des Fensters zurücknehmen |
 
 ### Geplante Endpoints (noch nicht gebaut)
 - `GET /api/event/menu`
@@ -129,21 +133,27 @@ Tokens laufen nie ab (bis Logout). Sprachauswahl in SecureStore unter `app_langu
 
 ```
 app/
-  _layout.tsx          Root-Stack, LanguageProvider + EventThemeProvider + BlockedFeaturesProvider
-  index.tsx            Welcome/Redirect — prüft Session + rsvp_status, leitet weiter; Galerie-QR-Login
+  _layout.tsx          Root-Stack, LanguageProvider + EventThemeProvider + BlockedFeaturesProvider + ConsentGateProvider
+  index.tsx            Welcome/Redirect — prüft Session + rsvp_status, leitet weiter; Galerie-QR-Login; erasure-pending Weiche
   scan.tsx             QR-Scanner (Kamera) + DEV-Token-Input
   rsvp.tsx             Onboarding-RSVP (direkt nach erstem Login, vor Tab-Nav)
   declined.tsx         Abgesagt-Screen (Rücknahme beantragen oder Logout)
   blocked.tsx          App-Zugang gesperrt (app_blocked)
+  legal/
+    privacy.tsx        DSGVO Art. 13 — Datenschutzerklärung, 24h SecureStore-Cache
+  consents/
+    index.tsx          DSGVO Art. 7 (3) — Einwilligungen verwalten + widerrufen
+  data-export.tsx      DSGVO Art. 15 — JSON-Export via expo-sharing
+  erasure-pending.tsx  DSGVO Art. 17 — 30-Tage-Fenster, in-app Revocation
   (tabs)/
     _layout.tsx        Bottom Tab Bar — blendet RSVP-Tab aus wenn accepted, Drinks-Tab wenn deaktiviert
                        tabBarLabelStyle nutzt colors.fontFamily.regular wenn gesetzt
     home.tsx           Begrüßungsscreen mit Countdown + Cover-Bild + tippbare Venue-Navigation
     rsvp.tsx           RSVP-Tab (sichtbar nur bei accepted_pending)
-    photos.tsx         Fotogalerie + Upload + Auto-Refresh (30s)
-    photo-game.tsx     Foto-Spiel: Aufgabe erhalten + Foto hochladen (4 States)
+    photos.tsx         Fotogalerie + Upload (ConsentGate photo_upload) + Auto-Refresh (30s)
+    photo-game.tsx     Foto-Spiel: Aufgabe erhalten + Foto hochladen (ConsentGate photo_game, 4 States)
     drinks.tsx         Getränke-Log (Suche + Akkordeon) + Rangliste
-    settings.tsx       Logout + Sprachauswahl
+    settings.tsx       Logout + Sprachauswahl + DSGVO-Reihen (Privacy, Consents, Export, Erasure)
 
 lib/
   api.ts               Axios-Instanz, Bearer-Interceptor; behandelt app_blocked (→ /blocked) + drinks_blocked
@@ -155,10 +165,14 @@ lib/
   BlockedFeaturesContext.tsx useBlockedFeatures() — drinksBlocked State + Polling
   QrFromImage.tsx      WebView-basierter QR-Decoder für Galerie-Bilder
   useRefreshToast.ts   Hook: { refreshing, refreshed, onRefresh } — zentrales Pull-to-Refresh + Toast-Logik
+  legal.ts             fetchPrivacyNotice(locale) + 24h SecureStore-Cache (legal_privacy_cache_<locale>)
+  consents.ts          ConsentKey (photo_upload | photo_game | camera_scan) + get/grant/revoke (SecureStore consent_<key>)
+  erasure.ts           requestErasure / revokeErasure / getErasureState — SecureStore erasure_* Keys
 
 components/
   ThemedText.tsx       Text-Wrapper — wendet fontFamily aus EventTheme an (bold/regular Variante)
   RefreshToast.tsx     Overlay-Toast nach Pull-to-Refresh ("✓ Aktualisiert")
+  ConsentGate.tsx      DSGVO Art. 6/7 — Modal-Wrapper um Verarbeitungs-Trigger; Provider hostet den Modal-Slot
 
 locales/
   de.ts                Deutsche Übersetzungen
@@ -167,8 +181,22 @@ locales/
 constants/
   theme.ts             ALLE statischen Design-Tokens (Farben, Spacing, Radius) — Single Source of Truth
   env.ts               API_BASE — hier auf Production umstellen wenn go-live
-  fonts.ts             FontKey-Typ + FONT_MAP (8 Google Fonts, lokal gebündelt via @expo-google-fonts)
+  fonts.ts             FontKey-Typ + FONT_MAP (10 Google Fonts, lokal gebündelt via @expo-google-fonts)
 
+docs/
+  REFACTOR_PLAN.md     Phasen-Plan (Phase 0–12), Follow-ups
+  ARCHITECTURE.md      Layer-Diagramm, Auth-Flow, Screen-Regeln, DSGVO-Design
+  dependencies.md      Runtime-Dep-Audit — "phont home?" pro Package
+  storage-keys.md      Jede SecureStore-Key: Zweck, Retention, cleared on logout?
+
+tests/
+  setup.ts             jest-expo Mocks (SecureStore, expo-router, image-picker, camera, ...)
+  __mocks__/           Non-JS Asset-Stubs (Bilder, Fonts)
+  lib/                 Unit-Tests je lib-Modul
+  constants/           theme/fonts-Snapshots
+  components/          ConsentGate + shared Components
+  app/                 Screen-Behaviour-Specs (happy + 1 failure pro Screen)
+  regressions/         no-tracking.test.ts (repo-wide Invarianten)
 ```
 
 ---
@@ -271,6 +299,24 @@ if (loading && !guest) return <ActivityIndicator ... />;             // rsvp
 **NativeWind Setup** (nicht anfassen):
 - `babel.config.js`: `jsxImportSource: 'nativewind'` — KEIN `nativewind/babel` Preset
 - `metro.config.js`: `withNativeWind(config, { input: './global.css' })`
+
+**ConsentGate** (DSGVO Art. 6/7) — jeder Verarbeitungs-Trigger wird gewrappt:
+```tsx
+import { ConsentGate } from '../../components/ConsentGate';
+<ConsentGate purpose="photo_upload">
+  <TouchableOpacity onPress={handleUpload}>...</TouchableOpacity>
+</ConsentGate>
+```
+- `ConsentKey` in `lib/consents.ts`: `photo_upload` | `photo_game` | `camera_scan`
+- Neue Purpose → Key ergänzen, Modal-Copy in `locales/de.ts`+`en.ts` unter `consents.<key>.*`
+- Widerruf via `Settings → Einwilligungen verwalten` (Art. 7 (3))
+
+**Test-Konventionen:**
+- Neue `lib/*.ts` → korrespondierender `tests/lib/*.test.ts` (≥ 90 % Lines/Branches)
+- Neue Screen-Datei → Happy Path + 1 wahrscheinlichster Failure in `tests/app/<screen>.test.tsx`
+- Neue `SecureStore.setItemAsync` → Key sofort in `docs/storage-keys.md`
+- Neue runtime dep → `docs/dependencies.md` + `tests/regressions/no-tracking.test.ts` prüft dass keine Tracking-SDKs eingeschmuggelt werden
+- Coverage-Thresholds in `jest.config.js` (`lib/` 90/90, `constants/` 100/100, `app/` 60/45, `components/` 70/40)
 
 ---
 
