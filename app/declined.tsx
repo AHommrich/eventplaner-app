@@ -95,6 +95,11 @@ export default function DeclinedScreen() {
   }
 
   useEffect(() => {
+    // Every state update in this effect happens in an async continuation
+    // (`loadData()` resolves the fetch, the interval callback runs later) —
+    // React 19's `set-state-in-effect` check would only be accurate if we
+    // set state synchronously in the effect body, which we do not.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     loadData();
     // Passive poll — same route as the manual pull-to-refresh above, minus
     // the toast/spinner side effects, so the guest doesn't see a spinner

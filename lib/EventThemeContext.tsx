@@ -100,6 +100,10 @@ export function EventThemeProvider({ children }: { children: ReactNode }) {
   }
 
   useEffect(() => {
+    // Bootstrap theme fetch → `setEventInfo`. The state update runs in the
+    // resolved-promise microtask, not synchronously in the effect body, so
+    // React 19's `set-state-in-effect` diagnostic is a false positive.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     loadTheme();
   }, []);
 
