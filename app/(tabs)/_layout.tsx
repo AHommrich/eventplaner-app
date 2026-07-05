@@ -66,7 +66,7 @@ export default function TabLayout() {
   }, [drinksBlocked]);
 
   const showRsvpTab = rsvpStatus === 'accepted_pending';
-  const showDrinksTab = !drinksBlocked && (eventInfo?.drink_game_enabled === true);
+  const showDrinksTab = !drinksBlocked && eventInfo?.drink_game_enabled === true;
   const showPhotoGameTab = eventInfo?.photo_game_enabled === true;
   const hasCover = !!eventInfo?.cover_image_url;
 
@@ -81,9 +81,7 @@ export default function TabLayout() {
           borderTopColor: colors.border + '33',
           borderTopWidth: 1,
         },
-        tabBarLabelStyle: colors.fontFamily
-          ? { fontFamily: colors.fontFamily.regular }
-          : undefined,
+        tabBarLabelStyle: colors.fontFamily ? { fontFamily: colors.fontFamily.regular } : undefined,
       }}
     >
       <Tabs.Screen
@@ -95,8 +93,18 @@ export default function TabLayout() {
           tabBarActiveTintColor: hasCover ? (colors.homeText ?? colors.tabTint) : colors.tabTint,
           tabBarInactiveTintColor: hasCover ? 'rgba(255,255,255,0.55)' : colors.tabTint + '66',
           tabBarStyle: hasCover
-            ? { position: 'absolute', backgroundColor: 'transparent', borderTopWidth: 0, elevation: 0, shadowOpacity: 0 }
-            : { backgroundColor: colors.screenBg, borderTopColor: colors.border + '33', borderTopWidth: 1 },
+            ? {
+                position: 'absolute',
+                backgroundColor: 'transparent',
+                borderTopWidth: 0,
+                elevation: 0,
+                shadowOpacity: 0,
+              }
+            : {
+                backgroundColor: colors.screenBg,
+                borderTopColor: colors.border + '33',
+                borderTopWidth: 1,
+              },
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="home-outline" size={size} color={color} />
           ),

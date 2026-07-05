@@ -36,7 +36,7 @@ function renderScreen() {
       <EventThemeProvider>
         <RsvpScreen />
       </EventThemeProvider>
-    </LanguageProvider>,
+    </LanguageProvider>
   );
 }
 
@@ -113,7 +113,7 @@ describe('app/rsvp — onboarding', () => {
       expect(alertSpy).toHaveBeenCalledWith(
         'Wirklich absagen?',
         expect.any(String),
-        expect.any(Array),
+        expect.any(Array)
       );
       expect(mockPostRsvp).toHaveBeenCalledWith(false);
       expect(router.replace).toHaveBeenCalledWith('/declined');

@@ -13,10 +13,10 @@ in Jest.
 
 ## What the suite tests today
 
-| Flow | What it proves |
-|---|---|
+| Flow                                 | What it proves                                                                                                                                                                                                                                                              |
+| ------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | [`solo-login.yaml`](solo-login.yaml) | Cold-launched app → welcome screen → scan screen → DEV token entry → backend two-step auth → home tab renders. Exercises `app/index.tsx` (session probe), `app/scan.tsx` (DEV token path), `lib/auth.ts` (SecureStore save), and `lib/EventThemeContext.tsx` (theme fetch). |
-| [`logout.yaml`](logout.yaml) | Signed-in guest → Settings tab → Logout → welcome screen re-renders. Exercises `app/(tabs)/settings.tsx`, `lib/auth.ts::clearSession` (which also fires the backend logout), and the empty-session branch of the welcome screen probe. |
+| [`logout.yaml`](logout.yaml)         | Signed-in guest → Settings tab → Logout → welcome screen re-renders. Exercises `app/(tabs)/settings.tsx`, `lib/auth.ts::clearSession` (which also fires the backend logout), and the empty-session branch of the welcome screen probe.                                      |
 
 Family QR (two-step picker), gallery-based QR login, RSVP flow, photo
 upload, and photo-game submission are intentionally NOT covered here yet —
@@ -29,19 +29,19 @@ Jest could plausibly have caught but did not.
 
 1. **Maestro CLI installed locally.**
 
-    ```bash
-    curl -Ls "https://get.maestro.mobile.dev" | bash
-    # …then follow the printed hint to add ~/.maestro/bin to PATH.
-    ```
+   ```bash
+   curl -Ls "https://get.maestro.mobile.dev" | bash
+   # …then follow the printed hint to add ~/.maestro/bin to PATH.
+   ```
 
-    On a machine without Homebrew the tarball at [github.com/mobile-dev-inc/maestro/releases](https://github.com/mobile-dev-inc/maestro/releases)
-    works as well. This project pins nothing — any Maestro `≥ 1.38` runs
-    the flows.
+   On a machine without Homebrew the tarball at [github.com/mobile-dev-inc/maestro/releases](https://github.com/mobile-dev-inc/maestro/releases)
+   works as well. This project pins nothing — any Maestro `≥ 1.38` runs
+   the flows.
 
 2. **A running app instance.** Either
-    - iOS Simulator with the native dev client installed via `npx expo run:ios`, **or**
-    - Android emulator with `npx expo run:android`, **or**
-    - Expo Go on a physical device that just booted the project from `npx expo start` (see the note in [`config.yaml`](config.yaml)).
+   - iOS Simulator with the native dev client installed via `npx expo run:ios`, **or**
+   - Android emulator with `npx expo run:android`, **or**
+   - Expo Go on a physical device that just booted the project from `npx expo start` (see the note in [`config.yaml`](config.yaml)).
 
 3. **A running backend.** The default `API_BASE` in
    [`constants/env.ts`](../constants/env.ts) points at `beta.hommrich.app`;
@@ -51,14 +51,14 @@ Jest could plausibly have caught but did not.
 
 4. **A test token exported to the shell.**
 
-    ```bash
-    export MAESTRO_SOLO_TOKEN='<solo QR token>'
-    ```
+   ```bash
+   export MAESTRO_SOLO_TOKEN='<solo QR token>'
+   ```
 
-    The tokens checked into [`CLAUDE.md`](../CLAUDE.md) are **local-only**
-    and will not authenticate against staging or production. The flow
-    references the env var, not the raw token, so nothing sensitive is
-    committed to the repo.
+   The tokens checked into [`CLAUDE.md`](../CLAUDE.md) are **local-only**
+   and will not authenticate against staging or production. The flow
+   references the env var, not the raw token, so nothing sensitive is
+   committed to the repo.
 
 ## Running the flows
 

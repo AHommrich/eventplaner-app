@@ -39,7 +39,7 @@ Pure modules. SecureStore stubbed via
 [`tests/setup.ts`](../../tests/setup.ts), axios mocked per suite,
 no rendering. The point is to prove that the "backend of the client"
 (session persistence, auth flow, consent state, erasure state, i18n,
-theme resolution) is *correct in isolation*.
+theme resolution) is _correct in isolation_.
 
 Threshold: **≥ 90 % lines + branches**. Enforced in
 [`jest.config.js`](../../jest.config.js). The number is intentionally
@@ -53,7 +53,7 @@ Coverage-of-record right now: 97 % lines / 97 % branches.
 
 Render each screen through `@testing-library/react-native`. Mock axios
 and expo-router, but leave the JSX + `useEffect` graph intact. The
-suite catches regressions in *what the screen does*: button dispatch,
+suite catches regressions in _what the screen does_: button dispatch,
 navigation calls, state transitions, RSVP decline confirmations,
 family-picker 409 handling.
 
@@ -62,8 +62,8 @@ lower than the plan's 80 % target on purpose. Two classes of paths are
 structurally unreachable from a unit harness:
 
 - **Image picker + multipart upload** on
-  [`app/(tabs)/photos.tsx`](../../app/(tabs)/photos.tsx) and
-  [`app/(tabs)/photo-game.tsx`](../../app/(tabs)/photo-game.tsx). Jest
+  [`app/(tabs)/photos.tsx`](<../../app/(tabs)/photos.tsx>) and
+  [`app/(tabs)/photo-game.tsx`](<../../app/(tabs)/photo-game.tsx>). Jest
   cannot spin up a real file system; a stubbed picker would prove the
   handler wiring but not the multipart body.
 - **Family two-step picker** on the login flow. The 409 case IS covered
@@ -98,7 +98,7 @@ what is and isn't covered end-to-end and why.
 ## Regression tests as a separate category
 
 Two files in [`tests/regressions/`](../../tests/regressions/) and
-[`tests/vendor/`](../../tests/vendor/) don't test *behaviour* — they
+[`tests/vendor/`](../../tests/vendor/) don't test _behaviour_ — they
 test **invariants**:
 
 - **no-tracking** — fails CI if
@@ -127,7 +127,7 @@ distinction matters:
 - Setting a target you don't yet hit lets today's flakiness sneak in;
   the number goes red for reasons unrelated to the PR that turned it
   red.
-- Setting a floor at *today's* achievable coverage lets a PR add code
+- Setting a floor at _today's_ achievable coverage lets a PR add code
   freely as long as it doesn't drag the average down. Explicitly
   raising the floor is a separate PR with its own justification.
 
@@ -140,15 +140,15 @@ not a matter of setting a bigger number.
 
 Every rule below is a heuristic; the actual choice is a judgment call.
 
-| If the test needs… | It belongs in… |
-|---|---|
-| A network response fixture | Jest (Unit or Screen) |
-| Real navigation between routes | Screen test if `router.push` is enough; Maestro if state carries across tabs |
-| A real filesystem, camera, or biometric prompt | Maestro |
-| A pure algorithm (sorting, date math) | Unit |
-| A "does the screen show the right label" check | Screen test |
-| A "does the app boot on iOS the same way as Android" check | Maestro (add the flow deliberately, don't add for coverage) |
-| An invariant about the source tree (no tracking, no CDN, no stale vendor) | Regression |
+| If the test needs…                                                        | It belongs in…                                                               |
+| ------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| A network response fixture                                                | Jest (Unit or Screen)                                                        |
+| Real navigation between routes                                            | Screen test if `router.push` is enough; Maestro if state carries across tabs |
+| A real filesystem, camera, or biometric prompt                            | Maestro                                                                      |
+| A pure algorithm (sorting, date math)                                     | Unit                                                                         |
+| A "does the screen show the right label" check                            | Screen test                                                                  |
+| A "does the app boot on iOS the same way as Android" check                | Maestro (add the flow deliberately, don't add for coverage)                  |
+| An invariant about the source tree (no tracking, no CDN, no stale vendor) | Regression                                                                   |
 
 ## Where to read next
 

@@ -22,9 +22,9 @@ import { fetchEventInfo, EventInfo } from './guest';
 import { FONT_MAP, FontDefinition, FontKey } from '../constants/fonts';
 
 // --- Fallback palette (used until the first backend fetch resolves) ---
-const FALLBACK_PRIMARY   = '#7c2d3e';
+const FALLBACK_PRIMARY = '#7c2d3e';
 const FALLBACK_SECONDARY = '#e8e3de';
-const FALLBACK_TERTIARY  = '#ffffff';
+const FALLBACK_TERTIARY = '#ffffff';
 
 /**
  * Resolved colour set consumed by every screen. Screens should reach for the
@@ -110,20 +110,20 @@ export function EventThemeProvider({ children }: { children: ReactNode }) {
 
   // --- Colour resolution: backend role → backend palette → hard-coded fallback ---
   const colors: EventThemeColors = {
-    primary:        eventInfo?.color_primary        ?? FALLBACK_PRIMARY,
-    secondary:      eventInfo?.color_secondary      ?? FALLBACK_SECONDARY,
-    tertiary:       eventInfo?.color_tertiary       ?? FALLBACK_TERTIARY,
-    screenBg:       eventInfo?.color_screen_bg      ?? FALLBACK_SECONDARY,
-    card:           eventInfo?.color_card           ?? FALLBACK_TERTIARY,
-    cardText:       eventInfo?.color_card_text      ?? FALLBACK_PRIMARY,
-    cardButton:     eventInfo?.color_card_button    ?? FALLBACK_PRIMARY,
+    primary: eventInfo?.color_primary ?? FALLBACK_PRIMARY,
+    secondary: eventInfo?.color_secondary ?? FALLBACK_SECONDARY,
+    tertiary: eventInfo?.color_tertiary ?? FALLBACK_TERTIARY,
+    screenBg: eventInfo?.color_screen_bg ?? FALLBACK_SECONDARY,
+    card: eventInfo?.color_card ?? FALLBACK_TERTIARY,
+    cardText: eventInfo?.color_card_text ?? FALLBACK_PRIMARY,
+    cardButton: eventInfo?.color_card_button ?? FALLBACK_PRIMARY,
     cardButtonText: eventInfo?.color_card_button_text ?? FALLBACK_TERTIARY,
-    border:         eventInfo?.color_border         ?? FALLBACK_PRIMARY,
-    fab:            eventInfo?.color_fab            ?? FALLBACK_PRIMARY,
-    fabIcon:        eventInfo?.color_fab_icon       ?? FALLBACK_TERTIARY,
-    homeText:       eventInfo?.color_home_text      ?? null,
-    homeShadow:     eventInfo?.color_home_shadow    ?? '#000000',
-    tabTint:        eventInfo?.color_tab_tint       ?? FALLBACK_PRIMARY,
+    border: eventInfo?.color_border ?? FALLBACK_PRIMARY,
+    fab: eventInfo?.color_fab ?? FALLBACK_PRIMARY,
+    fabIcon: eventInfo?.color_fab_icon ?? FALLBACK_TERTIARY,
+    homeText: eventInfo?.color_home_text ?? null,
+    homeShadow: eventInfo?.color_home_shadow ?? '#000000',
+    tabTint: eventInfo?.color_tab_tint ?? FALLBACK_PRIMARY,
     fontFamily,
   };
 

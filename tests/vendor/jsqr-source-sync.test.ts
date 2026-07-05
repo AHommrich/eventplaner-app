@@ -36,7 +36,7 @@ function readVendoredSource(): { rawSource: string; version: string } {
   if (startIdx < 0 || endIdx < 0 || endIdx <= startIdx) {
     throw new Error(
       'lib/vendor/jsQRSource.ts is missing the expected prologue/epilogue ' +
-        'markers. Regenerate with `node scripts/vendor-jsqr.mjs`.',
+        'markers. Regenerate with `node scripts/vendor-jsqr.mjs`.'
     );
   }
   const rawSource = contents.slice(startIdx + PROLOGUE_MARKER.length, endIdx);
@@ -51,10 +51,7 @@ describe('vendor/jsqr-source-sync', () => {
   it('vendored version string matches the installed jsqr version', () => {
     const { version } = readVendoredSource();
     const pkg = JSON.parse(
-      fs.readFileSync(
-        path.join(REPO_ROOT, 'node_modules/jsqr/package.json'),
-        'utf-8',
-      ),
+      fs.readFileSync(path.join(REPO_ROOT, 'node_modules/jsqr/package.json'), 'utf-8')
     );
     expect(version).toBe(pkg.version);
   });
@@ -63,7 +60,7 @@ describe('vendor/jsqr-source-sync', () => {
     const { rawSource } = readVendoredSource();
     const upstream = fs.readFileSync(
       path.join(REPO_ROOT, 'node_modules/jsqr/dist/jsQR.js'),
-      'utf-8',
+      'utf-8'
     );
     expect(rawSource.length).toBe(upstream.length);
     expect(rawSource).toBe(upstream);

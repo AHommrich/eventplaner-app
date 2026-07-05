@@ -51,18 +51,14 @@ export default function SettingsScreen() {
    * `/api/auth/logout` would 401.
    */
   function askDeleteAccount() {
-    Alert.alert(
-      t('erasure.confirmTitle'),
-      t('erasure.confirmBody'),
-      [
-        { text: t('common.cancel'), style: 'cancel' },
-        {
-          text: t('erasure.confirmButton'),
-          style: 'destructive',
-          onPress: performDeleteAccount,
-        },
-      ],
-    );
+    Alert.alert(t('erasure.confirmTitle'), t('erasure.confirmBody'), [
+      { text: t('common.cancel'), style: 'cancel' },
+      {
+        text: t('erasure.confirmButton'),
+        style: 'destructive',
+        onPress: performDeleteAccount,
+      },
+    ]);
   }
 
   async function performDeleteAccount() {
@@ -84,20 +80,42 @@ export default function SettingsScreen() {
       router.replace('/erasure-pending');
     } catch (e: any) {
       const message =
-        e?.response?.status === 409
-          ? t('erasure.alreadyPending')
-          : t('erasure.errorMessage');
+        e?.response?.status === 409 ? t('erasure.alreadyPending') : t('erasure.errorMessage');
       Alert.alert(t('erasure.errorTitle'), message);
     }
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: colors.screenBg, padding: theme.spacing.lg, paddingTop: insets.top + theme.spacing.md }}>
+    <View
+      style={{
+        flex: 1,
+        backgroundColor: colors.screenBg,
+        padding: theme.spacing.lg,
+        paddingTop: insets.top + theme.spacing.md,
+      }}
+    >
       {/* Single card: user identity + language + logout, one section each. */}
-      <View style={{ backgroundColor: colors.card, borderRadius: theme.borderRadius.lg, borderWidth: 2, borderColor: colors.border + '33', overflow: 'hidden', marginBottom: theme.spacing.xl }}>
+      <View
+        style={{
+          backgroundColor: colors.card,
+          borderRadius: theme.borderRadius.lg,
+          borderWidth: 2,
+          borderColor: colors.border + '33',
+          overflow: 'hidden',
+          marginBottom: theme.spacing.xl,
+        }}
+      >
         {session && (
-          <View style={{ padding: theme.spacing.md, borderBottomWidth: 1, borderBottomColor: colors.border + '30' }}>
-            <ThemedText style={{ fontSize: 12, color: colors.cardText + 'aa', marginBottom: 4 }}>{t('settings.loggedInAs')}</ThemedText>
+          <View
+            style={{
+              padding: theme.spacing.md,
+              borderBottomWidth: 1,
+              borderBottomColor: colors.border + '30',
+            }}
+          >
+            <ThemedText style={{ fontSize: 12, color: colors.cardText + 'aa', marginBottom: 4 }}>
+              {t('settings.loggedInAs')}
+            </ThemedText>
             <ThemedText style={{ fontSize: 16, fontWeight: '600', color: colors.cardText }}>
               {session.firstname} {session.lastname}
             </ThemedText>
@@ -110,9 +128,27 @@ export default function SettingsScreen() {
         )}
 
         {/* Language switcher — persisted in SecureStore, effective immediately. */}
-        <View style={{ padding: theme.spacing.md, borderBottomWidth: 1, borderBottomColor: colors.border + '30' }}>
-          <ThemedText style={{ fontSize: 12, color: colors.cardText + 'aa', marginBottom: theme.spacing.sm }}>{t('settings.language')}</ThemedText>
-          <View style={{ flexDirection: 'row', borderRadius: theme.borderRadius.md, overflow: 'hidden', borderWidth: 1, borderColor: colors.border + '55' }}>
+        <View
+          style={{
+            padding: theme.spacing.md,
+            borderBottomWidth: 1,
+            borderBottomColor: colors.border + '30',
+          }}
+        >
+          <ThemedText
+            style={{ fontSize: 12, color: colors.cardText + 'aa', marginBottom: theme.spacing.sm }}
+          >
+            {t('settings.language')}
+          </ThemedText>
+          <View
+            style={{
+              flexDirection: 'row',
+              borderRadius: theme.borderRadius.md,
+              overflow: 'hidden',
+              borderWidth: 1,
+              borderColor: colors.border + '55',
+            }}
+          >
             {(['de', 'en'] as Language[]).map((lang, i) => (
               <TouchableOpacity
                 key={lang}
@@ -126,7 +162,12 @@ export default function SettingsScreen() {
                   borderRightColor: colors.border + '55',
                 }}
               >
-                <ThemedText style={{ fontWeight: '600', color: language === lang ? colors.cardButtonText : colors.cardText }}>
+                <ThemedText
+                  style={{
+                    fontWeight: '600',
+                    color: language === lang ? colors.cardButtonText : colors.cardText,
+                  }}
+                >
                   {lang === 'de' ? t('settings.german') : t('settings.english')}
                 </ThemedText>
               </TouchableOpacity>
@@ -137,9 +178,17 @@ export default function SettingsScreen() {
         {/* Logout — clears SecureStore + fires server logout best-effort. */}
         <TouchableOpacity
           onPress={handleLogout}
-          style={{ margin: theme.spacing.md, paddingVertical: theme.spacing.sm, borderRadius: theme.borderRadius.md, alignItems: 'center', backgroundColor: colors.cardButton }}
+          style={{
+            margin: theme.spacing.md,
+            paddingVertical: theme.spacing.sm,
+            borderRadius: theme.borderRadius.md,
+            alignItems: 'center',
+            backgroundColor: colors.cardButton,
+          }}
         >
-          <ThemedText style={{ color: colors.cardButtonText, fontWeight: '600', fontSize: 14 }}>{t('settings.logout')}</ThemedText>
+          <ThemedText style={{ color: colors.cardButtonText, fontWeight: '600', fontSize: 14 }}>
+            {t('settings.logout')}
+          </ThemedText>
         </TouchableOpacity>
 
         {/* Privacy notice — additive row appended at the bottom of the card

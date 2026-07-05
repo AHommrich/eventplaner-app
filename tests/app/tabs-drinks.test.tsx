@@ -19,7 +19,12 @@ jest.mock('../../lib/api', () => ({
 jest.mock('../../lib/auth', () => ({
   __esModule: true,
   getSession: jest.fn(async () => ({
-    token: 't', guestId: 1, firstname: 'Ada', lastname: 'L', type: 'solo', familyName: null,
+    token: 't',
+    guestId: 1,
+    firstname: 'Ada',
+    lastname: 'L',
+    type: 'solo',
+    familyName: null,
   })),
 }));
 
@@ -42,7 +47,7 @@ function renderScreen() {
       <EventThemeProvider>
         <DrinksScreen />
       </EventThemeProvider>
-    </LanguageProvider>,
+    </LanguageProvider>
   );
 }
 
@@ -53,7 +58,13 @@ function renderScreen() {
  */
 function wireApi({
   drinks = [],
-  stats = { guest_totals: [], my_stats: [], current_streak: 0, binge_penalty: false, cooldown_seconds: 0 },
+  stats = {
+    guest_totals: [],
+    my_stats: [],
+    current_streak: 0,
+    binge_penalty: false,
+    cooldown_seconds: 0,
+  },
   eventInfo = { drink_game_end_time: null },
 }: { drinks?: any[]; stats?: any; eventInfo?: any } = {}) {
   mockApiGet.mockImplementation(async (path: string) => {
@@ -92,7 +103,10 @@ describe('app/(tabs)/drinks', () => {
     wireApi({
       drinks: [
         {
-          id: 1, display_name: 'Bier', category: 'beer', category_label: 'Bier',
+          id: 1,
+          display_name: 'Bier',
+          category: 'beer',
+          category_label: 'Bier',
           is_alcoholic: true,
           sizes: [{ drink_id: 10, id: 1, amount_liter: 0.5, is_default: true, points: 2 }],
         },
@@ -114,7 +128,9 @@ describe('app/(tabs)/drinks', () => {
   it('switching to the leaderboard tab fetches the stats view', async () => {
     wireApi({
       stats: {
-        guest_totals: [{ guest_id: 5, firstname: 'Zoe', lastname: 'K', total: 3, points_total: 12 }],
+        guest_totals: [
+          { guest_id: 5, firstname: 'Zoe', lastname: 'K', total: 3, points_total: 12 },
+        ],
         my_stats: [],
         current_streak: 0,
         binge_penalty: false,

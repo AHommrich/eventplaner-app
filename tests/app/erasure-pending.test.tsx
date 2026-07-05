@@ -42,7 +42,7 @@ function renderScreen() {
   return render(
     <LanguageProvider>
       <ErasurePendingScreen />
-    </LanguageProvider>,
+    </LanguageProvider>
   );
 }
 

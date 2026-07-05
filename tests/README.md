@@ -49,11 +49,11 @@ npm run test:coverage            # coverage report + threshold enforcement
 
 Enforced by `jest.config.js` and by the CI `test.yml` workflow:
 
-| Path            | Lines | Branches | Notes                              |
-| --------------- | ----- | -------- | ---------------------------------- |
-| Overall         | 50 %  | 50 %     | Tightens to 75 % in Phase 9.       |
-| `lib/**`        | 80 %  | 80 %     | Reusable modules — non-negotiable. |
-| `constants/**`  | 80 %  | 80 %     | Pure lookups.                      |
+| Path           | Lines | Branches | Notes                              |
+| -------------- | ----- | -------- | ---------------------------------- |
+| Overall        | 50 %  | 50 %     | Tightens to 75 % in Phase 9.       |
+| `lib/**`       | 80 %  | 80 %     | Reusable modules — non-negotiable. |
+| `constants/**` | 80 %  | 80 %     | Pure lookups.                      |
 
 ## Adding a new test
 

@@ -119,9 +119,9 @@ feature stops and we discuss the shape before implementation.
 1. **Maximum traceability via English comments.** Every exported function, hook,
    context provider and non-trivial constant gets a JSDoc block. Long files get
    section-header comments. Comments answer "why", never "what". Rule inherited
-   from `eventplaner/CLAUDE.md`: *"Ein Reviewer soll am Klassen-Docblock in 30
+   from `eventplaner/CLAUDE.md`: _"Ein Reviewer soll am Klassen-Docblock in 30
    Sekunden verstehen, was die Klasse leistet und welche Sonderfälle relevant
-   sind."*
+   sind."_
 2. **Full DSGVO compliance surfaced in the app itself, additively.** Backend is
    compliant; the app must expose Art. 13 privacy notice, Art. 7 explicit
    consents, Art. 15 export and Art. 17 erasure to the guest — all as new
@@ -469,8 +469,8 @@ Give guests a first-party place to read the Art. 13 notice without leaving the a
 **Branch:** `feat/explicit-consents`
 
 **Why:** The OS permission dialog covers technical access but is not a DSGVO
-Art. 6/7 consent for the *processing purpose* (publishing your photo in the
-shared wedding gallery). Add an in-app consent surface layered *on top* of
+Art. 6/7 consent for the _processing purpose_ (publishing your photo in the
+shared wedding gallery). Add an in-app consent surface layered _on top_ of
 the existing OS flow — the existing flow is not replaced.
 
 **❓ STOP — Rückfrage an André:** Legal copy per consent needs approval before
@@ -743,27 +743,26 @@ existing tree. Under Phase 0's "no code changes" rule they were parked, not
 fixed. Each is a candidate for its own future phase.
 
 - [x] **`app/declined.tsx:119`** — `useSafeAreaInsets()` is called after an
-  early `return` at line 111 (`react-hooks/rules-of-hooks`). Fixed by
-  hoisting the hook call above the loading branch. `eslint.config.js` no
-  longer downgrades the rule — future re-introductions fail lint.
+      early `return` at line 111 (`react-hooks/rules-of-hooks`). Fixed by
+      hoisting the hook call above the loading branch. `eslint.config.js` no
+      longer downgrades the rule — future re-introductions fail lint.
 - [x] **`app/_layout.tsx:49`** — font-loading setup accesses refs during
-  render (`react-hooks/refs`). Fixed by switching from
-  `useRef(new Animated.Value(1)).current` to
-  `useState(() => new Animated.Value(1))[0]`. The `react-hooks/refs` rule
-  is no longer disabled — future re-introductions fail lint.
+      render (`react-hooks/refs`). Fixed by switching from
+      `useRef(new Animated.Value(1)).current` to
+      `useState(() => new Animated.Value(1))[0]`. The `react-hooks/refs` rule
+      is no longer disabled — future re-introductions fail lint.
 - [ ] **Several files** — React-19 `set-state-in-effect` warnings on bootstrap
-  effects (`app/declined.tsx`, `lib/EventThemeContext.tsx`, potentially
-  others). Rule currently off. Fix: rewrite bootstrap effects to use lazy
-  initialiser or `useSyncExternalStore` pattern.
+      effects (`app/declined.tsx`, `lib/EventThemeContext.tsx`, potentially
+      others). Rule currently off. Fix: rewrite bootstrap effects to use lazy
+      initialiser or `useSyncExternalStore` pattern.
 - [x] **~18 `react-hooks/exhaustive-deps` warnings** across `app/*` and `lib/*`
-  — Fixed. Every intentional mount-only effect now carries a per-line
-  `// eslint-disable-next-line` with a specific justification. Rule runs
-  at default `error` level. Tree is at 0 lint warnings.
-- [ ] **Existing files are not Prettier-formatted** — Phase 0 keeps `prettier`
-  as a separate `format:check` / `format` script instead of gating `lint` on
-  it, so today's tree passes CI without a reformat. A one-shot
-  `npm run format` commit (large diff, zero behaviour change) would clean this
-  up; deferred so the diff doesn't drown out real changes.
+      — Fixed. Every intentional mount-only effect now carries a per-line
+      `// eslint-disable-next-line` with a specific justification. Rule runs
+      at default `error` level. Tree is at 0 lint warnings.
+- [x] **Existing files are not Prettier-formatted** — Fixed via a one-shot
+      `npm run format` pass across the whole tree. The `lint.yml` workflow now
+      runs `format:check` in addition to `lint`, so future drift fails CI
+      rather than sneaking in via review.
 
 Surfaced during **Phase 9** (2026-07-04) — screen coverage is at 62 % lines /
 59 % branches, below the 80 % target in this phase's brief. Every screen has
@@ -773,7 +772,7 @@ Expo module deeper or moving the code around:
 
 - [ ] **Raise `app/**` line coverage from 62 % → 80 %.** Concrete gaps:
   - `app/(tabs)/photos.tsx` upload path (image-picker + `expo-image-manipulator`
-    + manual multipart body) — needs a picker-plus-uploader integration harness.
+    - manual multipart body) — needs a picker-plus-uploader integration harness.
   - `app/(tabs)/photo-game.tsx` `pickAndSubmit` — same shape as above.
   - `app/(tabs)/drinks.tsx` size expansion, single-vs-multi-size branch,
     cooldown warning, binge-penalty banner — every branch is small on its
@@ -784,10 +783,10 @@ Expo module deeper or moving the code around:
     accepted, Drinks tab hides when disabled) — currently excluded from
     `collectCoverageFrom`.
 - [x] **`app/declined.tsx` and `app/(tabs)/home.tsx` hoisted-hook fix.**
-  Source fix landed. Test stubs kept in place with an updated comment —
-  the real reason for the stub was that the Jest render tree does not
-  mount a `SafeAreaProvider`, not the hook-order bug. Confirmed by
-  removing the stub and observing the hook's own "no provider" warning.
+      Source fix landed. Test stubs kept in place with an updated comment —
+      the real reason for the stub was that the Jest render tree does not
+      mount a `SafeAreaProvider`, not the hook-order bug. Confirmed by
+      removing the stub and observing the hook's own "no provider" warning.
 
 ---
 

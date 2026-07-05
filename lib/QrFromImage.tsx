@@ -100,7 +100,10 @@ export function QrFromImageView({ onReady }: Props) {
         onMessage={(e) => {
           try {
             const msg = JSON.parse(e.nativeEvent.data);
-            if (msg.ready) { onReady(decode); return; }
+            if (msg.ready) {
+              onReady(decode);
+              return;
+            }
             if (resolverRef.current) {
               resolverRef.current(msg.ok ? msg.data : null);
               resolverRef.current = null;

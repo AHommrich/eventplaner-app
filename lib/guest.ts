@@ -24,12 +24,7 @@ import api from './api';
 // --- RSVP + guest identity types ---
 
 export type RsvpStatus =
-  | null
-  | 'accepted_pending'
-  | 'accepted'
-  | 'declined_pending'
-  | 'declined'
-  | 'revocation_requested';
+  null | 'accepted_pending' | 'accepted' | 'declined_pending' | 'declined' | 'revocation_requested';
 
 /**
  * One member of a family group as returned inside `GuestMe.group_members`.
@@ -116,9 +111,7 @@ export function isFullAccess(status: RsvpStatus): boolean {
  */
 export function isDeclinedFlow(status: RsvpStatus): boolean {
   return (
-    status === 'declined_pending' ||
-    status === 'declined' ||
-    status === 'revocation_requested'
+    status === 'declined_pending' || status === 'declined' || status === 'revocation_requested'
   );
 }
 
@@ -155,11 +148,11 @@ export async function postRsvp(attending: boolean): Promise<RsvpStatus> {
  */
 export async function postGroupRsvp(
   guestId: number,
-  attending: boolean,
+  attending: boolean
 ): Promise<{ guest_id: number; rsvp_status: RsvpStatus }> {
   const res = await api.post<{ guest_id: number; rsvp_status: RsvpStatus }>(
     `/api/guest/${guestId}/rsvp`,
-    { attending },
+    { attending }
   );
   return res.data;
 }
@@ -197,7 +190,10 @@ export async function fetchPhotoGameStatus(): Promise<PhotoGameStatusResponse> {
  * exactly once per game round; a second call while an assignment already
  * exists returns the same one.
  */
-export async function assignPhotoGameTask(): Promise<{ id: number; task: { id: number; description: string } }> {
+export async function assignPhotoGameTask(): Promise<{
+  id: number;
+  task: { id: number; description: string };
+}> {
   const res = await api.post('/api/game/photo/assign');
   return res.data;
 }
@@ -208,7 +204,9 @@ export async function assignPhotoGameTask(): Promise<{ id: number; task: { id: n
  * overridden to `data => data` so React Native's fetch layer sends the
  * FormData as-is without JSON serialisation.
  */
-export async function submitPhotoGamePhoto(photoUri: string): Promise<{ photo_url: string; submitted_at: string }> {
+export async function submitPhotoGamePhoto(
+  photoUri: string
+): Promise<{ photo_url: string; submitted_at: string }> {
   const formData = new FormData();
   formData.append('photo', { uri: photoUri, name: 'photo.jpg', type: 'image/jpeg' } as any);
   const res = await api.post('/api/game/photo/submit', formData, {
@@ -283,9 +281,11 @@ export type GuestExport = {
   }[];
   photos: { id: number; url: string; uploaded_at: string }[];
   drink_logs: { id: number; drink_name: string; points: number; logged_at: string }[];
-  photo_game_submission:
-    | { assignment: string; photo_url: string | null; submitted_at: string | null }
-    | null;
+  photo_game_submission: {
+    assignment: string;
+    photo_url: string | null;
+    submitted_at: string | null;
+  } | null;
 };
 
 /**

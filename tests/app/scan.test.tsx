@@ -51,7 +51,7 @@ function renderScreen() {
       <EventThemeProvider>
         <ScanScreen />
       </EventThemeProvider>
-    </LanguageProvider>,
+    </LanguageProvider>
   );
 }
 
@@ -69,7 +69,15 @@ describe('app/scan', () => {
       data: {
         type: 'solo',
         family_name: null,
-        guests: [{ guest_id: 5, firstname: 'Ada', lastname: 'Lovelace', token: 'BEARER', is_active: false }],
+        guests: [
+          {
+            guest_id: 5,
+            firstname: 'Ada',
+            lastname: 'Lovelace',
+            token: 'BEARER',
+            is_active: false,
+          },
+        ],
       },
     });
 
@@ -82,7 +90,7 @@ describe('app/scan', () => {
     await waitFor(() => {
       expect(mockApiGet).toHaveBeenCalledWith('/api/auth/qr/tok-solo');
       expect(mockSaveSession).toHaveBeenCalledWith(
-        expect.objectContaining({ token: 'BEARER', guestId: 5, type: 'solo' }),
+        expect.objectContaining({ token: 'BEARER', guestId: 5, type: 'solo' })
       );
       expect(router.replace).toHaveBeenCalledWith('/');
     });

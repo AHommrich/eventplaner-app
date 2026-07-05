@@ -16,7 +16,12 @@ const mockClearSession = jest.fn();
 jest.mock('../../lib/auth', () => ({
   __esModule: true,
   getSession: jest.fn(async () => ({
-    token: 't', guestId: 1, firstname: 'Ada', lastname: 'L', type: 'family', familyName: 'Caspari',
+    token: 't',
+    guestId: 1,
+    firstname: 'Ada',
+    lastname: 'L',
+    type: 'family',
+    familyName: 'Caspari',
   })),
   clearSession: (...a: any[]) => mockClearSession(...a),
 }));
@@ -41,7 +46,7 @@ function renderScreen() {
       <EventThemeProvider>
         <SettingsScreen />
       </EventThemeProvider>
-    </LanguageProvider>,
+    </LanguageProvider>
   );
 }
 

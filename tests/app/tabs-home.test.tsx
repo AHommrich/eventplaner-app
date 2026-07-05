@@ -23,7 +23,12 @@ jest.mock('../../lib/guest', () => {
 jest.mock('../../lib/auth', () => ({
   __esModule: true,
   getSession: jest.fn(async () => ({
-    token: 't', guestId: 1, firstname: 'Ada', lastname: 'L', type: 'solo', familyName: null,
+    token: 't',
+    guestId: 1,
+    firstname: 'Ada',
+    lastname: 'L',
+    type: 'solo',
+    familyName: null,
   })),
   saveSession: jest.fn(),
 }));
@@ -52,7 +57,7 @@ function renderScreen() {
       <EventThemeProvider>
         <HomeScreen />
       </EventThemeProvider>
-    </LanguageProvider>,
+    </LanguageProvider>
   );
 }
 

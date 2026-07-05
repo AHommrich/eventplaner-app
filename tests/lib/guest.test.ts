@@ -60,7 +60,16 @@ describe('lib/guest — type guards', () => {
 
 describe('lib/guest — fetchers', () => {
   it('fetchGuestMe hits /api/guest/me and returns the payload', async () => {
-    const payload = { guest_id: 1, firstname: 'A', lastname: 'B', type: 'solo', family_name: null, rsvp_status: null, rsvp_set_by: null, group_members: [] };
+    const payload = {
+      guest_id: 1,
+      firstname: 'A',
+      lastname: 'B',
+      type: 'solo',
+      family_name: null,
+      rsvp_status: null,
+      rsvp_set_by: null,
+      group_members: [],
+    };
     api.get.mockResolvedValueOnce({ data: payload });
     const result = await fetchGuestMe();
     expect(api.get).toHaveBeenCalledWith('/api/guest/me');
@@ -113,14 +122,18 @@ describe('lib/guest — mutators', () => {
   });
 
   it('assignPhotoGameTask hits the assign endpoint', async () => {
-    api.post.mockResolvedValueOnce({ data: { id: 5, task: { id: 1, description: 'Take a jump shot' } } });
+    api.post.mockResolvedValueOnce({
+      data: { id: 5, task: { id: 1, description: 'Take a jump shot' } },
+    });
     const result = await assignPhotoGameTask();
     expect(api.post).toHaveBeenCalledWith('/api/game/photo/assign');
     expect(result.id).toBe(5);
   });
 
   it('submitPhotoGamePhoto builds a multipart body with the given uri', async () => {
-    api.post.mockResolvedValueOnce({ data: { photo_url: 'https://cdn/x.jpg', submitted_at: '2026-07-03' } });
+    api.post.mockResolvedValueOnce({
+      data: { photo_url: 'https://cdn/x.jpg', submitted_at: '2026-07-03' },
+    });
     const result = await submitPhotoGamePhoto('file:///tmp/x.jpg');
 
     expect(api.post).toHaveBeenCalledTimes(1);
@@ -133,7 +146,7 @@ describe('lib/guest — mutators', () => {
       expect.objectContaining({
         headers: { 'Content-Type': 'multipart/form-data' },
         transformRequest: expect.any(Function),
-      }),
+      })
     );
     expect(result.photo_url).toContain('.jpg');
   });
@@ -154,7 +167,16 @@ describe('lib/guest — Art. 15 / Art. 17 GDPR endpoints', () => {
     const payload = {
       format_version: 1,
       generated_at: '2026-07-03T12:00:00Z',
-      guest: { id: 1, firstname: 'A', lastname: 'B', family_name: null, language: 'de', rsvp_status: 'accepted', rsvp_set_at: null, created_at: '2026-01-01' },
+      guest: {
+        id: 1,
+        firstname: 'A',
+        lastname: 'B',
+        family_name: null,
+        language: 'de',
+        rsvp_status: 'accepted',
+        rsvp_set_at: null,
+        created_at: '2026-01-01',
+      },
       family_members: [],
       photos: [],
       drink_logs: [],

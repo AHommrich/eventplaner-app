@@ -26,7 +26,7 @@ function renderScreen() {
       <EventThemeProvider>
         <ConsentsScreen />
       </EventThemeProvider>
-    </LanguageProvider>,
+    </LanguageProvider>
   );
 }
 
@@ -50,7 +50,7 @@ describe('app/consents', () => {
   it('renders the granted timestamp + revoke button for stored consents', async () => {
     await SecureStore.setItemAsync(
       'consent_photo_upload',
-      JSON.stringify({ granted_at: '2026-06-01T00:00:00Z' }),
+      JSON.stringify({ granted_at: '2026-06-01T00:00:00Z' })
     );
 
     const { findByText, findAllByText } = renderScreen();
@@ -65,7 +65,7 @@ describe('app/consents', () => {
   it('revoke goes through the confirmation Alert before wiping the record', async () => {
     await SecureStore.setItemAsync(
       'consent_photo_upload',
-      JSON.stringify({ granted_at: '2026-06-01T00:00:00Z' }),
+      JSON.stringify({ granted_at: '2026-06-01T00:00:00Z' })
     );
 
     const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation((_t, _m, buttons?: any) => {

@@ -42,7 +42,7 @@ function renderScreen() {
           <PhotosScreen />
         </ConsentGateProvider>
       </EventThemeProvider>
-    </LanguageProvider>,
+    </LanguageProvider>
   );
 }
 
@@ -81,7 +81,7 @@ describe('app/(tabs)/photos', () => {
     mockApiGet.mockResolvedValue({ data: { data: [] } });
     await SecureStore.setItemAsync(
       'consent_photo_upload',
-      JSON.stringify({ granted_at: new Date().toISOString() }),
+      JSON.stringify({ granted_at: new Date().toISOString() })
     );
 
     const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
@@ -91,9 +91,7 @@ describe('app/(tabs)/photos', () => {
     await findByText('Noch keine Fotos');
 
     // The FAB is the last node in the tree that carries an `onPress` handler.
-    const pressNodes = UNSAFE_root.findAll(
-      (n: any) => typeof n?.props?.onPress === 'function',
-    );
+    const pressNodes = UNSAFE_root.findAll((n: any) => typeof n?.props?.onPress === 'function');
     const fab = pressNodes[pressNodes.length - 1];
 
     await act(async () => {
@@ -112,9 +110,7 @@ describe('app/(tabs)/photos', () => {
 
     await findByText('Noch keine Fotos');
 
-    const pressNodes = UNSAFE_root.findAll(
-      (n: any) => typeof n?.props?.onPress === 'function',
-    );
+    const pressNodes = UNSAFE_root.findAll((n: any) => typeof n?.props?.onPress === 'function');
     const fab = pressNodes[pressNodes.length - 1];
 
     await act(async () => {

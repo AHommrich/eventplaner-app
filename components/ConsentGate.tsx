@@ -73,11 +73,7 @@ export function ConsentGateProvider({ children }: { children: ReactNode }) {
     <ConsentGateContext.Provider value={{ ensureConsent }}>
       {children}
       {pending && (
-        <ConsentModal
-          purpose={pending.purpose}
-          onGrant={handleGrant}
-          onDecline={handleDecline}
-        />
+        <ConsentModal purpose={pending.purpose} onGrant={handleGrant} onDecline={handleDecline} />
       )}
     </ConsentGateContext.Provider>
   );

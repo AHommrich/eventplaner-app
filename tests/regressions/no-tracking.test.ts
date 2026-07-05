@@ -88,9 +88,14 @@ describe('regressions/no-tracking', () => {
           // Only flag actual import/require statements; matching the same
           // string in a comment is fine (this test file itself would trip
           // otherwise).
-          const importRegex = new RegExp(`(?:import[^;]+from\\s+|require\\s*\\()['"]([^'"]*${pattern}[^'"]*)['"]`, 'i');
+          const importRegex = new RegExp(
+            `(?:import[^;]+from\\s+|require\\s*\\()['"]([^'"]*${pattern}[^'"]*)['"]`,
+            'i'
+          );
           if (importRegex.test(content)) {
-            violations.push(`${path.relative(REPO_ROOT, file)} imports something containing "${pattern}"`);
+            violations.push(
+              `${path.relative(REPO_ROOT, file)} imports something containing "${pattern}"`
+            );
           }
         }
       }

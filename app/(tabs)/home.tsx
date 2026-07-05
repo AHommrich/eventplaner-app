@@ -18,7 +18,18 @@
  * without needing a manual pull.
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { View, ImageBackground, ScrollView, RefreshControl, ActivityIndicator, StyleSheet, TouchableOpacity, Linking, Platform, Alert } from 'react-native';
+import {
+  View,
+  ImageBackground,
+  ScrollView,
+  RefreshControl,
+  ActivityIndicator,
+  StyleSheet,
+  TouchableOpacity,
+  Linking,
+  Platform,
+  Alert,
+} from 'react-native';
 import { ThemedText } from '../../components/ThemedText';
 import { useFocusEffect } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -92,7 +103,8 @@ function formatEventDate(iso: string, locale: string): string {
   });
 }
 
-type CountdownParts = { days: number; hours: number; minutes: number; seconds: number } | 'today' | 'past';
+type CountdownParts =
+  { days: number; hours: number; minutes: number; seconds: number } | 'today' | 'past';
 
 /**
  * Countdown state calculator. Returns `'today'` for the full 24 h window
@@ -142,13 +154,15 @@ export default function HomeScreen() {
 
   // Re-fetch on every focus so a mid-session backend change (e.g. new cover
   // image, updated deadline) is reflected without a pull-to-refresh.
-  useFocusEffect(useCallback(() => {
-    loadData();
-    // Focus-effect callback intentionally captured once — recreating it per
-    // render would defeat useFocusEffect's "run when route becomes active"
-    // semantic and re-fire on every parent render.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []));
+  useFocusEffect(
+    useCallback(() => {
+      loadData();
+      // Focus-effect callback intentionally captured once — recreating it per
+      // render would defeat useFocusEffect's "run when route becomes active"
+      // semantic and re-fire on every parent render.
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [])
+  );
 
   // 1 Hz ticker for the countdown pill — cheap because `calcCountdown` is
   // pure arithmetic; teardown on eventInfo change so a fresh date doesn't
@@ -157,7 +171,9 @@ export default function HomeScreen() {
     if (!eventInfo?.date) return;
     setCountdown(calcCountdown(eventInfo.date));
     intervalRef.current = setInterval(() => setCountdown(calcCountdown(eventInfo!.date)), 1000);
-    return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
     // We only need to reset the ticker when the actual date changes. The
     // full `eventInfo` object would trigger on every unrelated theme /
     // schedule tweak the backend returns.
@@ -169,9 +185,9 @@ export default function HomeScreen() {
   const hasCover = !!eventInfo?.cover_image_url;
   // On a cover image, `homeText` is the couple-picked legible colour; without
   // one, we fall back to the standard cardText tone.
-  const textColor = (hasCover && colors.homeText) ? colors.homeText : colors.cardText;
-  const pillBg = (hasCover && colors.homeText) ? 'rgba(0,0,0,0.35)' : colors.primary;
-  const pillText = (hasCover && colors.homeText) ? colors.homeText : colors.cardButtonText;
+  const textColor = hasCover && colors.homeText ? colors.homeText : colors.cardText;
+  const pillBg = hasCover && colors.homeText ? 'rgba(0,0,0,0.35)' : colors.primary;
+  const pillText = hasCover && colors.homeText ? colors.homeText : colors.cardButtonText;
   const eventDate = eventInfo?.date ? formatEventDate(eventInfo.date, language) : null;
 
   function renderCountdown() {
@@ -201,7 +217,12 @@ export default function HomeScreen() {
 
   if (loading) {
     return (
-      <View style={[styles.container, { backgroundColor: colors.screenBg, justifyContent: 'center', alignItems: 'center' }]}>
+      <View
+        style={[
+          styles.container,
+          { backgroundColor: colors.screenBg, justifyContent: 'center', alignItems: 'center' },
+        ]}
+      >
         <ActivityIndicator color={colors.tabTint} />
       </View>
     );
@@ -210,8 +231,18 @@ export default function HomeScreen() {
   const content = (
     <ScrollView
       style={[styles.scroll, { paddingTop: insets.top }]}
-      contentContainerStyle={[styles.content, { paddingBottom: (hasCover ? tabBarHeight : insets.bottom) + theme.spacing.xl }]}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={hasCover ? '#fff' : colors.tabTint} colors={[colors.tabTint]} />}
+      contentContainerStyle={[
+        styles.content,
+        { paddingBottom: (hasCover ? tabBarHeight : insets.bottom) + theme.spacing.xl },
+      ]}
+      refreshControl={
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={onRefresh}
+          tintColor={hasCover ? '#fff' : colors.tabTint}
+          colors={[colors.tabTint]}
+        />
+      }
     >
       {loadError && (
         <ThemedText style={{ color: 'red', fontSize: 11, marginBottom: 8, textAlign: 'center' }}>
@@ -235,14 +266,19 @@ export default function HomeScreen() {
         // shows the venue name only, `'both'` stacks name over address with
         // a single tap target and a single pin icon.
         const displayMode = eventInfo?.venue_display_mode ?? 'both';
-        const hasNav = !!(eventInfo && (eventInfo.venue_address || (eventInfo.venue_lat != null && eventInfo.venue_lng != null)));
+        const hasNav = !!(
+          eventInfo &&
+          (eventInfo.venue_address || (eventInfo.venue_lat != null && eventInfo.venue_lng != null))
+        );
         const showName = displayMode !== 'address' && !!eventInfo?.venue_name;
         const showAddress = displayMode !== 'name' && hasNav;
         const bothVisible = showName && showAddress;
 
         if (!showName && !showAddress) return null;
 
-        const addrText = eventInfo?.venue_address ?? `${eventInfo?.venue_lat?.toFixed(4)}, ${eventInfo?.venue_lng?.toFixed(4)}`;
+        const addrText =
+          eventInfo?.venue_address ??
+          `${eventInfo?.venue_lat?.toFixed(4)}, ${eventInfo?.venue_lng?.toFixed(4)}`;
 
         // `both`: one combined button, name on top and address+icon below.
         if (bothVisible) {
@@ -252,9 +288,17 @@ export default function HomeScreen() {
               activeOpacity={0.7}
               style={{ alignItems: 'center', marginVertical: 8 }}
             >
-              <ThemedText style={[styles.meta, { color: textColor, marginBottom: 0, fontSize: 18 }]}>{eventInfo!.venue_name}</ThemedText>
+              <ThemedText
+                style={[styles.meta, { color: textColor, marginBottom: 0, fontSize: 18 }]}
+              >
+                {eventInfo!.venue_name}
+              </ThemedText>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                <ThemedText style={[styles.meta, { color: textColor, marginBottom: 0, fontSize: 18 }]}>{addrText}</ThemedText>
+                <ThemedText
+                  style={[styles.meta, { color: textColor, marginBottom: 0, fontSize: 18 }]}
+                >
+                  {addrText}
+                </ThemedText>
                 <Ionicons name="location-outline" size={15} color={textColor} />
               </View>
             </TouchableOpacity>
@@ -262,27 +306,31 @@ export default function HomeScreen() {
         }
 
         // `name` OR `address` only — one label, optional pin icon.
-        return (
-          hasNav ? (
-            <TouchableOpacity
-              onPress={() => openInMaps(eventInfo!, t)}
-              activeOpacity={0.7}
-              style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginVertical: 8 }}
-            >
-              <ThemedText style={[styles.meta, { color: textColor, marginBottom: 0, fontSize: 18 }]}>
-                {showName ? eventInfo!.venue_name : addrText}
-              </ThemedText>
-              <Ionicons name="location-outline" size={15} color={textColor} />
-            </TouchableOpacity>
-          ) : (
-            <ThemedText style={[styles.meta, { color: textColor, fontSize: 18 }]}>{eventInfo!.venue_name}</ThemedText>
-          )
+        return hasNav ? (
+          <TouchableOpacity
+            onPress={() => openInMaps(eventInfo!, t)}
+            activeOpacity={0.7}
+            style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginVertical: 8 }}
+          >
+            <ThemedText style={[styles.meta, { color: textColor, marginBottom: 0, fontSize: 18 }]}>
+              {showName ? eventInfo!.venue_name : addrText}
+            </ThemedText>
+            <Ionicons name="location-outline" size={15} color={textColor} />
+          </TouchableOpacity>
+        ) : (
+          <ThemedText style={[styles.meta, { color: textColor, fontSize: 18 }]}>
+            {eventInfo!.venue_name}
+          </ThemedText>
         );
       })()}
       {eventInfo?.dresscode && (
         <View style={{ alignItems: 'center', marginBottom: 2 }}>
-          <ThemedText style={[styles.meta, { color: textColor, opacity: 0.7, marginBottom: 0 }]}>{t('home.dresscode')}</ThemedText>
-          <ThemedText style={[styles.meta, { color: textColor, opacity: 0.7, marginBottom: 0 }]}>{eventInfo.dresscode}</ThemedText>
+          <ThemedText style={[styles.meta, { color: textColor, opacity: 0.7, marginBottom: 0 }]}>
+            {t('home.dresscode')}
+          </ThemedText>
+          <ThemedText style={[styles.meta, { color: textColor, opacity: 0.7, marginBottom: 0 }]}>
+            {eventInfo.dresscode}
+          </ThemedText>
         </View>
       )}
       {renderCountdown()}

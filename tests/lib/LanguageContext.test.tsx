@@ -41,7 +41,7 @@ describe('lib/LanguageContext', () => {
     const { getByTestId } = render(
       <LanguageProvider>
         <Probe />
-      </LanguageProvider>,
+      </LanguageProvider>
     );
 
     await waitFor(() => expect(getByTestId('lang').props.children).toBe('en'));
@@ -54,7 +54,7 @@ describe('lib/LanguageContext', () => {
     const { getByTestId } = render(
       <LanguageProvider>
         <Probe />
-      </LanguageProvider>,
+      </LanguageProvider>
     );
 
     await waitFor(() => expect(getByTestId('lang').props.children).toBe('en'));
@@ -67,7 +67,7 @@ describe('lib/LanguageContext', () => {
     const { getByTestId } = render(
       <LanguageProvider>
         <Probe />
-      </LanguageProvider>,
+      </LanguageProvider>
     );
 
     await waitFor(() => expect(getByTestId('pick').props.children).toBe('YES'));
@@ -79,7 +79,7 @@ describe('lib/LanguageContext', () => {
     const { getByTestId } = render(
       <LanguageProvider>
         <Probe />
-      </LanguageProvider>,
+      </LanguageProvider>
     );
 
     await waitFor(() => expect(getByTestId('pick').props.children).toBe('YES'));

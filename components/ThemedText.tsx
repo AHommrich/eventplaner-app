@@ -26,8 +26,7 @@ export function ThemedText({ style, ...props }: TextProps) {
 
   const flat = StyleSheet.flatten(style);
   const w = flat?.fontWeight;
-  const isBold =
-    w === 'bold' || w === '700' || w === '800' || w === '900' || w === '600';
+  const isBold = w === 'bold' || w === '700' || w === '800' || w === '900' || w === '600';
   const fontFamily = isBold ? colors.fontFamily.bold : colors.fontFamily.regular;
 
   return <Text style={[{ fontFamily }, style]} {...props} />;

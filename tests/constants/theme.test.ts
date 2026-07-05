@@ -20,7 +20,7 @@ describe('constants/theme', () => {
         'secondary',
         'surface',
         'terracotta',
-      ].sort(),
+      ].sort()
     );
   });
 
@@ -32,7 +32,14 @@ describe('constants/theme', () => {
   });
 
   it('spacing scale is strictly increasing', () => {
-    const values = [theme.spacing.xs, theme.spacing.sm, theme.spacing.md, theme.spacing.lg, theme.spacing.xl, theme.spacing.xxl];
+    const values = [
+      theme.spacing.xs,
+      theme.spacing.sm,
+      theme.spacing.md,
+      theme.spacing.lg,
+      theme.spacing.xl,
+      theme.spacing.xxl,
+    ];
     for (let i = 1; i < values.length; i++) {
       expect(values[i]).toBeGreaterThan(values[i - 1]);
     }

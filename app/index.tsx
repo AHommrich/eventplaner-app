@@ -22,7 +22,16 @@
  *      the family picker modal.
  */
 import { useEffect, useState } from 'react';
-import { View, Image, Text, TouchableOpacity, Alert, StyleSheet, Modal, FlatList } from 'react-native';
+import {
+  View,
+  Image,
+  Text,
+  TouchableOpacity,
+  Alert,
+  StyleSheet,
+  Modal,
+  FlatList,
+} from 'react-native';
 import { ThemedText } from '../components/ThemedText';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
@@ -42,7 +51,13 @@ import { getErasureState } from '../lib/erasure';
 // fades out into this screen.
 const SPLASH_COLORS = ['#FF6B8A', '#FF8C5A', '#FFD166', '#72D4C8'] as const;
 
-type ApiGuest = { guest_id: number; firstname: string; lastname: string; token: string | null; is_active: boolean };
+type ApiGuest = {
+  guest_id: number;
+  firstname: string;
+  lastname: string;
+  token: string | null;
+  is_active: boolean;
+};
 type ApiResponse = { type: 'solo' | 'family'; family_name: string | null; guests: ApiGuest[] };
 
 export default function WelcomeScreen() {
@@ -51,7 +66,9 @@ export default function WelcomeScreen() {
   const { loadTheme } = useEventTheme();
   const [checking, setChecking] = useState(true);
   const [loading, setLoading] = useState(false);
-  const [qrDecoder, setQrDecoder] = useState<((uri: string) => Promise<string | null>) | null>(null);
+  const [qrDecoder, setQrDecoder] = useState<((uri: string) => Promise<string | null>) | null>(
+    null
+  );
   const [familyGuests, setFamilyGuests] = useState<ApiGuest[]>([]);
   const [familyName, setFamilyName] = useState<string | null>(null);
   const [responseType, setResponseType] = useState<'solo' | 'family'>('solo');
@@ -108,7 +125,10 @@ export default function WelcomeScreen() {
       Alert.alert(t('common.accessDenied'), t('photos.libraryPermission'));
       return;
     }
-    const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 1 });
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      quality: 1,
+    });
     if (result.canceled) return;
     if (!qrDecoder) {
       Alert.alert(t('common.error'), t('scan.decoderNotReady'));
@@ -132,8 +152,12 @@ export default function WelcomeScreen() {
       if (type === 'solo' && guests[0]?.token) {
         const g = guests[0];
         const session: GuestSession = {
-          token: g.token!, guestId: g.guest_id, firstname: g.firstname,
-          lastname: g.lastname, type, familyName: family_name,
+          token: g.token!,
+          guestId: g.guest_id,
+          firstname: g.firstname,
+          lastname: g.lastname,
+          type,
+          familyName: family_name,
         };
         await saveSession(session);
         await loadTheme();
@@ -176,12 +200,23 @@ export default function WelcomeScreen() {
     if (guest.is_active || !qrToken) return;
     setLoading(true);
     try {
-      type SelectResponse = { guest_id: number; firstname: string; lastname: string; token: string };
-      const res = await api.post<SelectResponse>(`/api/auth/qr/${qrToken}/select`, { guest_id: guest.guest_id });
+      type SelectResponse = {
+        guest_id: number;
+        firstname: string;
+        lastname: string;
+        token: string;
+      };
+      const res = await api.post<SelectResponse>(`/api/auth/qr/${qrToken}/select`, {
+        guest_id: guest.guest_id,
+      });
       const { token, firstname, lastname } = res.data;
       const session: GuestSession = {
-        token, guestId: guest.guest_id, firstname, lastname,
-        type: responseType, familyName,
+        token,
+        guestId: guest.guest_id,
+        firstname,
+        lastname,
+        type: responseType,
+        familyName,
       };
       await saveSession(session);
       await loadTheme();
@@ -191,7 +226,9 @@ export default function WelcomeScreen() {
     } catch (e: any) {
       if (e?.response?.status === 409) {
         Alert.alert(t('common.error'), t('scan.alreadyLoggedIn'));
-        setFamilyGuests((prev) => prev.map((g) => g.guest_id === guest.guest_id ? { ...g, is_active: true } : g));
+        setFamilyGuests((prev) =>
+          prev.map((g) => (g.guest_id === guest.guest_id ? { ...g, is_active: true } : g))
+        );
       } else {
         Alert.alert(t('common.error'), e?.response?.data?.message ?? t('scan.invalidQrMessage'));
       }
@@ -261,11 +298,20 @@ export default function WelcomeScreen() {
                   onPress={() => selectFamilyGuest(item)}
                   activeOpacity={item.is_active ? 1 : 0.7}
                 >
-                  <ThemedText style={[styles.guestName, item.is_active && { color: theme.colors.muted }]}>
+                  <ThemedText
+                    style={[styles.guestName, item.is_active && { color: theme.colors.muted }]}
+                  >
                     {item.firstname} {item.lastname}
                   </ThemedText>
                   {item.is_active && (
-                    <ThemedText style={{ fontSize: 12, color: theme.colors.muted, marginTop: 2, textAlign: 'center' }}>
+                    <ThemedText
+                      style={{
+                        fontSize: 12,
+                        color: theme.colors.muted,
+                        marginTop: 2,
+                        textAlign: 'center',
+                      }}
+                    >
                       {t('scan.alreadyLoggedIn')}
                     </ThemedText>
                   )}

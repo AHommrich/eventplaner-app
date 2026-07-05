@@ -34,7 +34,7 @@ function renderScreen() {
       <EventThemeProvider>
         <PrivacyScreen />
       </EventThemeProvider>
-    </LanguageProvider>,
+    </LanguageProvider>
   );
 }
 

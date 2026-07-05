@@ -38,7 +38,7 @@ function renderScreen() {
           <PhotoGameScreen />
         </ConsentGateProvider>
       </EventThemeProvider>
-    </LanguageProvider>,
+    </LanguageProvider>
   );
 }
 
@@ -65,7 +65,12 @@ describe('app/(tabs)/photo-game', () => {
   it('assigned state renders the task text and upload button', async () => {
     mockFetchPhotoGameStatus.mockResolvedValue({
       status: 'active',
-      assignment: { id: 7, task: { id: 3, description: 'Take a selfie with the couple' }, submitted_at: null, photo_url: null },
+      assignment: {
+        id: 7,
+        task: { id: 3, description: 'Take a selfie with the couple' },
+        submitted_at: null,
+        photo_url: null,
+      },
     });
 
     const { findByText } = renderScreen();

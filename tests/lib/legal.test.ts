@@ -101,7 +101,7 @@ describe('lib/legal — readCachedPrivacyNotice', () => {
   it('returns the cached notice when it is fresh', async () => {
     await SecureStore.setItemAsync(
       'legal_privacy_cache_de',
-      JSON.stringify({ fetched_at: Date.now(), notice }),
+      JSON.stringify({ fetched_at: Date.now(), notice })
     );
     const result = await readCachedPrivacyNotice('de');
     expect(result).toEqual(notice);
@@ -110,7 +110,7 @@ describe('lib/legal — readCachedPrivacyNotice', () => {
   it('returns null when the cache is stale and allowStale is false', async () => {
     await SecureStore.setItemAsync(
       'legal_privacy_cache_de',
-      JSON.stringify({ fetched_at: Date.now() - 48 * 60 * 60 * 1000, notice }),
+      JSON.stringify({ fetched_at: Date.now() - 48 * 60 * 60 * 1000, notice })
     );
     const result = await readCachedPrivacyNotice('de');
     expect(result).toBeNull();
@@ -119,7 +119,7 @@ describe('lib/legal — readCachedPrivacyNotice', () => {
   it('returns a stale entry when explicitly allowed', async () => {
     await SecureStore.setItemAsync(
       'legal_privacy_cache_de',
-      JSON.stringify({ fetched_at: Date.now() - 48 * 60 * 60 * 1000, notice }),
+      JSON.stringify({ fetched_at: Date.now() - 48 * 60 * 60 * 1000, notice })
     );
     const result = await readCachedPrivacyNotice('de', true);
     expect(result).toEqual(notice);

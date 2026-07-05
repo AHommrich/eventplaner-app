@@ -72,12 +72,33 @@ export default function PrivacyScreen() {
           back arrow + title in a card-coloured strip so `colors.cardText`
           stays legible even when it happens to be close to
           `colors.screenBg` in the current palette. */}
-      <View style={{ backgroundColor: colors.card, paddingTop: insets.top, borderBottomWidth: 1, borderBottomColor: colors.border + '33' }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: theme.spacing.md, paddingVertical: theme.spacing.sm }}>
+      <View
+        style={{
+          backgroundColor: colors.card,
+          paddingTop: insets.top,
+          borderBottomWidth: 1,
+          borderBottomColor: colors.border + '33',
+        }}
+      >
+        <View
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            paddingHorizontal: theme.spacing.md,
+            paddingVertical: theme.spacing.sm,
+          }}
+        >
           <TouchableOpacity onPress={() => router.back()} style={{ padding: theme.spacing.xs }}>
             <Ionicons name="chevron-back" size={24} color={colors.cardText} />
           </TouchableOpacity>
-          <ThemedText style={{ fontSize: 18, fontWeight: '600', color: colors.cardText, marginLeft: theme.spacing.xs }}>
+          <ThemedText
+            style={{
+              fontSize: 18,
+              fontWeight: '600',
+              color: colors.cardText,
+              marginLeft: theme.spacing.xs,
+            }}
+          >
             {t('legal.privacy.title')}
           </ThemedText>
         </View>
@@ -88,36 +109,82 @@ export default function PrivacyScreen() {
           <ActivityIndicator color={colors.tabTint} />
         </View>
       ) : error ? (
-        <View style={{ padding: theme.spacing.lg, alignItems: 'center', justifyContent: 'center', flex: 1 }}>
+        <View
+          style={{
+            padding: theme.spacing.lg,
+            alignItems: 'center',
+            justifyContent: 'center',
+            flex: 1,
+          }}
+        >
           <Ionicons name="cloud-offline-outline" size={48} color={theme.colors.muted} />
-          <ThemedText style={{ fontSize: 18, fontWeight: '600', color: colors.cardText, marginTop: theme.spacing.md, textAlign: 'center' }}>
+          <ThemedText
+            style={{
+              fontSize: 18,
+              fontWeight: '600',
+              color: colors.cardText,
+              marginTop: theme.spacing.md,
+              textAlign: 'center',
+            }}
+          >
             {t('legal.privacy.offlineTitle')}
           </ThemedText>
-          <ThemedText style={{ fontSize: 14, color: theme.colors.muted, marginTop: theme.spacing.sm, textAlign: 'center', lineHeight: 20 }}>
+          <ThemedText
+            style={{
+              fontSize: 14,
+              color: theme.colors.muted,
+              marginTop: theme.spacing.sm,
+              textAlign: 'center',
+              lineHeight: 20,
+            }}
+          >
             {t('legal.privacy.offlineMessage')}
           </ThemedText>
           <TouchableOpacity
             onPress={() => Linking.openURL(FALLBACK_URL)}
-            style={{ marginTop: theme.spacing.lg, backgroundColor: colors.cardButton, paddingHorizontal: theme.spacing.lg, paddingVertical: theme.spacing.sm + 2, borderRadius: theme.borderRadius.md }}
+            style={{
+              marginTop: theme.spacing.lg,
+              backgroundColor: colors.cardButton,
+              paddingHorizontal: theme.spacing.lg,
+              paddingVertical: theme.spacing.sm + 2,
+              borderRadius: theme.borderRadius.md,
+            }}
           >
             <ThemedText style={{ color: colors.cardButtonText, fontWeight: '600' }}>
               {t('legal.privacy.openInBrowser')}
             </ThemedText>
           </TouchableOpacity>
-          <TouchableOpacity onPress={load} style={{ marginTop: theme.spacing.md, padding: theme.spacing.sm }}>
+          <TouchableOpacity
+            onPress={load}
+            style={{ marginTop: theme.spacing.md, padding: theme.spacing.sm }}
+          >
             <ThemedText style={{ color: colors.cardText, fontSize: 14 }}>
               {t('legal.privacy.retry')}
             </ThemedText>
           </TouchableOpacity>
         </View>
       ) : notice ? (
-        <ScrollView contentContainerStyle={{ padding: theme.spacing.lg, paddingBottom: insets.bottom + theme.spacing.xl }}>
-          <ThemedText style={{ fontSize: 12, color: theme.colors.muted, marginBottom: theme.spacing.lg }}>
+        <ScrollView
+          contentContainerStyle={{
+            padding: theme.spacing.lg,
+            paddingBottom: insets.bottom + theme.spacing.xl,
+          }}
+        >
+          <ThemedText
+            style={{ fontSize: 12, color: theme.colors.muted, marginBottom: theme.spacing.lg }}
+          >
             {t('legal.privacy.updatedAt', { date: formatUpdatedAt(notice.updated_at, language) })}
           </ThemedText>
           {notice.sections.map((section) => (
             <View key={section.id} style={{ marginBottom: theme.spacing.lg }}>
-              <ThemedText style={{ fontSize: 16, fontWeight: '700', color: colors.cardText, marginBottom: theme.spacing.sm }}>
+              <ThemedText
+                style={{
+                  fontSize: 16,
+                  fontWeight: '700',
+                  color: colors.cardText,
+                  marginBottom: theme.spacing.sm,
+                }}
+              >
                 {section.heading}
               </ThemedText>
               <ThemedText style={{ fontSize: 14, color: colors.cardText, lineHeight: 22 }}>

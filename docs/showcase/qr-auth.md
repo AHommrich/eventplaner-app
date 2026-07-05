@@ -7,7 +7,7 @@ shared token that a whole family reuses across ten devices.
 
 Wedding guests are not repeat users. They open the app once, maybe use
 it a few times over one weekend, and never sign in again. Any
-authentication mechanism that requires them to *remember* something
+authentication mechanism that requires them to _remember_ something
 after the wedding is friction that nobody wants.
 
 But there's a second constraint pulling in the opposite direction: a
@@ -82,14 +82,14 @@ until the guest changes their mind — is acceptable because the token
 only unlocks wedding-specific data, not identity or payment.
 
 **Slot-locking, not device-locking.** A guest can log in on multiple
-devices *if they scan the QR again first* — the 409 protects against a
+devices _if they scan the QR again first_ — the 409 protects against a
 different family member claiming that slot, but the same guest coming
 back from a lost-phone situation just re-scans and picks their name.
 Backend re-issues a token for the same `guest_id`.
 
 **QR from photo, not just camera.** The
 [`lib/QrFromImage.tsx`](../../lib/QrFromImage.tsx) module lets a guest
-pick a *photo* of their invitation from the gallery. The couple's
+pick a _photo_ of their invitation from the gallery. The couple's
 invitation photos posted in the family group chat still work. This is
 the surface that used to have the one non-DSGVO-compliant CDN dependency;
 see [`dsgvo-first.md`](dsgvo-first.md) for how that was neutralised.
@@ -98,11 +98,11 @@ see [`dsgvo-first.md`](dsgvo-first.md) for how that was neutralised.
 welcome screen probes `GET /api/guest/me` and redirects based on
 `rsvp_status`:
 
-| Status | Destination |
-|--------|-------------|
-| `null` (never answered) | `/rsvp` — onboarding RSVP screen |
-| `accepted` / `accepted_pending` | `/(tabs)/home` |
-| `declined` / `declined_pending` / `revocation_requested` | `/declined` |
+| Status                                                   | Destination                      |
+| -------------------------------------------------------- | -------------------------------- |
+| `null` (never answered)                                  | `/rsvp` — onboarding RSVP screen |
+| `accepted` / `accepted_pending`                          | `/(tabs)/home`                   |
+| `declined` / `declined_pending` / `revocation_requested` | `/declined`                      |
 
 A declined guest can still log in — they can revoke the decline, but
 they don't get the full tab bar. This is enforced in

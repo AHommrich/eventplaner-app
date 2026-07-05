@@ -14,13 +14,7 @@
  * the only realistic failure mode; a 401 would have redirected earlier.
  */
 import { useEffect, useState } from 'react';
-import {
-  View,
-  ScrollView,
-  TouchableOpacity,
-  ActivityIndicator,
-  Share,
-} from 'react-native';
+import { View, ScrollView, TouchableOpacity, ActivityIndicator, Share } from 'react-native';
 import { ThemedText } from '../components/ThemedText';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -135,31 +129,77 @@ export default function DataExportScreen() {
       )}
 
       {!loading && error && (
-        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: theme.spacing.lg }}>
+        <View
+          style={{
+            flex: 1,
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: theme.spacing.lg,
+          }}
+        >
           <Ionicons name="cloud-offline" size={48} color={theme.colors.error} />
-          <ThemedText style={{ fontSize: 18, fontWeight: '600', color: colors.cardText, marginTop: theme.spacing.md, marginBottom: theme.spacing.xs }}>
+          <ThemedText
+            style={{
+              fontSize: 18,
+              fontWeight: '600',
+              color: colors.cardText,
+              marginTop: theme.spacing.md,
+              marginBottom: theme.spacing.xs,
+            }}
+          >
             {t('dataExport.errorTitle')}
           </ThemedText>
-          <ThemedText style={{ fontSize: 14, color: colors.cardText + 'aa', textAlign: 'center', marginBottom: theme.spacing.lg }}>
+          <ThemedText
+            style={{
+              fontSize: 14,
+              color: colors.cardText + 'aa',
+              textAlign: 'center',
+              marginBottom: theme.spacing.lg,
+            }}
+          >
             {error}
           </ThemedText>
           <TouchableOpacity
             onPress={loadData}
-            style={{ backgroundColor: colors.cardButton, paddingHorizontal: theme.spacing.lg, paddingVertical: theme.spacing.sm, borderRadius: theme.borderRadius.md }}
+            style={{
+              backgroundColor: colors.cardButton,
+              paddingHorizontal: theme.spacing.lg,
+              paddingVertical: theme.spacing.sm,
+              borderRadius: theme.borderRadius.md,
+            }}
           >
-            <ThemedText style={{ color: colors.cardButtonText, fontWeight: '600' }}>{t('dataExport.retry')}</ThemedText>
+            <ThemedText style={{ color: colors.cardButtonText, fontWeight: '600' }}>
+              {t('dataExport.retry')}
+            </ThemedText>
           </TouchableOpacity>
         </View>
       )}
 
       {!loading && data && (
         <ScrollView
-          contentContainerStyle={{ padding: theme.spacing.md, paddingBottom: insets.bottom + theme.spacing.xl }}
+          contentContainerStyle={{
+            padding: theme.spacing.md,
+            paddingBottom: insets.bottom + theme.spacing.xl,
+          }}
         >
-          <ThemedText style={{ fontSize: 14, color: colors.cardText + 'aa', marginBottom: theme.spacing.md, lineHeight: 20 }}>
+          <ThemedText
+            style={{
+              fontSize: 14,
+              color: colors.cardText + 'aa',
+              marginBottom: theme.spacing.md,
+              lineHeight: 20,
+            }}
+          >
             {t('dataExport.subtitle')}
           </ThemedText>
-          <ThemedText style={{ fontSize: 12, color: colors.cardText + '99', marginBottom: theme.spacing.md, fontStyle: 'italic' }}>
+          <ThemedText
+            style={{
+              fontSize: 12,
+              color: colors.cardText + '99',
+              marginBottom: theme.spacing.md,
+              fontStyle: 'italic',
+            }}
+          >
             {t('dataExport.generatedAt', { date: formatDate(data.generated_at, language) })}
           </ThemedText>
 
@@ -207,7 +247,9 @@ export default function DataExportScreen() {
             colors={colors}
           />
 
-          <View style={{ flexDirection: 'row', gap: theme.spacing.sm, marginTop: theme.spacing.md }}>
+          <View
+            style={{ flexDirection: 'row', gap: theme.spacing.sm, marginTop: theme.spacing.md }}
+          >
             <TouchableOpacity
               onPress={copyJson}
               style={{

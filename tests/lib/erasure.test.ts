@@ -7,17 +7,9 @@
  * regardless of what the two timestamp keys hold.
  */
 import * as SecureStore from 'expo-secure-store';
-import {
-  saveErasureState,
-  getErasureState,
-  clearErasureState,
-} from '../../lib/erasure';
+import { saveErasureState, getErasureState, clearErasureState } from '../../lib/erasure';
 
-const KEYS = [
-  'erasure_recovery_token',
-  'erasure_scheduled_at',
-  'erasure_can_revoke_until',
-];
+const KEYS = ['erasure_recovery_token', 'erasure_scheduled_at', 'erasure_can_revoke_until'];
 
 describe('lib/erasure', () => {
   beforeEach(async () => {

@@ -30,11 +30,7 @@ import * as Clipboard from 'expo-clipboard';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLanguage } from '../lib/LanguageContext';
 import { theme } from '../constants/theme';
-import {
-  ErasureState,
-  getErasureState,
-  clearErasureState,
-} from '../lib/erasure';
+import { ErasureState, getErasureState, clearErasureState } from '../lib/erasure';
 import { revokeErasure } from '../lib/guest';
 
 const SPLASH_COLORS = ['#FF6B8A', '#FF8C5A', '#FFD166', '#72D4C8'] as const;
@@ -103,18 +99,14 @@ export default function ErasurePendingScreen() {
    */
   function askRevoke() {
     if (!state) return;
-    Alert.alert(
-      t('erasure.pending.revokeConfirmTitle'),
-      t('erasure.pending.revokeConfirmBody'),
-      [
-        { text: t('common.cancel'), style: 'cancel' },
-        {
-          text: t('erasure.pending.revokeConfirmButton'),
-          style: 'destructive',
-          onPress: performRevoke,
-        },
-      ],
-    );
+    Alert.alert(t('erasure.pending.revokeConfirmTitle'), t('erasure.pending.revokeConfirmBody'), [
+      { text: t('common.cancel'), style: 'cancel' },
+      {
+        text: t('erasure.pending.revokeConfirmButton'),
+        style: 'destructive',
+        onPress: performRevoke,
+      },
+    ]);
   }
 
   async function performRevoke() {
@@ -123,19 +115,17 @@ export default function ErasurePendingScreen() {
     try {
       await revokeErasure(state.recoveryToken);
       await clearErasureState();
-      Alert.alert(
-        t('erasure.pending.revokeSuccessTitle'),
-        t('erasure.pending.revokeSuccessBody'),
-        [{ text: 'OK', onPress: () => router.replace('/') }],
-      );
+      Alert.alert(t('erasure.pending.revokeSuccessTitle'), t('erasure.pending.revokeSuccessBody'), [
+        { text: 'OK', onPress: () => router.replace('/') },
+      ]);
     } catch (e: any) {
       const status = e?.response?.status;
       const message =
         status === 403
           ? t('erasure.pending.revokeErrorInvalidToken')
           : status === 410
-          ? t('erasure.pending.revokeErrorExpired')
-          : t('erasure.pending.revokeErrorGeneric');
+            ? t('erasure.pending.revokeErrorExpired')
+            : t('erasure.pending.revokeErrorGeneric');
       Alert.alert(t('common.error'), message);
     } finally {
       setRevoking(false);
@@ -163,7 +153,10 @@ export default function ErasurePendingScreen() {
       <ScrollView
         contentContainerStyle={[
           styles.content,
-          { paddingTop: insets.top + theme.spacing.xl, paddingBottom: insets.bottom + theme.spacing.xl },
+          {
+            paddingTop: insets.top + theme.spacing.xl,
+            paddingBottom: insets.bottom + theme.spacing.xl,
+          },
         ]}
       >
         <View style={styles.iconWrap}>
@@ -186,9 +179,7 @@ export default function ErasurePendingScreen() {
           <View style={styles.tokenBox}>
             <ThemedText style={styles.tokenText}>{state.recoveryToken}</ThemedText>
           </View>
-          <ThemedText style={styles.cardHint}>
-            {t('erasure.pending.recoveryTokenHint')}
-          </ThemedText>
+          <ThemedText style={styles.cardHint}>{t('erasure.pending.recoveryTokenHint')}</ThemedText>
           <TouchableOpacity style={styles.copyButton} onPress={copyToken}>
             <Ionicons
               name={copied ? 'checkmark' : 'copy-outline'}
@@ -215,9 +206,7 @@ export default function ErasurePendingScreen() {
           disabled={!canRevoke || revoking}
         >
           <ThemedText style={styles.primaryButtonText}>
-            {revoking
-              ? t('erasure.pending.revokeSubmitting')
-              : t('erasure.pending.revokeButton')}
+            {revoking ? t('erasure.pending.revokeSubmitting') : t('erasure.pending.revokeButton')}
           </ThemedText>
         </TouchableOpacity>
 

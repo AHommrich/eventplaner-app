@@ -52,7 +52,7 @@ describe('lib/BlockedFeaturesContext', () => {
     render(
       <BlockedFeaturesProvider>
         <Probe />
-      </BlockedFeaturesProvider>,
+      </BlockedFeaturesProvider>
     );
     expect(mockRegisterHandler).toHaveBeenCalledTimes(1);
     expect(mockApiGet).toHaveBeenCalledWith('/api/drinks');
@@ -63,7 +63,7 @@ describe('lib/BlockedFeaturesContext', () => {
     const { getByTestId } = render(
       <BlockedFeaturesProvider>
         <Probe />
-      </BlockedFeaturesProvider>,
+      </BlockedFeaturesProvider>
     );
     expect(getByTestId('blocked').props.children).toBe('OPEN');
 
@@ -78,7 +78,7 @@ describe('lib/BlockedFeaturesContext', () => {
     const { unmount } = render(
       <BlockedFeaturesProvider>
         <Probe />
-      </BlockedFeaturesProvider>,
+      </BlockedFeaturesProvider>
     );
     unmount();
     expect(mockClearHandler).toHaveBeenCalledTimes(1);

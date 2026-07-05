@@ -36,21 +36,21 @@ are a lint smell, not a coding style choice.
 
 The `event_info` endpoint returns roughly two dozen colour roles. The
 subset a screen actually touches is small — most screens use six or
-seven — but the roles are named for their *purpose* on screen, not for
+seven — but the roles are named for their _purpose_ on screen, not for
 their position in a palette. So the render code never has to translate
 "the primary colour" into "the pill button background":
 
-| Role | Purpose |
-|------|---------|
-| `screenBg` | Screen backdrop |
-| `card` | Card / container fill |
-| `cardText` | Text painted on `card` |
-| `cardButton` | Button background inside a card |
-| `cardButtonText` | Text on that button |
-| `tabTint` | Icon + label colour in the tab bar |
-| `border` | Card outline, divider colour (with alpha suffixes) |
-| `fab` / `fabIcon` | Floating action button (only on photos.tsx) |
-| `homeText` / `homeShadow` | Home cover text + gradient behind it |
+| Role                      | Purpose                                            |
+| ------------------------- | -------------------------------------------------- |
+| `screenBg`                | Screen backdrop                                    |
+| `card`                    | Card / container fill                              |
+| `cardText`                | Text painted on `card`                             |
+| `cardButton`              | Button background inside a card                    |
+| `cardButtonText`          | Text on that button                                |
+| `tabTint`                 | Icon + label colour in the tab bar                 |
+| `border`                  | Card outline, divider colour (with alpha suffixes) |
+| `fab` / `fabIcon`         | Floating action button (only on photos.tsx)        |
+| `homeText` / `homeShadow` | Home cover text + gradient behind it               |
 
 The full role table lives in [`CLAUDE.md`](../../CLAUDE.md); the type
 lives in [`lib/EventThemeContext.tsx`](../../lib/EventThemeContext.tsx).
@@ -103,7 +103,7 @@ behaviour is deliberately loud in some places and quiet in others:
 - A field the client uses defensively (`colors.homeText` when there is
   no cover image) is allowed to be `null`; the render just omits the
   text. No crash, no placeholder.
-- A field the client *cannot* work without (`colors.screenBg`) falls
+- A field the client _cannot_ work without (`colors.screenBg`) falls
   back to a hardcoded sensible default from `constants/theme.ts`. If
   the backend outage lasts an event, the screens still look coherent.
 
@@ -117,7 +117,7 @@ becomes mandatory.
 The engine has one non-obvious property test in
 [`tests/lib/EventThemeContext.test.tsx`](../../tests/lib/EventThemeContext.test.tsx):
 consecutive theme fetches don't stack in memory, and a fetch that
-returns a *subset* of roles resets the rest to fallback. That behaviour
+returns a _subset_ of roles resets the rest to fallback. That behaviour
 matters because the couple's colour picker in the admin surface can
 clear a role individually — the client must not remember yesterday's
 value for a role the backend now considers unset.

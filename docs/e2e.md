@@ -26,7 +26,7 @@ Coverage threshold: 90 % lines / 90 % branches
 
 **Screen** tests render each screen through `@testing-library/react-native`,
 mocking axios and expo-router but leaving the JSX + `useEffect` graph
-intact. They catch regressions in *what the screen does* — button dispatch,
+intact. They catch regressions in _what the screen does_ — button dispatch,
 navigation calls, state transitions — without paying the price of a real
 device. Threshold: 60 % lines / 45 % branches, chosen honestly at today's
 achievable ceiling because a handful of code paths (image picker →
@@ -78,12 +78,12 @@ Each of these has been discussed and left out on purpose. Adding one is a
 non-trivial decision because Maestro flows are the most expensive test
 tier — flake once and CI blocks a merge.
 
-| Not covered | Why |
-|---|---|
+| Not covered        | Why                                                                                                                         |
+| ------------------ | --------------------------------------------------------------------------------------------------------------------------- |
 | Family QR two-step | Requires seed guest fixtures with `is_active` tracking; the 409 flow is already covered by the Jest test on `app/scan.tsx`. |
-| Live camera scan | Maestro can drive a virtual camera but calibrating a QR image → camera stream setup is disproportionate work. |
-| Photo upload | Depends on a photo library populated in the simulator; hard to make deterministic. |
-| RSVP decline | The confirm dialog + backend revocation flow is covered by the Jest screen test on `app/(tabs)/rsvp.tsx`. |
+| Live camera scan   | Maestro can drive a virtual camera but calibrating a QR image → camera stream setup is disproportionate work.               |
+| Photo upload       | Depends on a photo library populated in the simulator; hard to make deterministic.                                          |
+| RSVP decline       | The confirm dialog + backend revocation flow is covered by the Jest screen test on `app/(tabs)/rsvp.tsx`.                   |
 
 ## CI wiring — deliberately absent for now
 

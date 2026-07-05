@@ -19,7 +19,15 @@
  * assigned on the server side).
  */
 import { useCallback, useState } from 'react';
-import { View, ScrollView, RefreshControl, ActivityIndicator, Alert, TouchableOpacity, StyleSheet } from 'react-native';
+import {
+  View,
+  ScrollView,
+  RefreshControl,
+  ActivityIndicator,
+  Alert,
+  TouchableOpacity,
+  StyleSheet,
+} from 'react-native';
 import { ThemedText } from '../../components/ThemedText';
 import { useFocusEffect } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -70,13 +78,15 @@ export default function PhotoGameScreen() {
     }
   }
 
-  useFocusEffect(useCallback(() => {
-    loadStatus();
-    // Same rationale as the other tab screens: the focus-effect callback
-    // is captured once so `useFocusEffect` fires on route focus, not on
-    // every render caused by an unrelated state change.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []));
+  useFocusEffect(
+    useCallback(() => {
+      loadStatus();
+      // Same rationale as the other tab screens: the focus-effect callback
+      // is captured once so `useFocusEffect` fires on route focus, not on
+      // every render caused by an unrelated state change.
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [])
+  );
 
   const { refreshing, refreshed, onRefresh } = useRefreshToast(loadStatus);
 
@@ -91,10 +101,14 @@ export default function PhotoGameScreen() {
     setError(null);
     try {
       const result = await assignPhotoGameTask();
-      setStatusData((prev) => prev ? {
-        ...prev,
-        assignment: { id: result.id, task: result.task, submitted_at: null, photo_url: null },
-      } : prev);
+      setStatusData((prev) =>
+        prev
+          ? {
+              ...prev,
+              assignment: { id: result.id, task: result.task, submitted_at: null, photo_url: null },
+            }
+          : prev
+      );
     } catch (e: any) {
       if (e?.response?.status === 409) {
         await loadStatus();
@@ -151,19 +165,27 @@ export default function PhotoGameScreen() {
 
     if (result.canceled || !result.assets?.[0]) return;
 
-    const jpeg = await ImageManipulator.manipulateAsync(
-      result.assets[0].uri,
-      [],
-      { compress: 0.8, format: ImageManipulator.SaveFormat.JPEG },
-    );
+    const jpeg = await ImageManipulator.manipulateAsync(result.assets[0].uri, [], {
+      compress: 0.8,
+      format: ImageManipulator.SaveFormat.JPEG,
+    });
 
     setUploading(true);
     setError(null);
     try {
       const submitted = await submitPhotoGamePhoto(jpeg.uri);
-      setStatusData((prev) => prev && prev.assignment
-        ? { ...prev, assignment: { ...prev.assignment, photo_url: submitted.photo_url, submitted_at: submitted.submitted_at } }
-        : prev);
+      setStatusData((prev) =>
+        prev && prev.assignment
+          ? {
+              ...prev,
+              assignment: {
+                ...prev.assignment,
+                photo_url: submitted.photo_url,
+                submitted_at: submitted.submitted_at,
+              },
+            }
+          : prev
+      );
     } catch (e: any) {
       if (e?.response?.status === 409) {
         await loadStatus();
@@ -185,7 +207,7 @@ export default function PhotoGameScreen() {
 
   const status = statusData?.status;
   const assignment = statusData?.assignment ?? null;
-  const isSubmitted = !!(assignment?.submitted_at);
+  const isSubmitted = !!assignment?.submitted_at;
   const isEnded = status === 'ended' || status === 'draft';
 
   /**
@@ -197,18 +219,33 @@ export default function PhotoGameScreen() {
   function renderContent() {
     if (isEnded) {
       return (
-        <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border + '33' }]}>
-          <Ionicons name="time-outline" size={32} color={colors.cardText} style={{ marginBottom: theme.spacing.sm }} />
-          <ThemedText style={[styles.cardTitle, { color: colors.cardText }]}>{t('photoGame.endedTitle')}</ThemedText>
+        <View
+          style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border + '33' }]}
+        >
+          <Ionicons
+            name="time-outline"
+            size={32}
+            color={colors.cardText}
+            style={{ marginBottom: theme.spacing.sm }}
+          />
+          <ThemedText style={[styles.cardTitle, { color: colors.cardText }]}>
+            {t('photoGame.endedTitle')}
+          </ThemedText>
         </View>
       );
     }
 
     if (isSubmitted && assignment) {
       return (
-        <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border + '33' }]}>
-          <ThemedText style={[styles.cardTitle, { color: colors.cardText }]}>{t('photoGame.submittedTitle')}</ThemedText>
-          <ThemedText style={[styles.cardBody, { color: colors.cardText }]}>{t('photoGame.submittedBody')}</ThemedText>
+        <View
+          style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border + '33' }]}
+        >
+          <ThemedText style={[styles.cardTitle, { color: colors.cardText }]}>
+            {t('photoGame.submittedTitle')}
+          </ThemedText>
+          <ThemedText style={[styles.cardBody, { color: colors.cardText }]}>
+            {t('photoGame.submittedBody')}
+          </ThemedText>
           {assignment.photo_url && (
             <Image
               source={{ uri: assignment.photo_url }}
@@ -217,15 +254,24 @@ export default function PhotoGameScreen() {
               cachePolicy="disk"
             />
           )}
-          <ThemedText style={[styles.taskLabel, { color: colors.cardText + 'aa' }]}>{t('photoGame.yourTask')}</ThemedText>
-          <ThemedText style={[styles.taskText, { color: colors.cardText }]}>{assignment.task.description}</ThemedText>
+          <ThemedText style={[styles.taskLabel, { color: colors.cardText + 'aa' }]}>
+            {t('photoGame.yourTask')}
+          </ThemedText>
+          <ThemedText style={[styles.taskText, { color: colors.cardText }]}>
+            {assignment.task.description}
+          </ThemedText>
           {error && (
-            <ThemedText style={[styles.errorText, { color: theme.colors.error }]}>{error}</ThemedText>
+            <ThemedText style={[styles.errorText, { color: theme.colors.error }]}>
+              {error}
+            </ThemedText>
           )}
           <TouchableOpacity
             onPress={handleUpload}
             disabled={uploading}
-            style={[styles.button, { backgroundColor: colors.cardButton, opacity: uploading ? 0.6 : 1 }]}
+            style={[
+              styles.button,
+              { backgroundColor: colors.cardButton, opacity: uploading ? 0.6 : 1 },
+            ]}
           >
             <ThemedText style={[styles.buttonText, { color: colors.cardButtonText }]}>
               {uploading ? t('photoGame.uploading') : t('photoGame.replaceButton')}
@@ -237,26 +283,40 @@ export default function PhotoGameScreen() {
 
     if (assignment) {
       return (
-        <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border + '33' }]}>
-          <ThemedText style={[styles.taskLabel, { color: colors.cardText + 'aa' }]}>{t('photoGame.yourTask')}</ThemedText>
-          <ThemedText style={[styles.taskText, { color: colors.cardText }]}>{assignment.task.description}</ThemedText>
+        <View
+          style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border + '33' }]}
+        >
+          <ThemedText style={[styles.taskLabel, { color: colors.cardText + 'aa' }]}>
+            {t('photoGame.yourTask')}
+          </ThemedText>
+          <ThemedText style={[styles.taskText, { color: colors.cardText }]}>
+            {assignment.task.description}
+          </ThemedText>
           {error && (
-            <ThemedText style={[styles.errorText, { color: theme.colors.error }]}>{error}</ThemedText>
+            <ThemedText style={[styles.errorText, { color: theme.colors.error }]}>
+              {error}
+            </ThemedText>
           )}
           <TouchableOpacity
             onPress={handleUpload}
             disabled={uploading}
-            style={[styles.button, { backgroundColor: colors.cardButton, opacity: uploading ? 0.6 : 1 }]}
+            style={[
+              styles.button,
+              { backgroundColor: colors.cardButton, opacity: uploading ? 0.6 : 1 },
+            ]}
           >
-            {uploading
-              ? <ThemedText style={[styles.buttonText, { color: colors.cardButtonText }]}>{t('photoGame.uploading')}</ThemedText>
-              : (
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                  <Ionicons name="camera-outline" size={18} color={colors.cardButtonText} />
-                  <ThemedText style={[styles.buttonText, { color: colors.cardButtonText }]}>{t('photoGame.uploadButton')}</ThemedText>
-                </View>
-              )
-            }
+            {uploading ? (
+              <ThemedText style={[styles.buttonText, { color: colors.cardButtonText }]}>
+                {t('photoGame.uploading')}
+              </ThemedText>
+            ) : (
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                <Ionicons name="camera-outline" size={18} color={colors.cardButtonText} />
+                <ThemedText style={[styles.buttonText, { color: colors.cardButtonText }]}>
+                  {t('photoGame.uploadButton')}
+                </ThemedText>
+              </View>
+            )}
           </TouchableOpacity>
         </View>
       );
@@ -264,17 +324,31 @@ export default function PhotoGameScreen() {
 
     // Default: no assignment yet → invite the guest to request one.
     return (
-      <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border + '33' }]}>
-        <Ionicons name="camera-outline" size={32} color={colors.cardText} style={{ marginBottom: theme.spacing.sm }} />
-        <ThemedText style={[styles.cardTitle, { color: colors.cardText }]}>{t('photoGame.disclaimerTitle')}</ThemedText>
-        <ThemedText style={[styles.cardBody, { color: colors.cardText }]}>{t('photoGame.disclaimerBody')}</ThemedText>
+      <View
+        style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border + '33' }]}
+      >
+        <Ionicons
+          name="camera-outline"
+          size={32}
+          color={colors.cardText}
+          style={{ marginBottom: theme.spacing.sm }}
+        />
+        <ThemedText style={[styles.cardTitle, { color: colors.cardText }]}>
+          {t('photoGame.disclaimerTitle')}
+        </ThemedText>
+        <ThemedText style={[styles.cardBody, { color: colors.cardText }]}>
+          {t('photoGame.disclaimerBody')}
+        </ThemedText>
         {error && (
           <ThemedText style={[styles.errorText, { color: theme.colors.error }]}>{error}</ThemedText>
         )}
         <TouchableOpacity
           onPress={handleAssign}
           disabled={assigning}
-          style={[styles.button, { backgroundColor: colors.cardButton, opacity: assigning ? 0.6 : 1 }]}
+          style={[
+            styles.button,
+            { backgroundColor: colors.cardButton, opacity: assigning ? 0.6 : 1 },
+          ]}
         >
           <ThemedText style={[styles.buttonText, { color: colors.cardButtonText }]}>
             {assigning ? t('photoGame.assigning') : t('photoGame.getTaskButton')}
@@ -287,8 +361,21 @@ export default function PhotoGameScreen() {
   return (
     <View style={[styles.container, { backgroundColor: colors.screenBg }]}>
       <ScrollView
-        contentContainerStyle={[styles.content, { paddingTop: insets.top + theme.spacing.lg, paddingBottom: insets.bottom + theme.spacing.xl }]}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.tabTint} colors={[colors.tabTint]} />}
+        contentContainerStyle={[
+          styles.content,
+          {
+            paddingTop: insets.top + theme.spacing.lg,
+            paddingBottom: insets.bottom + theme.spacing.xl,
+          },
+        ]}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={colors.tabTint}
+            colors={[colors.tabTint]}
+          />
+        }
       >
         {renderContent()}
       </ScrollView>

@@ -51,12 +51,12 @@ Out of scope:
 We aim for the following, measured from the moment your report lands in the
 inbox:
 
-| Stage | Target |
-|---|---|
-| Acknowledgement | 3 business days |
-| Initial triage (severity + reproduction) | 7 business days |
-| Fix in staging | 30 days (critical: sooner, best-effort) |
-| Coordinated public disclosure | agreed with reporter, default 30 days after fix |
+| Stage                                    | Target                                          |
+| ---------------------------------------- | ----------------------------------------------- |
+| Acknowledgement                          | 3 business days                                 |
+| Initial triage (severity + reproduction) | 7 business days                                 |
+| Fix in staging                           | 30 days (critical: sooner, best-effort)         |
+| Coordinated public disclosure            | agreed with reporter, default 30 days after fix |
 
 These are targets, not contracts. If a report needs more time (e.g. a fix
 requires a backend change on the Laravel side), we will keep you updated.

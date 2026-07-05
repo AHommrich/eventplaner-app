@@ -28,18 +28,23 @@ const en = {
     saving: 'Saving…',
     deadlinePassed: 'The RSVP deadline has passed.',
     declineConfirmTitle: 'Really decline?',
-    declineConfirmOwn: 'If you decline, you will lose access to this event. You can only request a revocation afterwards.',
-    declineConfirmMember: 'If you decline on behalf of %{name}, %{name} will no longer have access to this event.',
+    declineConfirmOwn:
+      'If you decline, you will lose access to this event. You can only request a revocation afterwards.',
+    declineConfirmMember:
+      'If you decline on behalf of %{name}, %{name} will no longer have access to this event.',
     declineConfirmButton: 'Yes, decline',
   },
   declined: {
     titlePending: 'You have declined.',
     titleFinal: 'Your invitation has been declined.',
-    subtitlePending: 'Your decline has been submitted and is awaiting confirmation. If you change your mind, you can still request a revocation now.',
-    subtitleFinal: 'Your decline has been confirmed by the host. A revocation is no longer possible.',
+    subtitlePending:
+      'Your decline has been submitted and is awaiting confirmation. If you change your mind, you can still request a revocation now.',
+    subtitleFinal:
+      'Your decline has been confirmed by the host. A revocation is no longer possible.',
     deadline: 'RSVP deadline: %{date}',
     revokeButton: 'Request revocation',
-    revocationPending: 'Your revocation request is being reviewed. You will be notified once it has been approved.',
+    revocationPending:
+      'Your revocation request is being reviewed. You will be notified once it has been approved.',
     logout: 'Log out',
   },
   welcome: {
@@ -75,11 +80,12 @@ const en = {
     countdownHours: 'h',
     countdownMinutes: 'm',
     countdownSeconds: 's',
-    countdownToday: "Today is the big day! 🎉",
+    countdownToday: 'Today is the big day! 🎉',
     countdownPast: 'What a beautiful day it was.',
     dresscode: 'Dress code:',
     openInMaps: 'Open address in',
-    openInMapsHint: 'Please double-check the address before departure — navigation apps can make mistakes.',
+    openInMapsHint:
+      'Please double-check the address before departure — navigation apps can make mistakes.',
     mapsApple: 'Maps',
     mapsGoogle: 'Google Maps',
   },
@@ -100,8 +106,7 @@ const en = {
       title: 'Privacy policy',
       updatedAt: 'Last updated: %{date}',
       offlineTitle: 'Unavailable',
-      offlineMessage:
-        "The privacy policy couldn't be loaded. You can read it in your browser.",
+      offlineMessage: "The privacy policy couldn't be loaded. You can read it in your browser.",
       openInBrowser: 'Open in browser',
       retry: 'Retry',
     },
@@ -117,13 +122,11 @@ const en = {
     notGranted: 'Not granted yet',
     photoUpload: {
       title: 'Photos in the shared gallery',
-      body:
-        'When you upload photos, they become visible in the shared wedding gallery to every invited guest. Your photos are stored for up to 30 days after the event and then deleted automatically. You may withdraw your consent at any time — already-uploaded photos can be deleted on request by contacting us.',
+      body: 'When you upload photos, they become visible in the shared wedding gallery to every invited guest. Your photos are stored for up to 30 days after the event and then deleted automatically. You may withdraw your consent at any time — already-uploaded photos can be deleted on request by contacting us.',
     },
     photoGame: {
       title: 'Sharing your photo task',
-      body:
-        'For the photo task you receive an assignment and upload exactly one photo. Your image is shown together with your name inside the task view and is used only for evaluation by the couple. It is stored for up to 30 days after the event and then deleted automatically. Withdrawal is possible at any time.',
+      body: 'For the photo task you receive an assignment and upload exactly one photo. Your image is shown together with your name inside the task view and is used only for evaluation by the couple. It is stored for up to 30 days after the event and then deleted automatically. Withdrawal is possible at any time.',
     },
   },
   drinks: {
@@ -151,7 +154,8 @@ const en = {
   photoGame: {
     tab: 'Photo Task',
     disclaimerTitle: 'Your Photo Task',
-    disclaimerBody: "You'll receive a random task and upload exactly one photo. You can only participate once.",
+    disclaimerBody:
+      "You'll receive a random task and upload exactly one photo. You can only participate once.",
     getTaskButton: 'Get task',
     yourTask: 'Your task:',
     uploadButton: 'Upload photo',
@@ -165,7 +169,8 @@ const en = {
   },
   blocked: {
     title: 'Access restricted',
-    message: 'Your app access has been deactivated. We automatically check every 10 seconds whether your access has been restored.',
+    message:
+      'Your app access has been deactivated. We automatically check every 10 seconds whether your access has been restored.',
   },
   photos: {
     empty: 'No photos yet',
@@ -178,12 +183,10 @@ const en = {
   },
   dataExport: {
     title: 'My data',
-    subtitle:
-      'Everything we have on record about you (Art. 15 GDPR).',
+    subtitle: 'Everything we have on record about you (Art. 15 GDPR).',
     loading: 'Loading your data…',
     errorTitle: 'Unavailable',
-    errorMessage:
-      "Your data couldn't be loaded. Please check your connection and try again.",
+    errorMessage: "Your data couldn't be loaded. Please check your connection and try again.",
     retry: 'Retry',
     copyJson: 'Copy JSON to clipboard',
     copied: 'Copied to clipboard',
@@ -206,8 +209,7 @@ const en = {
     confirmButton: 'Yes, delete my account',
     submitting: 'Submitting deletion request…',
     errorTitle: 'Error',
-    errorMessage:
-      "The deletion request couldn't be submitted. Please try again.",
+    errorMessage: "The deletion request couldn't be submitted. Please try again.",
     alreadyPending: 'A deletion request is already active.',
     pending: {
       title: 'Deletion pending',
@@ -226,12 +228,9 @@ const en = {
       revokeConfirmButton: 'Yes, revoke',
       revokeSubmitting: 'Revoking…',
       revokeSuccessTitle: 'Revoked',
-      revokeSuccessBody:
-        'Your deletion request has been revoked. Please log in again.',
-      revokeErrorInvalidToken:
-        'Recovery code is invalid. Please check your input.',
-      revokeErrorExpired:
-        'The 30-day window has expired. Revocation is no longer possible.',
+      revokeSuccessBody: 'Your deletion request has been revoked. Please log in again.',
+      revokeErrorInvalidToken: 'Recovery code is invalid. Please check your input.',
+      revokeErrorExpired: 'The 30-day window has expired. Revocation is no longer possible.',
       revokeErrorGeneric: "Revocation couldn't be completed. Please try again.",
       logoutButton: 'Log out',
     },

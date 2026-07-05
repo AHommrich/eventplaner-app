@@ -36,10 +36,8 @@ import apiDefault, {
 const axiosInstance = require('axios').default.__instance;
 const requestInterceptor: (cfg: any) => Promise<any> =
   axiosInstance.interceptors.request.use.mock.calls[0][0];
-const responseOnSuccess: (r: any) => any =
-  axiosInstance.interceptors.response.use.mock.calls[0][0];
-const responseOnError: (err: any) => any =
-  axiosInstance.interceptors.response.use.mock.calls[0][1];
+const responseOnSuccess: (r: any) => any = axiosInstance.interceptors.response.use.mock.calls[0][0];
+const responseOnError: (err: any) => any = axiosInstance.interceptors.response.use.mock.calls[0][1];
 
 describe('lib/api — module wiring', () => {
   it('exports the created axios instance as default', () => {

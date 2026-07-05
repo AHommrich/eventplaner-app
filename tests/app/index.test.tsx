@@ -63,7 +63,7 @@ function renderScreen() {
       <EventThemeProvider>
         <WelcomeScreen />
       </EventThemeProvider>
-    </LanguageProvider>,
+    </LanguageProvider>
   );
 }
 
