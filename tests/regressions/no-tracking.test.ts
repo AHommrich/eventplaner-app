@@ -1,14 +1,18 @@
 /**
  * Data-minimisation regression test — proves "no third-party tracking".
  *
- * Two assertions:
+ * Three assertions:
  *   1. No known tracking package name appears in `package.json` under
  *      `dependencies` or `devDependencies`.
  *   2. No source file under `app/`, `lib/`, `components/`, `constants/`
  *      imports a tracking module.
+ *   3. No source file references a public CDN host at runtime — the app
+ *      must fetch its assets from either the JS bundle or the backend at
+ *      `hommrich.app`, never from jsDelivr, unpkg, Google Fonts, etc.
  *
  * When a new tracking name enters the ecosystem, extend `TRACKING_PATTERNS`;
- * the test will fail if any current dep or import matches.
+ * the test will fail if any current dep or import matches. Same for CDN
+ * hosts via `CDN_HOSTS`.
  */
 import * as fs from 'fs';
 import * as path from 'path';
@@ -31,6 +35,19 @@ const TRACKING_PATTERNS: string[] = [
   'braze',
   'analytics',
   'tracker',
+];
+
+/**
+ * Hostnames of public CDNs that must never appear in the source tree. The
+ * `docs/` folder is allowed to mention them (context / history), but no
+ * runtime source file may embed them.
+ */
+const CDN_HOSTS: string[] = [
+  'cdn.jsdelivr.net',
+  'unpkg.com',
+  'cdnjs.cloudflare.com',
+  'fonts.googleapis.com',
+  'fonts.gstatic.com',
 ];
 
 function walkSource(dir: string, accum: string[] = []): string[] {
@@ -79,5 +96,26 @@ describe('regressions/no-tracking', () => {
       }
     }
     expect(violations).toEqual([]);
+  });
+
+  it('no source file references a public CDN host', () => {
+    // We scan the same roots the app actually bundles — no `docs/`, no
+    // `scripts/`, no `tests/`. Vendored third-party code lives under
+    // `lib/vendor/` and is scanned too: we WANT to catch a CDN reference
+    // that snuck in via a vendored library.
+    const roots = ['app', 'lib', 'components', 'constants'];
+    const offenders: string[] = [];
+    for (const root of roots) {
+      const files = walkSource(path.join(REPO_ROOT, root));
+      for (const file of files) {
+        const content = fs.readFileSync(file, 'utf-8');
+        for (const host of CDN_HOSTS) {
+          if (content.includes(host)) {
+            offenders.push(`${path.relative(REPO_ROOT, file)} references ${host}`);
+          }
+        }
+      }
+    }
+    expect(offenders).toEqual([]);
   });
 });

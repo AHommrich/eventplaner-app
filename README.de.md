@@ -5,7 +5,7 @@
 [![lint](https://github.com/AHommrich/eventplaner-app/actions/workflows/lint.yml/badge.svg?branch=main)](https://github.com/AHommrich/eventplaner-app/actions/workflows/lint.yml)
 [![typecheck](https://github.com/AHommrich/eventplaner-app/actions/workflows/typecheck.yml/badge.svg?branch=main)](https://github.com/AHommrich/eventplaner-app/actions/workflows/typecheck.yml)
 [![test](https://github.com/AHommrich/eventplaner-app/actions/workflows/test.yml/badge.svg?branch=main)](https://github.com/AHommrich/eventplaner-app/actions/workflows/test.yml)
-![license](https://img.shields.io/badge/license-MIT-blue)
+[![License](https://img.shields.io/badge/License-All%20Rights%20Reserved-red.svg)](LICENSE)
 
 Eine Companion-App für Hochzeitsgäste. Gäste bekommen eine Einladungskarte
 mit QR-Code, scannen einmal und landen in einem kompakten Event-Hub — RSVP,
@@ -18,7 +18,7 @@ Die App ist der Client zu einem Laravel-12-Backend, das derselbe Autor in
 einem separaten Repository pflegt. Die Hochzeit ist real, das Paar sind
 André & Tabea Hommrich, und der Code wird nach dem in
 [`docs/REFACTOR_PLAN.md`](docs/REFACTOR_PLAN.md) dokumentierten Phasen-
-Refactor unter MIT veröffentlicht.
+Refactor öffentlich einsehbar gemacht — zu Portfolio- und Referenzzwecken.
 
 ---
 
@@ -252,6 +252,8 @@ keine Checkbox — sie ist Teil des Designs.
 
 ## 9. Lizenz
 
-MIT — siehe [`LICENSE`](LICENSE). Die Hochzeitsfotos und alle
+Alle Rechte vorbehalten. Siehe [`LICENSE`](LICENSE). Öffentlich einsehbar
+zu Portfolio-Zwecken; keine Nutzung, kein Fork und keine Weiterverbreitung
+ohne schriftliche Genehmigung. Die Hochzeitsfotos und alle
 personenbezogenen Daten, die durch die laufende App fließen, sind
 selbstverständlich nicht von der Code-Lizenz abgedeckt.

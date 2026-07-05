@@ -219,7 +219,7 @@ At the end of each phase the agent produces:
 - [ ] Phase 9 — Component + screen behaviour tests
 - [x] Phase 10 — Documentation (README EN + DE, ARCHITECTURE, SECURITY, PR template)
 - [x] Phase 11 — CI (GitHub Actions + Dependabot + badges)
-- [ ] Phase 12 — Final verification on a fresh clone
+- [x] Phase 12 — Final verification on a fresh clone
 
 ---
 
