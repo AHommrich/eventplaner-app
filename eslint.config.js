@@ -11,17 +11,18 @@ module.exports = [
     rules: {
       // Existing hooks may not satisfy exhaustive-deps.
       'react-hooks/exhaustive-deps': 'warn',
-      // declined.tsx calls useSafeAreaInsets after an early return — a real
-      // rules-of-hooks violation that must be fixed in a dedicated commit,
-      // not silently reformatted here.
-      'react-hooks/rules-of-hooks': 'warn',
       // React 19 introduced an aggressive set-state-in-effect check that the
       // existing bootstrap effects trip. Rule stays off until we have a
       // dedicated refactor phase to address it.
       'react-hooks/set-state-in-effect': 'off',
-      // Same for the react-19 refs-during-render check — app/_layout.tsx
-      // trips it inside the font-loading setup; fix belongs to a later phase.
-      'react-hooks/refs': 'off',
+      // The two rules that were downgraded during Phase 0 have been fixed:
+      //   - `react-hooks/rules-of-hooks`: declined.tsx now reads
+      //      useSafeAreaInsets() ABOVE the early `if (loading) return …`.
+      //   - `react-hooks/refs`: _layout.tsx now stores the splash
+      //      `Animated.Value` in `useState(() => new Animated.Value(1))[0]`,
+      //      not `useRef(new Animated.Value(1)).current`.
+      // Both rules run at their default `error` level now — future
+      // introductions of either pattern will fail lint in CI.
     },
   },
   {

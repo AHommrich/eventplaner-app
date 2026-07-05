@@ -48,6 +48,10 @@ export default function DeclinedScreen() {
   const router = useRouter();
   const { t, language } = useLanguage();
   const { colors } = useEventTheme();
+  // Read insets up here — every hook must run on every render to satisfy
+  // React's rules-of-hooks. The early `if (loading) return …` further down
+  // used to sit above this call and produced a "conditional hook" warning.
+  const insets = useSafeAreaInsets();
 
   const [status, setStatus] = useState<RsvpStatus>(null);
   const [deadline, setDeadline] = useState<string | null>(null);
@@ -144,7 +148,6 @@ export default function DeclinedScreen() {
     );
   }
 
-  const insets = useSafeAreaInsets();
   const isFinal = status === 'declined';
   const isPending = status === 'declined_pending';
   const isRevocationRequested = status === 'revocation_requested';

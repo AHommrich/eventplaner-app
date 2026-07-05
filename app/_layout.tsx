@@ -24,7 +24,7 @@
  * Adding a font here MUST be matched by an entry in `constants/fonts.ts` or
  * `ThemedText` will silently fall back to system font.
  */
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Animated, Image, StyleSheet, Text, View } from 'react-native';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
@@ -76,7 +76,11 @@ const SPLASH_COLORS = ['#FF6B8A', '#FF8C5A', '#FFD166', '#72D4C8'] as const;
 
 export default function RootLayout() {
   const [splashVisible, setSplashVisible] = useState(true);
-  const fadeAnim = useRef(new Animated.Value(1)).current;
+  // Lazy-initialised via `useState` so the `Animated.Value` is created ONCE
+  // and never re-instantiated on re-render. `useRef(new Animated.Value(1))`
+  // would still work but reads `.current` during render — React 19 flags
+  // that as a rules-of-hooks refs violation, so we take the state path.
+  const [fadeAnim] = useState(() => new Animated.Value(1));
   const [fontsLoaded] = useFonts({
     PlayfairDisplay_400Regular,
     PlayfairDisplay_700Bold,
