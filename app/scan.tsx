@@ -2,14 +2,15 @@
  * Live QR-scanner screen — the primary login path.
  *
  * Flow:
- *   1. Ask for camera permission on mount (no early-return: the permission
+ *   1. Ask for explicit `camera_scan` consent before the OS camera prompt.
+ *   2. Ask for camera permission on mount (no early-return: the permission
  *      dialog is a normal iOS/Android alert, not a route).
- *   2. `CameraView` streams the back camera, `onBarcodeScanned` fires exactly
+ *   3. `CameraView` streams the back camera, `onBarcodeScanned` fires exactly
  *      once per unique QR (guarded by the `scanned` flag).
- *   3. Extract the trailing token from the URL, call `/api/auth/qr/{token}`.
- *   4. Solo → save session, route to `/`. Family → open picker with the
+ *   4. Extract the trailing token from the URL, call `/api/auth/qr/{token}`.
+ *   5. Solo → save session, route to `/`. Family → open picker with the
  *      returned guest list; the guest taps their name to trigger step 5.
- *   5. `/api/auth/qr/{token}/select` returns a per-guest bearer token; 409
+ *   6. `/api/auth/qr/{token}/select` returns a per-guest bearer token; 409
  *      means someone already claimed this slot (grey out the row).
  *
  * The DEV token input at the bottom is guarded by `__DEV__` and lets the
@@ -35,6 +36,7 @@ import { saveSession, GuestSession } from '../lib/auth';
 import { theme } from '../constants/theme';
 import { useLanguage, Language } from '../lib/LanguageContext';
 import { useEventTheme } from '../lib/EventThemeContext';
+import { useConsentGate } from '../components/ConsentGate';
 
 // --- Types (kept local to this file since only scan + welcome consume them) ---
 
@@ -56,7 +58,9 @@ export default function ScanScreen() {
   const router = useRouter();
   const { t, language, setLanguage, needsLanguagePick } = useLanguage();
   const { loadTheme } = useEventTheme();
+  const { ensureConsent } = useConsentGate();
   const [permission, requestPermission] = useCameraPermissions();
+  const [cameraConsentResolved, setCameraConsentResolved] = useState(false);
   const [scanned, setScanned] = useState(false);
   const [loading, setLoading] = useState(false);
   const [guests, setGuests] = useState<ApiGuest[]>([]);
@@ -68,11 +72,24 @@ export default function ScanScreen() {
   const [showDevInput, setShowDevInput] = useState(false);
 
   useEffect(() => {
-    if (!permission?.granted) requestPermission();
-    // Bootstrap permission ask — `requestPermission` shows the OS dialog
-    // once. Re-firing on subsequent renders (which happens if we list
-    // `permission?.granted` as a dep) would loop the request state
-    // machine when the guest denies and the render pipeline updates.
+    let active = true;
+    async function bootstrapCameraAccess() {
+      if (!(await ensureConsent('camera_scan'))) {
+        if (active) router.back();
+        return;
+      }
+      if (!active) return;
+      setCameraConsentResolved(true);
+      if (!permission?.granted) requestPermission();
+    }
+    bootstrapCameraAccess();
+    return () => {
+      active = false;
+    };
+    // Bootstrap consent + permission ask once. `ensureConsent` intentionally
+    // waits for the app-level consent modal before `requestPermission` can
+    // show the OS dialog. Re-running on permission state changes would loop
+    // the request state machine after denial.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -184,7 +201,7 @@ export default function ScanScreen() {
     }
   }
 
-  if (!permission) return <View style={styles.container} />;
+  if (!cameraConsentResolved || !permission) return <View style={styles.container} />;
 
   if (!permission.granted) {
     return (

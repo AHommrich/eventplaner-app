@@ -1,5 +1,5 @@
 /**
- * Privacy notice fetcher with 24-hour on-device cache.
+ * Legal notice fetchers with 24-hour on-device cache.
  *
  * The privacy notice is served by the Laravel backend so wording changes
  * roll out without an App Store update. The client caches the last
@@ -14,7 +14,8 @@
 import api from './api';
 import * as SecureStore from 'expo-secure-store';
 
-const CACHE_KEY_PREFIX = 'legal_privacy_cache_';
+const PRIVACY_CACHE_KEY_PREFIX = 'legal_privacy_cache_';
+const IMPRINT_CACHE_KEY_PREFIX = 'legal_imprint_cache_';
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000;
 
 /**
@@ -58,7 +59,7 @@ export async function fetchPrivacyNotice(locale: string): Promise<PrivacyNotice>
       params: { locale },
     });
     await SecureStore.setItemAsync(
-      CACHE_KEY_PREFIX + locale,
+      PRIVACY_CACHE_KEY_PREFIX + locale,
       JSON.stringify({ fetched_at: Date.now(), notice: res.data })
     );
     return res.data;
@@ -82,7 +83,47 @@ export async function readCachedPrivacyNotice(
   locale: string,
   allowStale: boolean = false
 ): Promise<PrivacyNotice | null> {
-  const raw = await SecureStore.getItemAsync(CACHE_KEY_PREFIX + locale);
+  return readCachedLegalNotice(PRIVACY_CACHE_KEY_PREFIX, locale, allowStale);
+}
+
+/** Full backend response for `GET /api/legal/imprint?locale=<de|en>`. */
+export type ImprintNotice = PrivacyNotice;
+
+/**
+ * Fetch the imprint for a locale, refreshing the cache on success.
+ * Falls back to stale cache on network failure, mirroring privacy behaviour.
+ */
+export async function fetchImprint(locale: string): Promise<ImprintNotice> {
+  try {
+    const res = await api.get<ImprintNotice>('/api/legal/imprint', {
+      params: { locale },
+    });
+    await SecureStore.setItemAsync(
+      IMPRINT_CACHE_KEY_PREFIX + locale,
+      JSON.stringify({ fetched_at: Date.now(), notice: res.data })
+    );
+    return res.data;
+  } catch (e) {
+    const stale = await readCachedImprint(locale, true);
+    if (stale) return stale;
+    throw e;
+  }
+}
+
+/** Read the cached imprint without a network round-trip. */
+export async function readCachedImprint(
+  locale: string,
+  allowStale: boolean = false
+): Promise<ImprintNotice | null> {
+  return readCachedLegalNotice(IMPRINT_CACHE_KEY_PREFIX, locale, allowStale);
+}
+
+async function readCachedLegalNotice(
+  prefix: string,
+  locale: string,
+  allowStale: boolean
+): Promise<PrivacyNotice | null> {
+  const raw = await SecureStore.getItemAsync(prefix + locale);
   if (!raw) return null;
   try {
     const entry = JSON.parse(raw) as CacheEntry;

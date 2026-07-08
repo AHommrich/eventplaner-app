@@ -191,9 +191,27 @@ export default function SettingsScreen() {
           </ThemedText>
         </TouchableOpacity>
 
-        {/* Privacy notice — additive row appended at the bottom of the card
-            per Phase 5 of the refactor plan. Every existing row above stays
-            byte-identical to before. */}
+        {/* Imprint + privacy notice — German-market legal surfaces. Imprint
+            stays above privacy because that is the conventional order in DE
+            app/site footers. */}
+        <TouchableOpacity
+          onPress={() => router.push('/legal/imprint')}
+          style={{
+            paddingHorizontal: theme.spacing.md,
+            paddingVertical: theme.spacing.md,
+            borderTopWidth: 1,
+            borderTopColor: colors.border + '30',
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+          }}
+        >
+          <ThemedText style={{ color: colors.cardText, fontSize: 15 }}>
+            {t('settings.imprint')}
+          </ThemedText>
+          <Ionicons name="chevron-forward" size={16} color={colors.cardText + 'aa'} />
+        </TouchableOpacity>
+
         <TouchableOpacity
           onPress={() => router.push('/legal/privacy')}
           style={{
@@ -212,8 +230,7 @@ export default function SettingsScreen() {
           <Ionicons name="chevron-forward" size={16} color={colors.cardText + 'aa'} />
         </TouchableOpacity>
 
-        {/* Consent management — additive row appended per Phase 6 of the
-            refactor plan. Sits directly under the privacy row so the two
+        {/* Consent management — sits directly under the privacy row so the
             DSGVO-related entries stay grouped. */}
         <TouchableOpacity
           onPress={() => router.push('/consents')}

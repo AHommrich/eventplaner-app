@@ -5,7 +5,13 @@
  * fresh → cache-hit-fresh → cache-hit-stale → cache-miss.
  */
 import * as SecureStore from 'expo-secure-store';
-import { fetchPrivacyNotice, readCachedPrivacyNotice, PrivacyNotice } from '../../lib/legal';
+import {
+  fetchImprint,
+  fetchPrivacyNotice,
+  readCachedImprint,
+  readCachedPrivacyNotice,
+  PrivacyNotice,
+} from '../../lib/legal';
 
 jest.mock('../../lib/api', () => {
   const mock = {
@@ -32,6 +38,8 @@ describe('lib/legal', () => {
     api.get.mockReset();
     await SecureStore.deleteItemAsync('legal_privacy_cache_de');
     await SecureStore.deleteItemAsync('legal_privacy_cache_en');
+    await SecureStore.deleteItemAsync('legal_imprint_cache_de');
+    await SecureStore.deleteItemAsync('legal_imprint_cache_en');
   });
 
   it('fetches from the backend and caches the response', async () => {
@@ -85,6 +93,40 @@ describe('lib/legal', () => {
     // No en cache exists yet — a stale check returns null.
     const enCache = await readCachedPrivacyNotice('en');
     expect(enCache).toBeNull();
+  });
+});
+
+describe('lib/legal — imprint', () => {
+  beforeEach(async () => {
+    api.get.mockReset();
+    await SecureStore.deleteItemAsync('legal_imprint_cache_de');
+    await SecureStore.deleteItemAsync('legal_imprint_cache_en');
+  });
+
+  it('fetches the imprint from the backend and caches it', async () => {
+    api.get.mockResolvedValueOnce({ data: notice });
+    const result = await fetchImprint('de');
+    expect(api.get).toHaveBeenCalledWith('/api/legal/imprint', { params: { locale: 'de' } });
+    expect(result).toEqual(notice);
+
+    const cached = await SecureStore.getItemAsync('legal_imprint_cache_de');
+    expect(cached).toBeTruthy();
+    expect(JSON.parse(cached!).notice).toEqual(notice);
+  });
+
+  it('falls back to a stale imprint cache when the network call fails', async () => {
+    await SecureStore.setItemAsync(
+      'legal_imprint_cache_de',
+      JSON.stringify({ fetched_at: Date.now() - 48 * 60 * 60 * 1000, notice })
+    );
+    api.get.mockRejectedValueOnce(new Error('offline'));
+
+    const result = await fetchImprint('de');
+    expect(result).toEqual(notice);
+  });
+
+  it('readCachedImprint returns null when no cache exists', async () => {
+    await expect(readCachedImprint('de')).resolves.toBeNull();
   });
 });
 

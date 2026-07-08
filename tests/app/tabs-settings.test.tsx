@@ -2,8 +2,8 @@
  * `app/(tabs)/settings.tsx` — preferences, DSGVO surfaces, logout.
  *
  * Covers:
- *   - Every DSGVO row (Datenschutz, Einwilligungen, Datenexport, Löschung)
- *     renders and routes to the correct path when tapped.
+ *   - Every legal / DSGVO row (Impressum, Datenschutz, Einwilligungen,
+ *     Datenexport, Löschung) renders and routes to the correct path.
  *   - Logout wipes the session and returns to `/`.
  *   - Language switch updates the persisted `app_language` key.
  */
@@ -87,10 +87,18 @@ describe('app/(tabs)/settings', () => {
 
   it('renders every DSGVO row appended to the settings card', async () => {
     const { findByText } = renderScreen();
+    await findByText('Impressum');
     await findByText('Datenschutzerklärung');
     await findByText('Einwilligungen verwalten');
     await findByText('Meine Daten exportieren');
     await findByText('Konto löschen');
+  });
+
+  it('tapping the imprint row routes to /legal/imprint', async () => {
+    const { findByText } = renderScreen();
+    const row = await findByText('Impressum');
+    fireEvent.press(row);
+    expect(router.push).toHaveBeenCalledWith('/legal/imprint');
   });
 
   it('tapping the privacy row routes to /legal/privacy', async () => {

@@ -50,15 +50,14 @@ Node 20 required — `nvm use` im Projektroot ausführen.
 | ---------- | ------------------------------------------------------------ |
 | Framework  | Laravel 12 + Sanctum                                         |
 | Staging    | `https://beta.hommrich.app` ← immer gegen Staging entwickeln |
-| Production | `https://hommrich.app`                                       |
+| Production | `https://eveplan.de`                                         |
 | Config     | `constants/env.ts` → `API_BASE`                              |
 
 Staging-Tokens funktionieren NICHT auf Production (separate Datenbanken).
 
 ### Test-Tokens (lokal — NICHT Staging)
 
-- Familie Caspari (4 Gäste): `zkcZnmgxwH4Kmy27pTxjgNkbGvPvNIte`
-- Solo-Gast: `GbuyIYNTncT9tflws9vFcezcuFUyQvOE`
+Siehe `CLAUDE.local.md` (nicht committet).
 
 ### Implementierte API-Endpoints
 
@@ -153,6 +152,7 @@ app/
   declined.tsx         Abgesagt-Screen (Rücknahme beantragen oder Logout)
   blocked.tsx          App-Zugang gesperrt (app_blocked)
   legal/
+    imprint.tsx        § 5 DDG — Impressum, 24h SecureStore-Cache
     privacy.tsx        DSGVO Art. 13 — Datenschutzerklärung, 24h SecureStore-Cache
   consents/
     index.tsx          DSGVO Art. 7 (3) — Einwilligungen verwalten + widerrufen
@@ -166,7 +166,7 @@ app/
     photos.tsx         Fotogalerie + Upload (ConsentGate photo_upload) + Auto-Refresh (30s)
     photo-game.tsx     Foto-Spiel: Aufgabe erhalten + Foto hochladen (ConsentGate photo_game, 4 States)
     drinks.tsx         Getränke-Log (Suche + Akkordeon) + Rangliste
-    settings.tsx       Logout + Sprachauswahl + DSGVO-Reihen (Privacy, Consents, Export, Erasure)
+    settings.tsx       Logout + Sprachauswahl + Legal/DSGVO-Reihen (Imprint, Privacy, Consents, Export, Erasure)
 
 lib/
   api.ts               Axios-Instanz, Bearer-Interceptor; behandelt app_blocked (→ /blocked) + drinks_blocked
@@ -180,7 +180,7 @@ lib/
   vendor/
     jsQRSource.ts      Vendored jsQR (Apache-2.0), regeneriert via scripts/vendor-jsqr.mjs
   useRefreshToast.ts   Hook: { refreshing, refreshed, onRefresh } — zentrales Pull-to-Refresh + Toast-Logik
-  legal.ts             fetchPrivacyNotice(locale) + 24h SecureStore-Cache (legal_privacy_cache_<locale>)
+  legal.ts             fetchPrivacyNotice/fetchImprint(locale) + 24h SecureStore-Cache (legal_*_cache_<locale>)
   consents.ts          ConsentKey (photo_upload | photo_game | camera_scan) + get/grant/revoke (SecureStore consent_<key>)
   erasure.ts           requestErasure / revokeErasure / getErasureState — SecureStore erasure_* Keys
 
@@ -195,7 +195,7 @@ locales/
 
 constants/
   theme.ts             ALLE statischen Design-Tokens (Farben, Spacing, Radius) — Single Source of Truth
-  env.ts               API_BASE — hier auf Production umstellen wenn go-live
+  env.ts               API_BASE — Staging-Default; Production kommt via `eas.json`
   fonts.ts             FontKey-Typ + FONT_MAP (10 Google Fonts, lokal gebündelt via @expo-google-fonts)
 
 docs/
@@ -345,17 +345,15 @@ if (loading && !guest) return <ActivityIndicator ... />;             // rsvp
 - `babel.config.js`: `jsxImportSource: 'nativewind'` — KEIN `nativewind/babel` Preset
 - `metro.config.js`: `withNativeWind(config, { input: './global.css' })`
 
-**ConsentGate** (DSGVO Art. 6/7) — jeder Verarbeitungs-Trigger wird gewrappt:
+**ConsentGate** (DSGVO Art. 6/7) — jeder Verarbeitungs-Trigger fragt vorab:
 
 ```tsx
-import { ConsentGate } from '../../components/ConsentGate';
-<ConsentGate purpose="photo_upload">
-  <TouchableOpacity onPress={handleUpload}>...</TouchableOpacity>
-</ConsentGate>;
+const { ensureConsent } = useConsentGate();
+if (!(await ensureConsent('photo_upload'))) return;
 ```
 
 - `ConsentKey` in `lib/consents.ts`: `photo_upload` | `photo_game` | `camera_scan`
-- Neue Purpose → Key ergänzen, Modal-Copy in `locales/de.ts`+`en.ts` unter `consents.<key>.*`
+- Neue Purpose → Key ergänzen, Locale-Shard in `ConsentGate.tsx` und `app/consents/index.tsx` ergänzen, Modal-Copy in `locales/de.ts`+`en.ts` unter `consents.<shard>.*`
 - Widerruf via `Settings → Einwilligungen verwalten` (Art. 7 (3))
 
 **Test-Konventionen:**

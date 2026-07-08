@@ -49,6 +49,7 @@ payload is a single ISO timestamp — the Art. 7 (1) burden-of-proof artefact.
 | ---------------------- | -------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
 | `consent_photo_upload` | Records that the guest agreed to have their uploaded photos shared in the wedding gallery.   | Until the guest revokes via _Settings → Einwilligungen verwalten_ (Art. 7 (3)). | **No** — consent survives logout by design so the next login does not re-prompt. |
 | `consent_photo_game`   | Records agreement to participate in the photo game (challenge photos are shared with hosts). | Until revocation.                                                               | **No** — same rationale as above.                                                |
+| `consent_camera_scan`  | Records agreement to use the camera for QR login. No image is stored.                        | Until revocation.                                                               | **No** — same rationale as above.                                                |
 
 Revocation deletes the key entirely rather than writing a `revoked_at` entry:
 keeping a per-guest consent timeline on-device would itself become a personal-
@@ -71,14 +72,17 @@ a revocation, the entries become stale on-device but harmless — the recovery
 token is server-rejected and the erasure-pending screen falls back to the
 "window has closed" branch.
 
-## Privacy-notice cache (set by `lib/legal.ts`)
+## Legal notice caches (set by `lib/legal.ts`)
 
-Keys use the prefix `legal_privacy_cache_` followed by the locale.
+Keys use the prefix `legal_privacy_cache_` or `legal_imprint_cache_` followed
+by the locale.
 
 | Key                      | Purpose                                                                                                                         | Retention                                                                                           | Cleared on logout?                                                        |
 | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------- |
 | `legal_privacy_cache_de` | Last-known German privacy notice (JSON: `{ fetched_at, notice }`). Served immediately on open; a background fetch refreshes it. | 24 h fresh window; kept indefinitely as stale-fallback so airplane-mode never shows a blank notice. | **No** — a stale copy is strictly better than no copy for a legal notice. |
 | `legal_privacy_cache_en` | Same, English notice.                                                                                                           | Same.                                                                                               | No                                                                        |
+| `legal_imprint_cache_de` | Last-known German imprint (JSON: `{ fetched_at, notice }`).                                                                     | Same.                                                                                               | No                                                                        |
+| `legal_imprint_cache_en` | Same, English imprint.                                                                                                          | Same.                                                                                               | No                                                                        |
 
 The cache is content addressable per locale so switching language does not
 serve the wrong-language notice.

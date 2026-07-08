@@ -6,6 +6,11 @@ const de = {
     unknownError: 'Unbekannter Fehler',
     refreshed: 'Aktualisiert',
   },
+  a11y: {
+    back: 'Zurück',
+    closePhoto: 'Foto schließen',
+    uploadPhoto: 'Foto hochladen',
+  },
   welcome: {
     title: 'Herzlich willkommen',
     subtitle: 'Nutze den QR-Code aus deiner Einladung, um dich einzuloggen.',
@@ -55,12 +60,21 @@ const de = {
     language: 'Sprache',
     german: 'Deutsch',
     english: 'Englisch',
+    imprint: 'Impressum',
     privacy: 'Datenschutzerklärung',
     consents: 'Einwilligungen verwalten',
     exportData: 'Meine Daten exportieren',
     deleteAccount: 'Konto löschen',
   },
   legal: {
+    imprint: {
+      title: 'Impressum',
+      updatedAt: 'Zuletzt aktualisiert: %{date}',
+      offlineTitle: 'Nicht verfügbar',
+      offlineMessage: 'Das Impressum konnte nicht geladen werden. Du kannst es im Browser lesen.',
+      openInBrowser: 'Im Browser öffnen',
+      retry: 'Erneut versuchen',
+    },
     privacy: {
       title: 'Datenschutzerklärung',
       updatedAt: 'Zuletzt aktualisiert: %{date}',
@@ -87,6 +101,10 @@ const de = {
     photoGame: {
       title: 'Foto-Aufgabe teilen',
       body: 'Beim Foto-Spiel bekommst du eine Aufgabe und lädst genau ein Foto hoch. Dein Bild wird zusammen mit deinem Namen im Spiel angezeigt und dient nur zur Auswertung durch das Brautpaar. Es wird bis 30 Tage nach der Veranstaltung gespeichert und danach automatisch gelöscht. Widerruf jederzeit möglich.',
+    },
+    cameraScan: {
+      title: 'Kamerazugriff für den QR-Scan',
+      body: 'Wir brauchen deine Kamera einmal, um deinen Einladungs-QR zu lesen. Es wird kein Bild gespeichert, nichts an Dritte weitergegeben und nichts im Hintergrund aufgezeichnet.',
     },
   },
   tabs: {

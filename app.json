@@ -15,12 +15,15 @@
     "ios": {
       "supportsTablet": true,
       "infoPlist": {
-        "LSApplicationQueriesSchemes": ["comgooglemaps", "comgooglemaps"],
+        "LSApplicationQueriesSchemes": ["comgooglemaps"],
+        "NSCameraUsageDescription": "eveplan liest deinen Einladungs-QR-Code und erlaubt dir, Fotos für das Hochzeitsalbum aufzunehmen.",
+        "NSPhotoLibraryUsageDescription": "eveplan lädt Fotos aus deiner Bibliothek in das Hochzeitsalbum hoch, wenn du das möchtest.",
         "ITSAppUsesNonExemptEncryption": false
       },
       "bundleIdentifier": "com.ahommrichsorganization.eveplan"
     },
     "android": {
+      "package": "com.ahommrichsorganization.eveplan",
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/android-icon-foreground.png",

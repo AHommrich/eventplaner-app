@@ -814,6 +814,26 @@ Expo module deeper or moving the code around:
       the real reason for the stub was that the Jest render tree does not
       mount a `SafeAreaProvider`, not the hook-order bug. Confirmed by
       removing the stub and observing the hook's own "no provider" warning.
+- [ ] **Public HTML privacy policy on `eveplan.de/datenschutz`.**
+      The in-app endpoint `/api/legal/privacy` returns JSON for the native
+      renderer. App Store Connect and Play Console also need a browser-openable
+      privacy URL. Track implementation in the backend repo; app-side
+      readiness is documented in `docs/STORE_RELEASE.md`.
+- [ ] **Monitoring / error reporting after store release.**
+      Compare Sentry SaaS EU-region vs. self-hosted Sentry, decide whether the
+      privacy/ops trade-off is worth it, then integrate in a separate cycle.
+      Owner: Andre.
+- [ ] **Split `app/(tabs)/drinks.tsx`.**
+      Extract leaderboard, accordion item and search/filter UI once the store
+      release is stable. The file is large enough that future changes now have
+      avoidable review risk.
+- [ ] **Maestro in CI or explicitly local-only.**
+      The E2E suite exists, but CI does not run it. Either wire Maestro into CI
+      or document the suite as a local release-smoke gate only.
+- [ ] **Raise `app/` coverage above the calibrated floor.**
+      Do this only after building a meaningful WebView / image-picker /
+      multipart-upload harness; do not add shallow mocks just to raise the
+      percentage.
 
 ---
 
