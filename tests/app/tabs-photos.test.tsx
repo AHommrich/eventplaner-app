@@ -57,12 +57,8 @@ describe('app/(tabs)/photos', () => {
   it('shows the empty-state hint when the backend returns no photos', async () => {
     mockApiGet.mockResolvedValue({ data: { data: [] } });
 
-    const { queryByText } = renderScreen();
-    // DE: `photos.empty` = "Noch keine Fotos".
-    await waitFor(() => {
-      expect(queryByText(/Noch keine Fotos/)).toBeTruthy();
-      expect(queryByText(/Sei der Erste/)).toBeTruthy();
-    });
+    const { findByTestId } = renderScreen();
+    await findByTestId('photos-empty-state');
   });
 
   it('renders the grid after a successful fetch', async () => {

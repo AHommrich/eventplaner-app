@@ -336,7 +336,7 @@ export default function PhotosScreen() {
         }
         ItemSeparatorComponent={() => <View style={{ height: GAP }} />}
         ListEmptyComponent={
-          <View className="flex-1 items-center justify-center mt-32">
+          <View testID="photos-empty-state" className="flex-1 items-center justify-center mt-32">
             <Ionicons name="images-outline" size={48} color={theme.colors.muted} />
             <ThemedText className="text-muted mt-3 text-base">{t('photos.empty')}</ThemedText>
             <ThemedText className="text-muted text-sm">{t('photos.beFirst')}</ThemedText>
