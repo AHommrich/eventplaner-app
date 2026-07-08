@@ -12,14 +12,15 @@
  * Phase 12 smoke, not in a screen test.
  */
 import React from 'react';
-import { Alert } from 'react-native';
+import { Alert, Dimensions } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
 import { act, fireEvent, render, waitFor } from '@testing-library/react-native';
 
 const mockApiGet = jest.fn();
+const mockApiPost = jest.fn();
 jest.mock('../../lib/api', () => ({
   __esModule: true,
-  default: { get: (...a: any[]) => mockApiGet(...a), post: jest.fn() },
+  default: { get: (...a: any[]) => mockApiGet(...a), post: (...a: any[]) => mockApiPost(...a) },
 }));
 
 // Same rationale as the other tab tests — safe-area hook stubbed to avoid the
@@ -49,6 +50,7 @@ function renderScreen() {
 describe('app/(tabs)/photos', () => {
   beforeEach(async () => {
     mockApiGet.mockReset();
+    mockApiPost.mockReset();
     await SecureStore.deleteItemAsync('consent_photo_upload');
   });
 
@@ -64,8 +66,20 @@ describe('app/(tabs)/photos', () => {
     mockApiGet.mockResolvedValue({
       data: {
         data: [
-          { id: 1, url: 'https://x/1.jpg', guest_name: 'Ada', created_at: '2026-06-01T00:00:00Z' },
-          { id: 2, url: 'https://x/2.jpg', guest_name: 'Bea', created_at: '2026-06-01T00:00:00Z' },
+          {
+            id: 1,
+            url: 'https://x/1.jpg',
+            guest_id: 11,
+            guest_name: 'Ada',
+            created_at: '2026-06-01T00:00:00Z',
+          },
+          {
+            id: 2,
+            url: 'https://x/2.jpg',
+            guest_id: 12,
+            guest_name: 'Bea',
+            created_at: '2026-06-01T00:00:00Z',
+          },
         ],
       },
     });
@@ -121,6 +135,216 @@ describe('app/(tabs)/photos', () => {
     await findByText('Ich stimme zu');
     // Upload alert has NOT fired yet — the modal blocks it.
     expect(alertSpy).not.toHaveBeenCalled();
+    alertSpy.mockRestore();
+  });
+
+  it('report modal opens with all reason options', async () => {
+    mockApiGet.mockResolvedValue({
+      data: {
+        data: [
+          {
+            id: 1,
+            url: 'https://x/1.jpg',
+            guest_id: 11,
+            guest_name: 'Ada',
+            created_at: '2026-06-01T00:00:00Z',
+          },
+        ],
+      },
+    });
+
+    const { findByTestId, findByText } = renderScreen();
+    fireEvent.press(await findByTestId('photo-1'));
+    fireEvent.press(await findByTestId('report-photo-button'));
+
+    await findByText('Unangemessener Inhalt');
+    await findByText('Persönlichkeitsrechte');
+    await findByText('Sonstiges');
+  });
+
+  it('closing the detail view also clears an open report sheet', async () => {
+    mockApiGet.mockResolvedValue({
+      data: {
+        data: [
+          {
+            id: 1,
+            url: 'https://x/1.jpg',
+            guest_id: 11,
+            guest_name: 'Ada',
+            created_at: '2026-06-01T00:00:00Z',
+          },
+        ],
+      },
+    });
+
+    const { findByLabelText, findByTestId, findByText, queryByText } = renderScreen();
+    fireEvent.press(await findByTestId('photo-1'));
+    fireEvent.press(await findByTestId('report-photo-button'));
+    await findByText('Foto melden');
+
+    fireEvent.press(await findByLabelText('Foto schließen'));
+
+    await waitFor(() => expect(queryByText('Foto melden')).toBeNull());
+    fireEvent.press(await findByTestId('photo-1'));
+    await findByText('Ada');
+  });
+
+  it('swiping the detail pager updates the selected photo', async () => {
+    mockApiGet.mockResolvedValue({
+      data: {
+        data: [
+          {
+            id: 1,
+            url: 'https://x/1.jpg',
+            guest_id: 11,
+            guest_name: 'Ada',
+            created_at: '2026-06-01T00:00:00Z',
+          },
+          {
+            id: 2,
+            url: 'https://x/2.jpg',
+            guest_id: 12,
+            guest_name: 'Bea',
+            created_at: '2026-06-01T00:00:00Z',
+          },
+        ],
+      },
+    });
+
+    const { findByTestId, findByText } = renderScreen();
+    fireEvent.press(await findByTestId('photo-1'));
+    const pager = await findByTestId('photo-detail-pager');
+
+    fireEvent(pager, 'momentumScrollEnd', {
+      nativeEvent: { contentOffset: { x: Dimensions.get('window').width, y: 0 } },
+    });
+
+    await findByText('Bea');
+  });
+
+  it('submitting an other-report posts the expected body and removes the photo locally', async () => {
+    mockApiGet.mockResolvedValue({
+      data: {
+        data: [
+          {
+            id: 1,
+            url: 'https://x/1.jpg',
+            guest_id: 11,
+            guest_name: 'Ada',
+            created_at: '2026-06-01T00:00:00Z',
+          },
+        ],
+      },
+    });
+    mockApiPost.mockResolvedValue({ data: { id: 9, status: 'open', auto_hidden: true } });
+    const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+
+    const { findByTestId, findByText, queryByTestId } = renderScreen();
+    fireEvent.press(await findByTestId('photo-1'));
+    fireEvent.press(await findByTestId('report-photo-button'));
+    fireEvent.press(await findByText('Sonstiges'));
+    fireEvent.press(await findByText('Absenden'));
+
+    await waitFor(() =>
+      expect(mockApiPost).toHaveBeenCalledWith('/api/photos/1/report', { reason: 'other' })
+    );
+    await waitFor(() => expect(queryByTestId('photo-1')).toBeNull());
+    expect(alertSpy).toHaveBeenCalledWith('Foto gemeldet — es ist für Dich ausgeblendet.');
+    alertSpy.mockRestore();
+  });
+
+  it('429 report response shows the rate-limit message', async () => {
+    mockApiGet.mockResolvedValue({
+      data: {
+        data: [
+          {
+            id: 1,
+            url: 'https://x/1.jpg',
+            guest_id: 11,
+            guest_name: 'Ada',
+            created_at: '2026-06-01T00:00:00Z',
+          },
+        ],
+      },
+    });
+    mockApiPost.mockRejectedValue({ response: { status: 429 } });
+    const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+
+    const { findByTestId, findByText } = renderScreen();
+    fireEvent.press(await findByTestId('photo-1'));
+    fireEvent.press(await findByTestId('report-photo-button'));
+    fireEvent.press(await findByText('Absenden'));
+
+    await waitFor(() => expect(alertSpy).toHaveBeenCalledWith('Zu viele Meldungen. Bitte warte eine Weile.'));
+    alertSpy.mockRestore();
+  });
+
+  it('hide-uploader button is hidden for owner uploads', async () => {
+    mockApiGet.mockResolvedValue({
+      data: {
+        data: [
+          {
+            id: 1,
+            url: 'https://x/1.jpg',
+            guest_id: null,
+            guest_name: 'Admin',
+            created_at: '2026-06-01T00:00:00Z',
+          },
+        ],
+      },
+    });
+
+    const { findByTestId, queryByText } = renderScreen();
+    fireEvent.press(await findByTestId('photo-1'));
+    expect(queryByText('Uploader ausblenden')).toBeNull();
+  });
+
+  it('hide-uploader confirm posts and removes every photo from that guest', async () => {
+    mockApiGet.mockResolvedValue({
+      data: {
+        data: [
+          {
+            id: 1,
+            url: 'https://x/1.jpg',
+            guest_id: 11,
+            guest_name: 'Ada',
+            created_at: '2026-06-01T00:00:00Z',
+          },
+          {
+            id: 2,
+            url: 'https://x/2.jpg',
+            guest_id: 11,
+            guest_name: 'Ada',
+            created_at: '2026-06-01T00:00:00Z',
+          },
+          {
+            id: 3,
+            url: 'https://x/3.jpg',
+            guest_id: 12,
+            guest_name: 'Bea',
+            created_at: '2026-06-01T00:00:00Z',
+          },
+        ],
+      },
+    });
+    mockApiPost.mockResolvedValue({ data: { hidden_guest_id: 11 } });
+    const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+
+    const { findByTestId, queryByTestId } = renderScreen();
+    fireEvent.press(await findByTestId('photo-1'));
+    fireEvent.press(await findByTestId('hide-uploader-button'));
+
+    const [, , buttons] = alertSpy.mock.calls[0] as any;
+    await act(async () => {
+      await buttons[1].onPress();
+    });
+
+    await waitFor(() => expect(mockApiPost).toHaveBeenCalledWith('/api/guests/11/hide-content'));
+    await waitFor(() => {
+      expect(queryByTestId('photo-1')).toBeNull();
+      expect(queryByTestId('photo-2')).toBeNull();
+      expect(queryByTestId('photo-3')).not.toBeNull();
+    });
     alertSpy.mockRestore();
   });
 });

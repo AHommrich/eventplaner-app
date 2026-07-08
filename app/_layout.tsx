@@ -108,8 +108,8 @@ export default function RootLayout() {
         <BlockedFeaturesProvider>
           <ConsentGateProvider>
             <Stack screenOptions={{ headerShown: false }}>
-              <Stack.Screen name="index" />
-              <Stack.Screen name="scan" />
+              <Stack.Screen name="index" options={{ gestureEnabled: false }} />
+              <Stack.Screen name="scan" options={{ gestureEnabled: false }} />
               <Stack.Screen name="rsvp" />
               <Stack.Screen name="declined" />
               <Stack.Screen name="blocked" />
@@ -118,6 +118,7 @@ export default function RootLayout() {
               <Stack.Screen name="legal/privacy" />
               <Stack.Screen name="consents/index" />
               <Stack.Screen name="data-export" />
+              <Stack.Screen name="hidden-guests" />
               <Stack.Screen name="erasure-pending" />
             </Stack>
             {splashVisible && (

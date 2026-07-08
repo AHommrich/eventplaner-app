@@ -14,6 +14,10 @@ import {
   fetchPhotoGameStatus,
   assignPhotoGameTask,
   submitPhotoGamePhoto,
+  reportPhoto,
+  hideGuestContent,
+  unhideGuestContent,
+  fetchHiddenGuests,
   exportMyData,
   requestErasure,
   revokeErasure,
@@ -217,5 +221,42 @@ describe('lib/guest — Art. 15 / Art. 17 GDPR endpoints', () => {
     await expect(revokeErasure('expired-token')).rejects.toMatchObject({
       response: { status: 410 },
     });
+  });
+});
+
+describe('lib/guest — UGC moderation endpoints', () => {
+  it('reportPhoto posts reason and optional message to the photo report endpoint', async () => {
+    api.post.mockResolvedValueOnce({ data: { id: 7, status: 'open', auto_hidden: true } });
+    const result = await reportPhoto(42, { reason: 'other', message: 'Bitte prüfen' });
+
+    expect(api.post).toHaveBeenCalledWith('/api/photos/42/report', {
+      reason: 'other',
+      message: 'Bitte prüfen',
+    });
+    expect(result.auto_hidden).toBe(true);
+  });
+
+  it('hideGuestContent posts to the hide-content endpoint', async () => {
+    api.post.mockResolvedValueOnce({ data: { hidden_guest_id: 11 } });
+    const result = await hideGuestContent(11);
+
+    expect(api.post).toHaveBeenCalledWith('/api/guests/11/hide-content');
+    expect(result.hidden_guest_id).toBe(11);
+  });
+
+  it('unhideGuestContent deletes the hide-content endpoint', async () => {
+    api.delete.mockResolvedValueOnce({ data: undefined });
+    await unhideGuestContent(11);
+
+    expect(api.delete).toHaveBeenCalledWith('/api/guests/11/hide-content');
+  });
+
+  it('fetchHiddenGuests unwraps the hidden_guests list', async () => {
+    const hidden = [{ id: 11, firstname: 'Ada', lastname: 'Lovelace' }];
+    api.get.mockResolvedValueOnce({ data: { hidden_guests: hidden } });
+    const result = await fetchHiddenGuests();
+
+    expect(api.get).toHaveBeenCalledWith('/api/guests/hidden-content');
+    expect(result).toEqual(hidden);
   });
 });

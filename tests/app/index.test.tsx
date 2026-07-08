@@ -7,6 +7,7 @@
  *   - session + rsvp_status = null         → `/rsvp` onboarding
  *   - session + accepted / accepted_pending → `/(tabs)/home`
  *   - session + declined / declined_pending / revocation_requested → `/declined`
+ *   - session + backend unreachable      → `/(tabs)/home` fallback, never welcome
  *
  * The gallery-QR fallback flow is complex enough to deserve its own suite
  * (Phase 12 verification covers the live scanner). Here we cover the redirect
@@ -122,15 +123,11 @@ describe('app/index — redirect matrix', () => {
     await waitFor(() => expect(router.replace).toHaveBeenCalledWith('/declined'));
   });
 
-  it('session but backend unreachable → stays on welcome so guest can retry', async () => {
+  it('session but backend unreachable → keeps welcome hidden and routes to tabs/home', async () => {
     mockGetSession.mockResolvedValue({ token: 't', guestId: 1 });
     mockFetchGuestMe.mockRejectedValue(new Error('network down'));
 
-    const { findByText } = renderScreen();
-
-    // Welcome is reachable — the failure path clears `checking` and re-shows
-    // the scan button rather than trapping the guest on a blank screen.
-    await findByText(/QR-Code scannen|Scan QR/i);
-    expect(router.replace).not.toHaveBeenCalled();
+    renderScreen();
+    await waitFor(() => expect(router.replace).toHaveBeenCalledWith('/(tabs)/home'));
   });
 });
