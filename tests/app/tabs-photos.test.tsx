@@ -57,8 +57,10 @@ describe('app/(tabs)/photos', () => {
   it('shows the empty-state hint when the backend returns no photos', async () => {
     mockApiGet.mockResolvedValue({ data: { data: [] } });
 
-    const { findByTestId } = renderScreen();
-    await findByTestId('photos-empty-state');
+    const { UNSAFE_root } = renderScreen();
+    await waitFor(() =>
+      expect(UNSAFE_root.findAllByProps({ testID: 'photos-empty-state' }).length).toBeGreaterThan(0)
+    );
   });
 
   it('renders the grid after a successful fetch', async () => {
