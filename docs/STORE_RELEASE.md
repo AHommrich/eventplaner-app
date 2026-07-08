@@ -55,24 +55,24 @@
 
 ### Apple App Privacy
 
-| Kategorie              | Antwort                    | Begruendung                                                            |
-| ---------------------- | -------------------------- | ---------------------------------------------------------------------- |
-| Data Used to Track You | None                       | Keine Tracking-SDKs, keine Werbung, keine Third-Party Analytics.       |
-| Contact Info / Name    | Collected, linked to user  | Vorname + Nachname werden fuer RSVP, Anzeige und Gruppenlogik genutzt. |
-| User Content / Photos  | Collected, linked to user  | Foto-Galerie und Foto-Spiel-Uploads sind Gastinhalte.                  |
-| Identifiers            | Not collected for tracking | QR-/Session-Token bleibt Backend-auth, kein Werbe-Identifier.          |
-| Usage Data / Analytics | Not collected              | Kein Analytics- oder Crash-Reporting-SDK im Runtime-Bundle.            |
+| Kategorie              | Antwort                     | Begruendung                                                            |
+| ---------------------- | --------------------------- | ---------------------------------------------------------------------- |
+| Data Used to Track You | None                        | Keine Werbung, keine Third-Party Analytics, keine Session Replay.      |
+| Contact Info / Name    | Collected, linked to user   | Vorname + Nachname werden fuer RSVP, Anzeige und Gruppenlogik genutzt. |
+| User Content / Photos  | Collected, linked to user   | Foto-Galerie und Foto-Spiel-Uploads sind Gastinhalte.                  |
+| Identifiers            | Not collected for tracking  | QR-/Session-Token bleibt Backend-auth, kein Werbe-Identifier.          |
+| Diagnostics / Crashes  | Collected, not for tracking | Sentry Error Monitoring nur mit DSN, ohne PII, ohne Replay/Analytics.  |
 
 ### Google Data Safety
 
-| Frage                             | Antwort                                                                       |
-| --------------------------------- | ----------------------------------------------------------------------------- |
-| Data collected                    | Name, photos/user content                                                     |
-| Data shared with third parties    | No                                                                            |
-| Data encrypted in transit         | Yes, HTTPS                                                                    |
-| Data deletion request available   | Yes, in-app Art. 17 erasure flow                                              |
-| User can delete uploaded content  | Via erasure/support flow; per-photo moderation/delete flow depends on backend |
-| Committed to Play Families Policy | n/a, not intended for children                                                |
+| Frage                             | Antwort                                                                        |
+| --------------------------------- | ------------------------------------------------------------------------------ |
+| Data collected                    | Name, photos/user content                                                      |
+| Data shared with third parties    | Yes, diagnostics only if Sentry SaaS is used; No if self-hosted Sentry is used |
+| Data encrypted in transit         | Yes, HTTPS                                                                     |
+| Data deletion request available   | Yes, in-app Art. 17 erasure flow                                               |
+| User can delete uploaded content  | Via erasure/support flow; per-photo moderation/delete flow depends on backend  |
+| Committed to Play Families Policy | n/a, not intended for children                                                 |
 
 ### Age Rating
 

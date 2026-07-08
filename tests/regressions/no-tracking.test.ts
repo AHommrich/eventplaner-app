@@ -3,7 +3,8 @@
  *
  * Three assertions:
  *   1. No known tracking package name appears in `package.json` under
- *      `dependencies` or `devDependencies`.
+ *      `dependencies` or `devDependencies`. Sentry is allowed as explicit
+ *      error monitoring, but not as session replay / analytics.
  *   2. No source file under `app/`, `lib/`, `components/`, `constants/`
  *      imports a tracking module.
  *   3. No source file references a public CDN host at runtime — the app
@@ -21,7 +22,6 @@ import * as path from 'path';
 const REPO_ROOT = path.resolve(__dirname, '..', '..');
 
 const TRACKING_PATTERNS: string[] = [
-  'sentry',
   'crashlytics',
   '@react-native-firebase',
   'firebase-analytics',
@@ -37,6 +37,8 @@ const TRACKING_PATTERNS: string[] = [
   'analytics',
   'tracker',
 ];
+
+const ALLOWED_ERROR_MONITORING_DEPS = new Set(['@sentry/react-native']);
 
 /**
  * Hostnames of public CDNs that must never appear in the source tree. The
@@ -70,12 +72,20 @@ describe('regressions/no-tracking', () => {
     const allDeps = { ...(pkg.dependencies ?? {}), ...(pkg.devDependencies ?? {}) };
     const offenders: string[] = [];
     for (const name of Object.keys(allDeps)) {
+      if (ALLOWED_ERROR_MONITORING_DEPS.has(name)) continue;
       const lower = name.toLowerCase();
       for (const pattern of TRACKING_PATTERNS) {
         if (lower.includes(pattern)) offenders.push(`${name} (matches ${pattern})`);
       }
     }
     expect(offenders).toEqual([]);
+  });
+
+  it('Sentry stays crash-only: no replay, logs, or default PII', () => {
+    const monitoring = fs.readFileSync(path.join(REPO_ROOT, 'lib', 'monitoring.ts'), 'utf-8');
+    expect(monitoring).toContain('sendDefaultPii: false');
+    expect(monitoring).not.toContain('mobileReplayIntegration');
+    expect(monitoring).not.toContain('enableLogs: true');
   });
 
   it('no source file imports a tracking module', () => {

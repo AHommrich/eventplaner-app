@@ -130,9 +130,10 @@ template refuses to merge without an update to that file.
   ships a foreign SDK to a guest phone. The value it would deliver — a
   couple's curiosity about which screens got looked at — is not worth
   the compliance surface.
-- **Sentry / crash reporting**: same argument, plus the fact that
-  crashes at a wedding are a rare event, not a data-informed engineering
-  problem. If a crash happens, the couple will hear about it.
+- **Analytics-style monitoring**: still rejected. Sentry is now allowed only
+  as crash/error monitoring for development/EAS/store builds: no Session
+  Replay, no Sentry Logs, no default PII, no user IDs, and no Expo Go runtime.
+  The DSN must be configured explicitly; without it the SDK is inert.
 - **Auto-delete on logout instead of the 30-day window**: rejected
   because a guest who logs out to hand the phone to a partner should not
   be treated as a delete request. Explicit erasure is a different intent.

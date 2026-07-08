@@ -51,8 +51,10 @@ import { LanguageProvider } from '../lib/LanguageContext';
 import { EventThemeProvider } from '../lib/EventThemeContext';
 import { BlockedFeaturesProvider } from '../lib/BlockedFeaturesContext';
 import { ConsentGateProvider } from '../components/ConsentGate';
+import { initMonitoring } from '../lib/monitoring';
 
 SplashScreen.preventAutoHideAsync();
+void initMonitoring();
 
 // Splash gradient — hand-picked to match the eveplan brand identity. Never
 // resolves through the dynamic theme because splash renders BEFORE the theme

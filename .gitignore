@@ -34,6 +34,9 @@ yarn-error.*
 .env
 .env*.local
 CLAUDE.local.md
+sentry.properties
+ios/sentry.properties
+android/sentry.properties
 
 # typescript
 *.tsbuildinfo

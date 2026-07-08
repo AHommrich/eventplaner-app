@@ -41,6 +41,7 @@
       "expo-secure-store",
       "expo-camera",
       "expo-font",
+      "@sentry/react-native/expo",
       [
         "expo-build-properties",
         {

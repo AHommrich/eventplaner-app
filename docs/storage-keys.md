@@ -18,14 +18,14 @@ image cache of `expo-image`.
 
 ## Guest session (set by `lib/auth.ts` `saveSession`)
 
-| Key                 | Purpose                                                                         | Retention                                         | Cleared on logout?  |
-| ------------------- | ------------------------------------------------------------------------------- | ------------------------------------------------- | ------------------- |
-| `guest_token`       | Sanctum bearer token — attached by the Axios interceptor to every backend call. | Until logout. Backend token itself never expires. | Yes                 |
-| `guest_id`          | Numeric guest ID — used by the group-RSVP flow to identify the acting guest.    | Until logout.                                     | Yes                 |
-| `guest_firstname`   | Rendered on the home screen and RSVP surfaces.                                  | Until logout.                                     | Yes                 |
-| `guest_lastname`    | Rendered where the full name is shown (settings, revoke dialog).                | Until logout.                                     | Yes                 |
-| `guest_type`        | Either `solo` or `family` — drives whether the RSVP tab lists group members.    | Until logout.                                     | Yes                 |
-| `guest_family_name` | Family label for `family`-type sessions; absent for `solo`.                     | Until logout.                                     | Yes (only when set) |
+| Key                 | Purpose                                                                         | Retention                                                                                                                                           | Cleared on logout?  |
+| ------------------- | ------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------- |
+| `guest_token`       | Sanctum bearer token — attached by the Axios interceptor to every backend call. | Until logout or backend-side event cleanup/revocation. Tokens are intentionally long-lived for guest UX, but bounded by the event retention window. | Yes                 |
+| `guest_id`          | Numeric guest ID — used by the group-RSVP flow to identify the acting guest.    | Until logout.                                                                                                                                       | Yes                 |
+| `guest_firstname`   | Rendered on the home screen and RSVP surfaces.                                  | Until logout.                                                                                                                                       | Yes                 |
+| `guest_lastname`    | Rendered where the full name is shown (settings, revoke dialog).                | Until logout.                                                                                                                                       | Yes                 |
+| `guest_type`        | Either `solo` or `family` — drives whether the RSVP tab lists group members.    | Until logout.                                                                                                                                       | Yes                 |
+| `guest_family_name` | Family label for `family`-type sessions; absent for `solo`.                     | Until logout.                                                                                                                                       | Yes (only when set) |
 
 Logout runs both from `lib/auth.ts` `clearSession` and — as a belt-and-braces
 duplicate — directly in `app/(tabs)/settings.tsx` so a failed API logout still

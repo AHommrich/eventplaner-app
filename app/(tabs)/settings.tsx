@@ -19,6 +19,7 @@ import { useEventTheme } from '../../lib/EventThemeContext';
 import { theme } from '../../constants/theme';
 import { requestErasure } from '../../lib/guest';
 import { saveErasureState } from '../../lib/erasure';
+import { captureSentryTestError } from '../../lib/monitoring';
 
 export default function SettingsScreen() {
   const router = useRouter();
@@ -26,6 +27,7 @@ export default function SettingsScreen() {
   const { colors } = useEventTheme();
   const insets = useSafeAreaInsets();
   const [session, setSession] = useState<GuestSession | null>(null);
+  const showSentryTestButton = process.env.EXPO_PUBLIC_ENABLE_SENTRY_TEST_BUTTON === '1';
 
   useEffect(() => {
     getSession().then(setSession);
@@ -83,6 +85,14 @@ export default function SettingsScreen() {
         e?.response?.status === 409 ? t('erasure.alreadyPending') : t('erasure.errorMessage');
       Alert.alert(t('erasure.errorTitle'), message);
     }
+  }
+
+  async function handleSentryTestError() {
+    const sent = await captureSentryTestError();
+    Alert.alert(
+      t('settings.sentryTestTitle'),
+      sent ? t('settings.sentryTestSent') : t('settings.sentryTestUnavailable')
+    );
   }
 
   return (
@@ -308,6 +318,26 @@ export default function SettingsScreen() {
           </ThemedText>
           <Ionicons name="chevron-forward" size={16} color={theme.colors.error + 'aa'} />
         </TouchableOpacity>
+
+        {showSentryTestButton && (
+          <TouchableOpacity
+            onPress={handleSentryTestError}
+            style={{
+              paddingHorizontal: theme.spacing.md,
+              paddingVertical: theme.spacing.md,
+              borderTopWidth: 1,
+              borderTopColor: colors.border + '30',
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+            }}
+          >
+            <ThemedText style={{ color: colors.cardText, fontSize: 15 }}>
+              {t('settings.sentryTest')}
+            </ThemedText>
+            <Ionicons name="bug-outline" size={16} color={colors.cardText + 'aa'} />
+          </TouchableOpacity>
+        )}
       </View>
     </View>
   );
