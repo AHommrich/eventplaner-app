@@ -88,19 +88,19 @@
 
 | Feld | Zielwert | Status |
 | ---- | -------- | ------ |
-| Datenschutz-URL | `https://eveplan.de/datenschutz` | E6: Backend-Task offen |
-| Impressum-URL | `https://eveplan.de/impressum` | E4: Backend-Task offen; App-Screen vorbereitet |
+| Datenschutz-URL | `https://eveplan.de/datenschutz` | Backend umgesetzt; deploy/verifizieren |
+| Impressum-URL | `https://eveplan.de/impressum` | Backend umgesetzt; App-Screen vorbereitet; deploy/verifizieren |
 | Kontakt/Support | offen | Haengt an E3. |
 
 ## Backend-Tickets
 
 | Ticket | Minimaler Scope | Status |
 | ------ | --------------- | ------ |
-| Imprint | `GET /api/legal/imprint?locale=de\|en` + `https://eveplan.de/impressum` | Backend offen; App-Client vorbereitet |
-| Privacy HTML | `https://eveplan.de/datenschutz` als browseroeffentliche HTML-Seite | offen |
-| UGC Report | Foto/Inhalt melden, inklusive Grund und Guest-ID/Auth-Kontext | offen |
-| UGC Block | Gast blockieren oder Inhalte des Gasts ausblenden | offen |
-| UGC Contact | erreichbarer Supportkontakt fuer Moderationsfaelle | offen |
+| Imprint | `GET /api/legal/imprint?locale=de\|en` + `https://eveplan.de/impressum` | Backend umgesetzt; App-Client vorbereitet; deploy/verifizieren |
+| Privacy HTML | `https://eveplan.de/datenschutz` als browseroeffentliche HTML-Seite | Backend umgesetzt; deploy/verifizieren |
+| UGC Report | `POST /api/photos/:photoId/report` + App-Report-Modal | umgesetzt; deploy/smoke-test |
+| UGC Hide Content | `POST/DELETE /api/guests/:guestId/hide-content` + Hidden-Guests-Screen | umgesetzt; deploy/smoke-test |
+| UGC Contact | erreichbarer Supportkontakt fuer Moderationsfaelle | dokumentiert; E3 finalisieren |
 
 ### Backend Contract Draft
 
@@ -132,9 +132,9 @@ Mindestinhalt fuer DE:
 Minimaler Scope fuer Apple Guideline 1.2:
 
 - `POST /api/photos/:photoId/report`
-- `POST /api/guests/:guestId/block`
-- `DELETE /api/guests/:guestId/block`
-- `GET /api/guests/blocked`
+- `POST /api/guests/:guestId/hide-content`
+- `DELETE /api/guests/:guestId/hide-content`
+- `GET /api/guests/hidden-content`
 
 Report-Payload:
 
@@ -145,9 +145,10 @@ Report-Payload:
 }
 ```
 
-Block-Verhalten:
+Hide-Verhalten:
 
-- Blockierte Gaeste werden in Foto-Galerie und Foto-Spiel ausgeblendet.
+- Ausgeblendete Gaeste werden in der Foto-Galerie fuer den aktuellen Gast
+  ausgeblendet.
 - Eigene Inhalte bleiben fuer den eingeloggten Gast sichtbar.
 - Backend erzwingt die Filterung serverseitig, App filtert nur zusaetzlich fuer
   UX.
@@ -155,15 +156,15 @@ Block-Verhalten:
 
 ### Apple Guideline 1.2 Compliance
 
-Current status: backend + app UI still open.
+Current status: implemented; deploy + smoke-test before TestFlight External Review.
 
-Required before TestFlight External Review:
+Coverage:
 
 - Report content: guest can report a photo or other UGC from the app.
-- Block user: guest can hide/block another guest's UGC.
+- Hide uploader: guest can hide another guest's photo content privately.
 - Moderation contact: support email is visible in the app/store listing.
-- Review notes explain where report/block controls live.
-- Backend stores reports and enforces block filtering server-side.
+- Review notes must explain where report/hide controls live.
+- Backend stores reports and enforces hide filtering server-side.
 
 ## Rechts-Check
 

@@ -90,6 +90,7 @@ describe('app/(tabs)/settings', () => {
     await findByText('Impressum');
     await findByText('Datenschutzerklärung');
     await findByText('Einwilligungen verwalten');
+    await findByText('Ausgeblendete Gäste');
     await findByText('Meine Daten exportieren');
     await findByText('Konto löschen');
   });
@@ -113,6 +114,13 @@ describe('app/(tabs)/settings', () => {
     const row = await findByText('Einwilligungen verwalten');
     fireEvent.press(row);
     expect(router.push).toHaveBeenCalledWith('/consents');
+  });
+
+  it('tapping the hidden-guests row routes to /hidden-guests', async () => {
+    const { findByText } = renderScreen();
+    const row = await findByText('Ausgeblendete Gäste');
+    fireEvent.press(row);
+    expect(router.push).toHaveBeenCalledWith('/hidden-guests');
   });
 
   it('logout clears the session and returns to `/`', async () => {

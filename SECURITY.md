@@ -98,8 +98,8 @@ go to the same contact address listed above. Target response time for content
 reports is 48 hours.
 
 The store-release tracker in [`docs/STORE_RELEASE.md`](docs/STORE_RELEASE.md)
-keeps the Apple Guideline 1.2 checklist: report content, block users, visible
-support contact and backend-side filtering.
+keeps the Apple Guideline 1.2 checklist: report content, hide uploader
+content, visible support contact and backend-side filtering.
 
 ## Data-protection concerns
 

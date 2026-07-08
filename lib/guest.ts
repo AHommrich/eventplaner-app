@@ -216,6 +216,48 @@ export async function submitPhotoGamePhoto(
   return res.data;
 }
 
+// --- UGC moderation -------------------------------------------------------
+
+export type PhotoReportReason = 'inappropriate_content' | 'privacy' | 'other';
+
+export type PhotoReportResponse = {
+  id: number;
+  status: 'open';
+  auto_hidden: boolean;
+};
+
+export type HiddenGuest = {
+  id: number;
+  firstname: string;
+  lastname: string;
+};
+
+/** Report a visible photo to the event owner/staff. Reporter identity stays backend-only. */
+export async function reportPhoto(
+  photoId: number,
+  payload: { reason: PhotoReportReason; message?: string }
+): Promise<PhotoReportResponse> {
+  const res = await api.post<PhotoReportResponse>(`/api/photos/${photoId}/report`, payload);
+  return res.data;
+}
+
+/** Hide all current/future photo content from one uploader for the current guest. */
+export async function hideGuestContent(guestId: number): Promise<{ hidden_guest_id: number }> {
+  const res = await api.post<{ hidden_guest_id: number }>(`/api/guests/${guestId}/hide-content`);
+  return res.data;
+}
+
+/** Undo a previous content-hide. Backend treats this as idempotent. */
+export async function unhideGuestContent(guestId: number): Promise<void> {
+  await api.delete(`/api/guests/${guestId}/hide-content`);
+}
+
+/** Load guests whose photo content the current guest has hidden. */
+export async function fetchHiddenGuests(): Promise<HiddenGuest[]> {
+  const res = await api.get<{ hidden_guests: HiddenGuest[] }>('/api/guests/hidden-content');
+  return res.data.hidden_guests;
+}
+
 // --- Revocation -----------------------------------------------------------
 
 /**

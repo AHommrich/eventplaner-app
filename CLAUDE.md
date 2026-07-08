@@ -157,21 +157,22 @@ app/
   consents/
     index.tsx          DSGVO Art. 7 (3) — Einwilligungen verwalten + widerrufen
   data-export.tsx      DSGVO Art. 15 — JSON-Export via expo-sharing
+  hidden-guests.tsx    UGC Moderation — ausgeblendete Foto-Uploader verwalten
   erasure-pending.tsx  DSGVO Art. 17 — 30-Tage-Fenster, in-app Revocation
   (tabs)/
     _layout.tsx        Bottom Tab Bar — blendet RSVP-Tab aus wenn accepted, Drinks-Tab wenn deaktiviert
                        tabBarLabelStyle nutzt colors.fontFamily.regular wenn gesetzt
     home.tsx           Begrüßungsscreen mit Countdown + Cover-Bild + tippbare Venue-Navigation
     rsvp.tsx           RSVP-Tab (sichtbar nur bei accepted_pending)
-    photos.tsx         Fotogalerie + Upload (ConsentGate photo_upload) + Auto-Refresh (30s)
+    photos.tsx         Fotogalerie + Upload (ConsentGate photo_upload) + Report/Hide + Auto-Refresh (30s)
     photo-game.tsx     Foto-Spiel: Aufgabe erhalten + Foto hochladen (ConsentGate photo_game, 4 States)
     drinks.tsx         Getränke-Log (Suche + Akkordeon) + Rangliste
-    settings.tsx       Logout + Sprachauswahl + Legal/DSGVO-Reihen (Imprint, Privacy, Consents, Export, Erasure)
+    settings.tsx       Logout + Sprachauswahl + Legal/DSGVO-Reihen (Imprint, Privacy, Consents, Hidden Guests, Export, Erasure)
 
 lib/
   api.ts               Axios-Instanz, Bearer-Interceptor; behandelt app_blocked (→ /blocked) + drinks_blocked
   auth.ts              saveSession / getSession / clearSession
-  guest.ts             fetchGuestMe / fetchEventInfo / postRsvp / postGroupRsvp / postRevoke + Typen (EventInfo, GuestMe, GroupMember)
+  guest.ts             fetchGuestMe / fetchEventInfo / RSVP / PhotoGame / UGC-Moderation / Erasure + Typen
   i18n.ts              i18n-js Setup (de/en, Fallback: de)
   LanguageContext.tsx  useLanguage() Hook, Persistenz via SecureStore
   EventThemeContext.tsx useEventTheme() — Farben + EventInfo aus /api/event/info

@@ -8,8 +8,8 @@
  *   3. `CameraView` streams the back camera, `onBarcodeScanned` fires exactly
  *      once per unique QR (guarded by the `scanned` flag).
  *   4. Extract the trailing token from the URL, call `/api/auth/qr/{token}`.
- *   5. Solo → save session, route to `/`. Family → open picker with the
- *      returned guest list; the guest taps their name to trigger step 5.
+ *   5. Solo → save session, route by RSVP status. Family → open picker with
+ *      the returned guest list; the guest taps their name to trigger step 5.
  *   6. `/api/auth/qr/{token}/select` returns a per-guest bearer token; 409
  *      means someone already claimed this slot (grey out the row).
  *
@@ -17,7 +17,7 @@
  * developer paste a test token without needing a QR image. See CLAUDE.md
  * for the local test tokens.
  */
-import { useState, useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import {
   View,
   TouchableOpacity,
@@ -30,13 +30,14 @@ import {
 } from 'react-native';
 import { ThemedText } from '../components/ThemedText';
 import { CameraView, useCameraPermissions } from 'expo-camera';
-import { useRouter } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import api from '../lib/api';
-import { saveSession, GuestSession } from '../lib/auth';
+import { getSession, saveSession, GuestSession } from '../lib/auth';
 import { theme } from '../constants/theme';
 import { useLanguage, Language } from '../lib/LanguageContext';
 import { useEventTheme } from '../lib/EventThemeContext';
 import { useConsentGate } from '../components/ConsentGate';
+import { fetchGuestMe, isDeclinedFlow, isFullAccess, RsvpStatus } from '../lib/guest';
 
 // --- Types (kept local to this file since only scan + welcome consume them) ---
 
@@ -71,11 +72,34 @@ export default function ScanScreen() {
   const [devToken, setDevToken] = useState('');
   const [showDevInput, setShowDevInput] = useState(false);
 
+  useFocusEffect(
+    useCallback(() => {
+      let active = true;
+      async function guardExistingSession() {
+        const existingSession = await getSession();
+        if (active && existingSession) {
+          await redirectExistingSession();
+        }
+      }
+      guardExistingSession();
+      return () => {
+        active = false;
+      };
+      // This guard must run whenever the scanner comes back into focus,
+      // including the iOS back-swipe case where the screen was already mounted
+      // with a family picker open.
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [])
+  );
+
   useEffect(() => {
     let active = true;
     async function bootstrapCameraAccess() {
+      if (!(await ensureNoExistingSession())) {
+        return;
+      }
       if (!(await ensureConsent('camera_scan'))) {
-        if (active) router.back();
+        if (active) router.replace('/');
         return;
       }
       if (!active) return;
@@ -92,6 +116,37 @@ export default function ScanScreen() {
     // the request state machine after denial.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  async function ensureNoExistingSession() {
+    const existingSession = await getSession();
+    if (!existingSession) return true;
+    await redirectExistingSession();
+    return false;
+  }
+
+  function navigateByStatus(status: RsvpStatus | null) {
+    if (status === null) {
+      router.replace('/rsvp');
+    } else if (isFullAccess(status)) {
+      router.replace('/(tabs)/home');
+    } else if (isDeclinedFlow(status)) {
+      router.replace('/declined');
+    } else {
+      router.replace('/rsvp');
+    }
+  }
+
+  async function redirectExistingSession() {
+    setShowPicker(false);
+    setLoading(false);
+    setScanned(false);
+    try {
+      const guest = await fetchGuestMe();
+      navigateByStatus(guest.rsvp_status);
+    } catch {
+      router.replace('/(tabs)/home');
+    }
+  }
 
   /**
    * Barcode-scanned handler — guarded by `scanned` so the same QR only fires
@@ -122,6 +177,7 @@ export default function ScanScreen() {
    * language switcher appears next to the "Continue" button.
    */
   async function loginWithToken(token: string) {
+    if (!(await ensureNoExistingSession())) return;
     const response = await api.get<ApiResponse>(`/api/auth/qr/${token}`);
     const { type, family_name, guests: apiGuests } = response.data;
     setResponseType(type);
@@ -152,7 +208,12 @@ export default function ScanScreen() {
     await saveSession(session);
     await loadTheme();
     setShowPicker(false);
-    router.replace('/');
+    try {
+      const me = await fetchGuestMe();
+      navigateByStatus(me.rsvp_status);
+    } catch {
+      router.replace('/(tabs)/home');
+    }
   }
 
   /**
@@ -163,6 +224,7 @@ export default function ScanScreen() {
    */
   async function selectFamilyGuest(guest: ApiGuest) {
     if (guest.is_active) return;
+    if (!(await ensureNoExistingSession())) return;
     setLoading(true);
     try {
       type SelectResponse = {
@@ -186,7 +248,12 @@ export default function ScanScreen() {
       await saveSession(session);
       await loadTheme();
       setShowPicker(false);
-      router.replace('/');
+      try {
+        const me = await fetchGuestMe();
+        navigateByStatus(me.rsvp_status);
+      } catch {
+        router.replace('/(tabs)/home');
+      }
     } catch (e: any) {
       if (e?.response?.status === 409) {
         Alert.alert(t('common.error'), t('scan.alreadyLoggedIn'));

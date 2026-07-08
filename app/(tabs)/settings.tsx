@@ -250,6 +250,24 @@ export default function SettingsScreen() {
           <Ionicons name="chevron-forward" size={16} color={colors.cardText + 'aa'} />
         </TouchableOpacity>
 
+        <TouchableOpacity
+          onPress={() => router.push('/hidden-guests')}
+          style={{
+            paddingHorizontal: theme.spacing.md,
+            paddingVertical: theme.spacing.md,
+            borderTopWidth: 1,
+            borderTopColor: colors.border + '30',
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+          }}
+        >
+          <ThemedText style={{ color: colors.cardText, fontSize: 15 }}>
+            {t('settings.hiddenGuests')}
+          </ThemedText>
+          <Ionicons name="chevron-forward" size={16} color={colors.cardText + 'aa'} />
+        </TouchableOpacity>
+
         {/* Art. 15 GDPR — data export. Additive row per Phase 7. Sits
             below the consents row so the DSGVO block stays grouped. */}
         <TouchableOpacity

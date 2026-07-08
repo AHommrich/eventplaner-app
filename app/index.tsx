@@ -12,7 +12,8 @@
  *          `declined` /
  *          `revocation_requested` .. → `/declined`
  *      On error (network offline, backend down) we keep the welcome screen
- *      visible so the guest can retry via the scan button.
+ *      hidden and fall back to the signed-in app area so an existing local
+ *      session cannot be overwritten by scanning a second guest QR.
  *
  *   2. **Gallery QR fallback login.** Guests can either scan the QR live
  *      (`/scan`) or pick a photo of the invitation from their gallery. The
@@ -100,8 +101,10 @@ export default function WelcomeScreen() {
           router.replace('/declined');
         }
       } catch {
-        // Backend unreachable — keep the welcome screen so guest can retry.
-        setChecking(false);
+        // Session exists, so do NOT expose the login screen. If the backend is
+        // temporarily unreachable we still keep the local account protected
+        // from accidental replacement via another QR scan.
+        router.replace('/(tabs)/home');
       }
     });
     // Bootstrap session probe — the "who am I and where do I go" flow runs
@@ -261,7 +264,7 @@ export default function WelcomeScreen() {
 
             <TouchableOpacity
               style={styles.scanButton}
-              onPress={() => router.push('/scan')}
+              onPress={() => router.replace('/scan')}
               disabled={loading}
             >
               <ThemedText style={styles.scanButtonText}>{t('welcome.scanButton')}</ThemedText>

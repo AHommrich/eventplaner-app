@@ -80,9 +80,9 @@ macht weiter.
 | E1 | Apple Developer Account ($99/J) aktiv? | Extern / Account | T15, T22, T25, T27 | offen |
 | E2 | Google Play Console Account ($25 einm.) aktiv? | Extern / Account | T15, T23, T26, T28 | offen |
 | E3 | Support-Email für Store-Listing | Extern / Branding | T15, T20 | offen — Default-Vorschlag: `support@eveplan.de` |
-| E4 | Impressum-URL: Wo lebt die Web-Version? | Backend / Legal | T16 | offen — Zielannahme: `https://eveplan.de/impressum` |
-| E5 | UGC-Report/Block-Endpoints Backend | Backend / Moderation | T17 | offen — existieren nicht, müssen im Backend-Repo als Task |
-| E6 | HTML-Datenschutz-URL für Store-Formular | Backend / Legal | T10 (aus altem Plan) | offen — Zielannahme: `https://eveplan.de/datenschutz` |
+| E4 | Impressum-URL: Wo lebt die Web-Version? | Backend / Legal | T16 | umgesetzt im Backend — Ziel: `https://eveplan.de/impressum` |
+| E5 | UGC-Report/Hide-Content Backend | Backend / Moderation | T17 | umgesetzt — App-UI + Backend vorhanden, deploy/smoke-test offen |
+| E6 | HTML-Datenschutz-URL für Store-Formular | Backend / Legal | T10 (aus altem Plan) | umgesetzt im Backend — Ziel: `https://eveplan.de/datenschutz` |
 | E7 | Content-Rating-Selbsteinschätzung: Drinks-Feature | Store / Legal | T21 | offen — Arbeitshypothese: 12+ / USK 12 |
 
 Bevor T15 (Ende Woche 1) startet, sollten E1–E7 beantwortet oder als
