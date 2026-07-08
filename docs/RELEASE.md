@@ -23,6 +23,51 @@ maestro test .maestro
 Do not continue if any check fails. Fix, re-run the failing check, then re-run
 the full preflight before building.
 
+## Monitoring
+
+Sentry is optional at runtime and intentionally disabled in Expo Go. For
+development builds, TestFlight and Play Store builds, set:
+
+| Variable                                | Required | Notes                                                                       |
+| --------------------------------------- | -------- | --------------------------------------------------------------------------- |
+| `EXPO_PUBLIC_SENTRY_DSN`                | yes      | Public DSN for runtime error reporting. Leave unset to disable Sentry.      |
+| `EXPO_PUBLIC_SENTRY_TRACES_SAMPLE_RATE` | no       | Defaults to `0`; keep low or disabled unless performance tracing is needed. |
+| `EXPO_PUBLIC_ENABLE_SENTRY_TEST_BUTTON` | no       | Set to `1` only for a temporary TestFlight/preview verification build.      |
+| `SENTRY_ORG`                            | no       | Defaults to `ahommrich` in `app.config.js`; override only if project moves. |
+| `SENTRY_PROJECT`                        | no       | Defaults to `react-native` in `app.config.js`; override only if renamed.    |
+| `SENTRY_AUTH_TOKEN`                     | release  | Secret for source-map upload. Configure in EAS/CI, never commit.            |
+
+The client config in `lib/monitoring.ts` is crash-only: `sendDefaultPii: false`,
+no Session Replay and no Sentry Logs. If Sentry SaaS is used, keep
+`docs/STORE_RELEASE.md` in sync because diagnostics are shared with a third
+party for operational purposes.
+
+Run these once per EAS environment. The DSN is public but still kept out of the
+repo so preview and production can diverge later if needed:
+
+```bash
+eas env:create --environment preview --name EXPO_PUBLIC_SENTRY_DSN --value "https://8b68f769c5f943cd71adba3c5715fea2@o4511683645997056.ingest.de.sentry.io/4511701402517584" --visibility plaintext
+eas env:create --environment production --name EXPO_PUBLIC_SENTRY_DSN --value "https://8b68f769c5f943cd71adba3c5715fea2@o4511683645997056.ingest.de.sentry.io/4511701402517584" --visibility plaintext
+eas env:create --environment preview --name EXPO_PUBLIC_SENTRY_TRACES_SAMPLE_RATE --value "0" --visibility plaintext
+eas env:create --environment production --name EXPO_PUBLIC_SENTRY_TRACES_SAMPLE_RATE --value "0" --visibility plaintext
+eas env:create --environment preview --name SENTRY_AUTH_TOKEN --value "<sentry-auth-token>" --visibility secret
+eas env:create --environment production --name SENTRY_AUTH_TOKEN --value "<sentry-auth-token>" --visibility secret
+```
+
+`app.config.js` already wires the Sentry Expo plugin to org `ahommrich` and
+project `react-native`. Only `SENTRY_AUTH_TOKEN` is still missing for source-map
+upload; do not commit that token.
+
+For a temporary TestFlight verification build, enable the hidden Settings row:
+
+```bash
+eas env:create --environment production --name EXPO_PUBLIC_ENABLE_SENTRY_TEST_BUTTON --value "1" --visibility plaintext
+```
+
+After Sentry receives the test event, remove that variable or set it to `0`
+before the real store release. The button only calls `captureException`; it does
+not crash the app.
+
 ## Versioning
 
 - `app.json` `expo.version` is the user-visible version (`1.0.0`, `1.0.1`,
@@ -42,6 +87,14 @@ the full preflight before building.
 
 The production backend override comes from `eas.json`. Do not edit
 `constants/env.ts` for a production release.
+
+Each build profile also declares the EAS environment it consumes:
+
+| Profile       | EAS environment |
+| ------------- | --------------- |
+| `development` | `preview`       |
+| `preview`     | `preview`       |
+| `production`  | `production`    |
 
 ## Store Upload
 

@@ -47,6 +47,12 @@ jest.mock('../../lib/erasure', () => {
   };
 });
 
+const mockCaptureSentryTestError = jest.fn();
+jest.mock('../../lib/monitoring', () => ({
+  __esModule: true,
+  captureSentryTestError: (...a: any[]) => mockCaptureSentryTestError(...a),
+}));
+
 jest.mock('react-native-safe-area-context', () => {
   const actual = jest.requireActual('react-native-safe-area-context');
   return { ...actual, useSafeAreaInsets: () => ({ top: 0, right: 0, bottom: 0, left: 0 }) };
@@ -71,8 +77,10 @@ describe('app/(tabs)/settings', () => {
     mockClearSession.mockReset();
     mockRequestErasure.mockReset();
     mockSaveErasureState.mockReset();
+    mockCaptureSentryTestError.mockReset();
     (router.replace as jest.Mock).mockClear();
     (router.push as jest.Mock).mockClear();
+    delete process.env.EXPO_PUBLIC_ENABLE_SENTRY_TEST_BUTTON;
     // A previous test in this file may have persisted a non-default locale
     // (see the language-switch test). Reset before every render so the
     // assertions against DE copy stay reliable regardless of test order.
@@ -156,6 +164,22 @@ describe('app/(tabs)/settings', () => {
     const [, , buttons] = alertSpy.mock.calls[0] as any;
     expect(buttons).toHaveLength(2);
     expect(buttons[1].style).toBe('destructive');
+    alertSpy.mockRestore();
+  });
+
+  it('renders and sends the Sentry test event only when the build flag is enabled', async () => {
+    process.env.EXPO_PUBLIC_ENABLE_SENTRY_TEST_BUTTON = '1';
+    mockCaptureSentryTestError.mockResolvedValue(true);
+    const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+
+    const { findByText } = renderScreen();
+    const row = await findByText('Sentry-Test senden');
+    fireEvent.press(row);
+
+    await waitFor(() => {
+      expect(mockCaptureSentryTestError).toHaveBeenCalled();
+      expect(alertSpy).toHaveBeenCalledWith('Sentry-Test', 'Testfehler wurde an Sentry gesendet.');
+    });
     alertSpy.mockRestore();
   });
 });

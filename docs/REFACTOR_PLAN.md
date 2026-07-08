@@ -819,10 +819,12 @@ Expo module deeper or moving the code around:
       renderer. App Store Connect and Play Console also need a browser-openable
       privacy URL. Track implementation in the backend repo; app-side
       readiness is documented in `docs/STORE_RELEASE.md`.
-- [ ] **Monitoring / error reporting after store release.**
-      Compare Sentry SaaS EU-region vs. self-hosted Sentry, decide whether the
-      privacy/ops trade-off is worth it, then integrate in a separate cycle.
-      Owner: Andre.
+- [x] **Monitoring / error reporting.**
+      Sentry is integrated for development/EAS/store builds behind
+      `EXPO_PUBLIC_SENTRY_DSN`. The client keeps it crash-only: no default PII,
+      no Session Replay, no Sentry Logs and no Expo Go runtime initialisation.
+      Source-map upload still needs the Sentry org/project/auth-token wiring in
+      the release environment before store builds.
 - [ ] **Split `app/(tabs)/drinks.tsx`.**
       Extract leaderboard, accordion item and search/filter UI once the store
       release is stable. The file is large enough that future changes now have

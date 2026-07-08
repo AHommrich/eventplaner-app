@@ -69,6 +69,10 @@ const de = {
     unhide: 'Wieder einblenden',
     exportData: 'Meine Daten exportieren',
     deleteAccount: 'Konto löschen',
+    sentryTest: 'Sentry-Test senden',
+    sentryTestTitle: 'Sentry-Test',
+    sentryTestSent: 'Testfehler wurde an Sentry gesendet.',
+    sentryTestUnavailable: 'Sentry ist in diesem Build nicht aktiv.',
   },
   legal: {
     imprint: {

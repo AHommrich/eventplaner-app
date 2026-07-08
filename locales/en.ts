@@ -110,6 +110,10 @@ const en = {
     unhide: 'Unhide',
     exportData: 'Export my data',
     deleteAccount: 'Delete my account',
+    sentryTest: 'Send Sentry test',
+    sentryTestTitle: 'Sentry test',
+    sentryTestSent: 'Test error was sent to Sentry.',
+    sentryTestUnavailable: 'Sentry is not active in this build.',
   },
   legal: {
     imprint: {

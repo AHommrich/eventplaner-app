@@ -101,6 +101,7 @@ commit so the repo does not ship placeholder art.
 | i18n         | `i18n-js` + `LanguageContext`                        | Two locales (DE + EN), device-detected on first launch, switchable in Settings.                                                                     |
 | Test runner  | Jest + `jest-expo` + `@testing-library/react-native` | Official Expo test preset, no custom transformer.                                                                                                   |
 | Fonts        | `@expo-google-fonts/*` (10 families)                 | Bundled locally, zero CDN traffic.                                                                                                                  |
+| Monitoring   | Sentry React Native                                  | Error monitoring for development/EAS/store builds only; disabled in Expo Go and without `EXPO_PUBLIC_SENTRY_DSN`, no PII/replay/logs.               |
 | Backend      | Laravel 12 + Sanctum                                 | [`AHommrich/eventplaner`](https://github.com/AHommrich/eventplaner); wedding-app-specific tokens with `app_blocked` / `drinks_blocked` soft-blocks. |
 
 Pinned dependency versions for Expo Go SDK 54 compatibility (touching these
@@ -135,6 +136,15 @@ tokens on the scan screen (`app/scan.tsx`). Production QR codes point at
 | Expo Go / `npm start`            | `https://beta.hommrich.app` | local development against staging |
 | `eas build --profile preview`    | `https://beta.hommrich.app` | internal preview builds           |
 | `eas build --profile production` | `https://eveplan.de`        | TestFlight / Play Store           |
+
+Optional monitoring env:
+
+| Variable                                | Purpose                                                                  |
+| --------------------------------------- | ------------------------------------------------------------------------ |
+| `EXPO_PUBLIC_SENTRY_DSN`                | Enables Sentry error monitoring outside Expo Go. Leave unset to disable. |
+| `EXPO_PUBLIC_SENTRY_TRACES_SAMPLE_RATE` | Optional performance tracing sample rate. Defaults to `0`.               |
+| `SENTRY_ORG` / `SENTRY_PROJECT`         | Optional Sentry slug overrides; defaults are set in `app.config.js`.     |
+| `SENTRY_AUTH_TOKEN`                     | Build-time secret for source-map upload. Never commit it.                |
 
 ---
 

@@ -19,12 +19,13 @@ production bundle is produced by Metro from `dependencies` only.
 
 ## Networked dependencies
 
-Exactly **one** runtime dependency opens network sockets, and it only opens
-them to `API_BASE` from `constants/env.ts`:
+Exactly **two** runtime dependencies can open network sockets, both under app
+control:
 
 | Package                | Phones home?                                                                                                                                          | To whom                                                                     | Notes                                                                                                                                                                                                                         |
 | ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `axios`                | Only to `constants/env.ts::API_BASE`                                                                                                                  | `beta.hommrich.app` (Expo Go / EAS Preview) / `eveplan.de` (EAS Production) | Sole HTTP client. All backend calls funnel through `lib/api.ts`, which enforces the base URL and attaches the bearer via interceptor.                                                                                         |
+| `@sentry/react-native` | Only when `EXPO_PUBLIC_SENTRY_DSN` is set and the app is not running in Expo Go.                                                                      | Configured Sentry project                                                   | Crash/error monitoring only. `sendDefaultPii: false`, no Session Replay, no Sentry Logs, no analytics events. `lib/monitoring.ts` strips user data and auth/cookie headers before sending.                                    |
 | `react-native-webview` | Only when we render a WebView; the only such surface is `lib/QrFromImage.tsx` which loads an inline HTML string (no remote URL, no `src` attributes). | —                                                                           | Never used to render remote URLs. The HTML template inlines a vendored `jsQR` copy (`lib/vendor/jsQRSource.ts`) — the previous CDN reference to `cdn.jsdelivr.net` was removed so the WebView produces zero outbound traffic. |
 
 Everything else in the list is either pure UI, a native module wrapping a
@@ -107,9 +108,12 @@ Nothing over the wire.
 
 ## Summary
 
-- **1** package makes network calls (`axios`) — only to the configured backend
+- **1** package makes backend calls (`axios`) — only to the configured backend
   (`beta.hommrich.app` for Expo Go / EAS Preview, `eveplan.de` for EAS
   Production).
+- **1** package may send diagnostics (`@sentry/react-native`) — only when a
+  Sentry DSN is configured and only outside Expo Go. It is configured as
+  crash/error monitoring, not analytics.
 - **1** package renders content on demand from a URL we pass (`expo-image`) —
   the URLs point at the same configured backend.
 - **10** font packages ship font files locally with no CDN fallback.
@@ -118,11 +122,11 @@ Nothing over the wire.
 - **Every other runtime dep** either wraps a local device capability or is a
   pure computation / rendering library.
 
-There is **no** analytics SDK, crash-reporter, error-tracker, feature-flag
-service, remote-config client, ad tracker, session-replay tool, or push-
-notification service in the tree — enforced positively by this audit and
-negatively by `tests/regressions/no-tracking.test.ts`. The same test also
-fails if a CDN hostname (jsDelivr, unpkg, Google Fonts) reappears in the
+There is **no** analytics SDK, feature-flag service, remote-config client, ad
+tracker, session-replay tool, or push-notification service in the tree.
+Sentry is the single explicit error-monitoring exception and is guarded by
+`lib/monitoring.ts` plus `tests/regressions/no-tracking.test.ts`. The same test
+also fails if a CDN hostname (jsDelivr, unpkg, Google Fonts) reappears in the
 source tree.
 
 ## Vulnerability posture
