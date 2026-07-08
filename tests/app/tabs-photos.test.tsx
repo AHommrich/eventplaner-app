@@ -57,9 +57,12 @@ describe('app/(tabs)/photos', () => {
   it('shows the empty-state hint when the backend returns no photos', async () => {
     mockApiGet.mockResolvedValue({ data: { data: [] } });
 
-    const { findByText } = renderScreen();
+    const { queryByText } = renderScreen();
     // DE: `photos.empty` = "Noch keine Fotos".
-    await findByText('Noch keine Fotos');
+    await waitFor(() => {
+      expect(queryByText(/Noch keine Fotos/)).toBeTruthy();
+      expect(queryByText(/Sei der Erste/)).toBeTruthy();
+    });
   });
 
   it('renders the grid after a successful fetch', async () => {
@@ -275,7 +278,9 @@ describe('app/(tabs)/photos', () => {
     fireEvent.press(await findByTestId('report-photo-button'));
     fireEvent.press(await findByText('Absenden'));
 
-    await waitFor(() => expect(alertSpy).toHaveBeenCalledWith('Zu viele Meldungen. Bitte warte eine Weile.'));
+    await waitFor(() =>
+      expect(alertSpy).toHaveBeenCalledWith('Zu viele Meldungen. Bitte warte eine Weile.')
+    );
     alertSpy.mockRestore();
   });
 

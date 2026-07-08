@@ -130,11 +130,11 @@ tokens on the scan screen (`app/scan.tsx`). Production QR codes point at
 
 `API_BASE` lives in [`constants/env.ts`](constants/env.ts):
 
-| Build variant | API_BASE | Purpose |
-| ------------- | -------- | ------- |
-| Expo Go / `npm start` | `https://beta.hommrich.app` | local development against staging |
-| `eas build --profile preview` | `https://beta.hommrich.app` | internal preview builds |
-| `eas build --profile production` | `https://eveplan.de` | TestFlight / Play Store |
+| Build variant                    | API_BASE                    | Purpose                           |
+| -------------------------------- | --------------------------- | --------------------------------- |
+| Expo Go / `npm start`            | `https://beta.hommrich.app` | local development against staging |
+| `eas build --profile preview`    | `https://beta.hommrich.app` | internal preview builds           |
+| `eas build --profile production` | `https://eveplan.de`        | TestFlight / Play Store           |
 
 ---
 

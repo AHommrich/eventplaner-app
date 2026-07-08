@@ -6,73 +6,73 @@
 
 ## Accounts & Zugaenge
 
-| Bereich | Status | Notizen |
-| ------- | ------ | ------- |
-| Apple Developer Program | offen | E1: Membership, Team-ID und App Store Connect Zugriff eintragen. |
-| Google Play Console | offen | E2: Console-Zugriff und Zahlungsstatus eintragen. |
-| App Store Connect Users | offen | Reviewer-/Admin-Zugaenge hier nicht als Passwort dokumentieren. |
-| Play Console Users | offen | Rollen und Owner hier festhalten. |
+| Bereich                 | Status | Notizen                                                          |
+| ----------------------- | ------ | ---------------------------------------------------------------- |
+| Apple Developer Program | offen  | E1: Membership, Team-ID und App Store Connect Zugriff eintragen. |
+| Google Play Console     | offen  | E2: Console-Zugriff und Zahlungsstatus eintragen.                |
+| App Store Connect Users | offen  | Reviewer-/Admin-Zugaenge hier nicht als Passwort dokumentieren.  |
+| Play Console Users      | offen  | Rollen und Owner hier festhalten.                                |
 
 ## Bundle Identifier / Package Name
 
-| Plattform | Wert | Status |
-| --------- | ---- | ------ |
+| Plattform             | Wert                                 | Status                     |
+| --------------------- | ------------------------------------ | -------------------------- |
 | iOS Bundle Identifier | `com.ahommrichsorganization.eveplan` | aus `app.json` uebernommen |
-| Android Package Name | `com.ahommrichsorganization.eveplan` | aus `app.json` uebernommen |
+| Android Package Name  | `com.ahommrichsorganization.eveplan` | aus `app.json` uebernommen |
 
 ## Support-Email + Marketing-URL
 
-| Feld | Wert | Status |
-| ---- | ---- | ------ |
-| Support-Email | `support@eveplan.de` | vorlaeufige Annahme aus E3 |
-| Security-Email | offen | klaeren, ob getrennt von Support-Mail |
-| Marketing-URL | `https://eveplan.de` | vorlaeufige Annahme |
+| Feld           | Wert                 | Status                                |
+| -------------- | -------------------- | ------------------------------------- |
+| Support-Email  | `support@eveplan.de` | vorlaeufige Annahme aus E3            |
+| Security-Email | offen                | klaeren, ob getrennt von Support-Mail |
+| Marketing-URL  | `https://eveplan.de` | vorlaeufige Annahme                   |
 
 ## Store IDs
 
-| Feld | Wert | Status |
-| ---- | ---- | ------ |
+| Feld                     | Wert  | Status                       |
+| ------------------------ | ----- | ---------------------------- |
 | App Store Connect App-ID | offen | Wird in Woche 4 eingetragen. |
-| Google Play App-ID | offen | Wird in Woche 4 eingetragen. |
+| Google Play App-ID       | offen | Wird in Woche 4 eingetragen. |
 
 ## Reviewer-Zugang
 
-| Feld | Wert | Status |
-| ---- | ---- | ------ |
+| Feld                | Wert  | Status                                                                           |
+| ------------------- | ----- | -------------------------------------------------------------------------------- |
 | Reviewer Login Flow | offen | Apple/Google koennen keine echte Einladung scannen; Demo-Token-Flow vorbereiten. |
-| Demo Guest | offen | Nur Beschreibung oder Token-Quelle dokumentieren, keine Secrets commiten. |
-| Review Notes | offen | Spaeter mit Impressum/UGC/Privacy-Hinweisen fuellen. |
+| Demo Guest          | offen | Nur Beschreibung oder Token-Quelle dokumentieren, keine Secrets commiten.        |
+| Review Notes        | offen | Spaeter mit Impressum/UGC/Privacy-Hinweisen fuellen.                             |
 
 ## Age Rating
 
-| Feld | Wert | Status |
-| ---- | ---- | ------ |
-| Arbeitshypothese | 12+ / USK 12 | E7: konservativ wegen Drinks-Feature. |
-| Begruendung | Kein Alkohol-Verkauf, keine Zahlungsfunktion, kein Konsumanreiz; Drinks sind Event-Logistik. | vorlaeufig |
-| Finale Store-Antworten | offen | In T21 ausfuellen. |
+| Feld                   | Wert                                                                                         | Status                                |
+| ---------------------- | -------------------------------------------------------------------------------------------- | ------------------------------------- |
+| Arbeitshypothese       | 12+ / USK 12                                                                                 | E7: konservativ wegen Drinks-Feature. |
+| Begruendung            | Kein Alkohol-Verkauf, keine Zahlungsfunktion, kein Konsumanreiz; Drinks sind Event-Logistik. | vorlaeufig                            |
+| Finale Store-Antworten | offen                                                                                        | In T21 ausfuellen.                    |
 
 ## Frageboegen
 
 ### Apple App Privacy
 
-| Kategorie | Antwort | Begruendung |
-| --------- | ------- | ----------- |
-| Data Used to Track You | None | Keine Tracking-SDKs, keine Werbung, keine Third-Party Analytics. |
-| Contact Info / Name | Collected, linked to user | Vorname + Nachname werden fuer RSVP, Anzeige und Gruppenlogik genutzt. |
-| User Content / Photos | Collected, linked to user | Foto-Galerie und Foto-Spiel-Uploads sind Gastinhalte. |
-| Identifiers | Not collected for tracking | QR-/Session-Token bleibt Backend-auth, kein Werbe-Identifier. |
-| Usage Data / Analytics | Not collected | Kein Analytics- oder Crash-Reporting-SDK im Runtime-Bundle. |
+| Kategorie              | Antwort                    | Begruendung                                                            |
+| ---------------------- | -------------------------- | ---------------------------------------------------------------------- |
+| Data Used to Track You | None                       | Keine Tracking-SDKs, keine Werbung, keine Third-Party Analytics.       |
+| Contact Info / Name    | Collected, linked to user  | Vorname + Nachname werden fuer RSVP, Anzeige und Gruppenlogik genutzt. |
+| User Content / Photos  | Collected, linked to user  | Foto-Galerie und Foto-Spiel-Uploads sind Gastinhalte.                  |
+| Identifiers            | Not collected for tracking | QR-/Session-Token bleibt Backend-auth, kein Werbe-Identifier.          |
+| Usage Data / Analytics | Not collected              | Kein Analytics- oder Crash-Reporting-SDK im Runtime-Bundle.            |
 
 ### Google Data Safety
 
-| Frage | Antwort |
-| ----- | ------- |
-| Data collected | Name, photos/user content |
-| Data shared with third parties | No |
-| Data encrypted in transit | Yes, HTTPS |
-| Data deletion request available | Yes, in-app Art. 17 erasure flow |
-| User can delete uploaded content | Via erasure/support flow; per-photo moderation/delete flow depends on backend |
-| Committed to Play Families Policy | n/a, not intended for children |
+| Frage                             | Antwort                                                                       |
+| --------------------------------- | ----------------------------------------------------------------------------- |
+| Data collected                    | Name, photos/user content                                                     |
+| Data shared with third parties    | No                                                                            |
+| Data encrypted in transit         | Yes, HTTPS                                                                    |
+| Data deletion request available   | Yes, in-app Art. 17 erasure flow                                              |
+| User can delete uploaded content  | Via erasure/support flow; per-photo moderation/delete flow depends on backend |
+| Committed to Play Families Policy | n/a, not intended for children                                                |
 
 ### Age Rating
 
@@ -86,21 +86,21 @@
 
 ## Legal URLs
 
-| Feld | Zielwert | Status |
-| ---- | -------- | ------ |
-| Datenschutz-URL | `https://eveplan.de/datenschutz` | Backend umgesetzt; deploy/verifizieren |
-| Impressum-URL | `https://eveplan.de/impressum` | Backend umgesetzt; App-Screen vorbereitet; deploy/verifizieren |
-| Kontakt/Support | offen | Haengt an E3. |
+| Feld            | Zielwert                         | Status                                                         |
+| --------------- | -------------------------------- | -------------------------------------------------------------- |
+| Datenschutz-URL | `https://eveplan.de/datenschutz` | Backend umgesetzt; deploy/verifizieren                         |
+| Impressum-URL   | `https://eveplan.de/impressum`   | Backend umgesetzt; App-Screen vorbereitet; deploy/verifizieren |
+| Kontakt/Support | offen                            | Haengt an E3.                                                  |
 
 ## Backend-Tickets
 
-| Ticket | Minimaler Scope | Status |
-| ------ | --------------- | ------ |
-| Imprint | `GET /api/legal/imprint?locale=de\|en` + `https://eveplan.de/impressum` | Backend umgesetzt; App-Client vorbereitet; deploy/verifizieren |
-| Privacy HTML | `https://eveplan.de/datenschutz` als browseroeffentliche HTML-Seite | Backend umgesetzt; deploy/verifizieren |
-| UGC Report | `POST /api/photos/:photoId/report` + App-Report-Modal | umgesetzt; deploy/smoke-test |
-| UGC Hide Content | `POST/DELETE /api/guests/:guestId/hide-content` + Hidden-Guests-Screen | umgesetzt; deploy/smoke-test |
-| UGC Contact | erreichbarer Supportkontakt fuer Moderationsfaelle | dokumentiert; E3 finalisieren |
+| Ticket           | Minimaler Scope                                                         | Status                                                         |
+| ---------------- | ----------------------------------------------------------------------- | -------------------------------------------------------------- |
+| Imprint          | `GET /api/legal/imprint?locale=de\|en` + `https://eveplan.de/impressum` | Backend umgesetzt; App-Client vorbereitet; deploy/verifizieren |
+| Privacy HTML     | `https://eveplan.de/datenschutz` als browseroeffentliche HTML-Seite     | Backend umgesetzt; deploy/verifizieren                         |
+| UGC Report       | `POST /api/photos/:photoId/report` + App-Report-Modal                   | umgesetzt; deploy/smoke-test                                   |
+| UGC Hide Content | `POST/DELETE /api/guests/:guestId/hide-content` + Hidden-Guests-Screen  | umgesetzt; deploy/smoke-test                                   |
+| UGC Contact      | erreichbarer Supportkontakt fuer Moderationsfaelle                      | dokumentiert; E3 finalisieren                                  |
 
 ### Backend Contract Draft
 

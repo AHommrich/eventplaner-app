@@ -138,11 +138,11 @@ noch in Produktion.
 
 `API_BASE` liegt in [`constants/env.ts`](constants/env.ts):
 
-| Build-Variante | API_BASE | Zweck |
-| --------------- | -------- | ----- |
-| Expo Go / `npm start` | `https://beta.hommrich.app` | lokale Entwicklung gegen Staging |
-| `eas build --profile preview` | `https://beta.hommrich.app` | interne Preview-Builds |
-| `eas build --profile production` | `https://eveplan.de` | TestFlight / Play Store |
+| Build-Variante                   | API_BASE                    | Zweck                            |
+| -------------------------------- | --------------------------- | -------------------------------- |
+| Expo Go / `npm start`            | `https://beta.hommrich.app` | lokale Entwicklung gegen Staging |
+| `eas build --profile preview`    | `https://beta.hommrich.app` | interne Preview-Builds           |
+| `eas build --profile production` | `https://eveplan.de`        | TestFlight / Play Store          |
 
 ---
 
