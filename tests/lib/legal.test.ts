@@ -128,6 +128,12 @@ describe('lib/legal — imprint', () => {
   it('readCachedImprint returns null when no cache exists', async () => {
     await expect(readCachedImprint('de')).resolves.toBeNull();
   });
+
+  it('re-throws when the imprint network call fails and no cache exists', async () => {
+    const err = new Error('offline');
+    api.get.mockRejectedValueOnce(err);
+    await expect(fetchImprint('de')).rejects.toBe(err);
+  });
 });
 
 describe('lib/legal — readCachedPrivacyNotice', () => {
