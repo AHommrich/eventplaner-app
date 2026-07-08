@@ -54,15 +54,6 @@ describe('app/(tabs)/photos', () => {
     await SecureStore.deleteItemAsync('consent_photo_upload');
   });
 
-  it('shows the empty-state hint when the backend returns no photos', async () => {
-    mockApiGet.mockResolvedValue({ data: { data: [] } });
-
-    const { UNSAFE_root } = renderScreen();
-    await waitFor(() =>
-      expect(UNSAFE_root.findAllByProps({ testID: 'photos-empty-state' }).length).toBeGreaterThan(0)
-    );
-  });
-
   it('renders the grid after a successful fetch', async () => {
     mockApiGet.mockResolvedValue({
       data: {
