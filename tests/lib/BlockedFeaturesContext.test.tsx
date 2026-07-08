@@ -73,6 +73,48 @@ describe('lib/BlockedFeaturesContext', () => {
     expect(getByTestId('blocked').props.children).toBe('BLOCKED');
   });
 
+  it('polls while blocked and re-opens drinks after a successful probe', async () => {
+    mockApiGet.mockResolvedValue({ data: [] });
+    const { getByTestId } = render(
+      <BlockedFeaturesProvider>
+        <Probe />
+      </BlockedFeaturesProvider>
+    );
+
+    act(() => {
+      capturedHandler?.();
+    });
+    expect(getByTestId('blocked').props.children).toBe('BLOCKED');
+
+    await act(async () => {
+      jest.advanceTimersByTime(10_000);
+      await Promise.resolve();
+    });
+
+    expect(mockResetBlocked).toHaveBeenCalledTimes(1);
+    expect(getByTestId('blocked').props.children).toBe('OPEN');
+  });
+
+  it('keeps polling when a blocked-state probe fails', async () => {
+    mockApiGet.mockResolvedValueOnce({ data: [] }).mockRejectedValueOnce(new Error('offline'));
+    const { getByTestId } = render(
+      <BlockedFeaturesProvider>
+        <Probe />
+      </BlockedFeaturesProvider>
+    );
+
+    act(() => {
+      capturedHandler?.();
+    });
+    await act(async () => {
+      jest.advanceTimersByTime(10_000);
+      await Promise.resolve();
+    });
+
+    expect(mockResetBlocked).not.toHaveBeenCalled();
+    expect(getByTestId('blocked').props.children).toBe('BLOCKED');
+  });
+
   it('detaches the handler on unmount to prevent leaks', () => {
     mockApiGet.mockResolvedValue({ data: [] });
     const { unmount } = render(

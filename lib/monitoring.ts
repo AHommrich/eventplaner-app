@@ -2,16 +2,21 @@
  * Sentry error monitoring bootstrap.
  *
  * Sentry's React Native SDK is a native module and is therefore meant for
- * development builds / EAS builds, not Expo Go. Keeping the import dynamic lets
+ * development builds / EAS builds, not Expo Go. Keeping the SDK load deferred lets
  * Expo Go keep working while production builds get crash reporting as soon as a
  * public DSN is supplied through EXPO_PUBLIC_SENTRY_DSN.
  */
 import Constants from 'expo-constants';
 
-const SENTRY_DSN = process.env.EXPO_PUBLIC_SENTRY_DSN ?? '';
-const SENTRY_TRACES_SAMPLE_RATE = Number(process.env.EXPO_PUBLIC_SENTRY_TRACES_SAMPLE_RATE ?? '0');
-
 let initialized = false;
+
+function getSentryDsn(): string {
+  return process.env['EXPO_PUBLIC_SENTRY_DSN'] ?? '';
+}
+
+function getSentryTracesSampleRate(): number {
+  return Number(process.env['EXPO_PUBLIC_SENTRY_TRACES_SAMPLE_RATE'] ?? '0');
+}
 
 function isExpoGo(): boolean {
   return Constants.executionEnvironment === 'storeClient';
@@ -32,17 +37,23 @@ function sanitizeEvent(event: any) {
   return event;
 }
 
+function loadSentry(): typeof import('@sentry/react-native') {
+  return require('@sentry/react-native');
+}
+
 export async function initMonitoring(): Promise<void> {
-  if (initialized || !SENTRY_DSN || isExpoGo()) return;
+  const dsn = getSentryDsn();
+  if (initialized || !dsn || isExpoGo()) return;
   initialized = true;
 
   try {
-    const Sentry = await import('@sentry/react-native');
+    const Sentry = loadSentry();
+    const tracesSampleRate = getSentryTracesSampleRate();
     Sentry.init({
-      dsn: SENTRY_DSN,
+      dsn,
       enabled: true,
       sendDefaultPii: false,
-      tracesSampleRate: Number.isFinite(SENTRY_TRACES_SAMPLE_RATE) ? SENTRY_TRACES_SAMPLE_RATE : 0,
+      tracesSampleRate: Number.isFinite(tracesSampleRate) ? tracesSampleRate : 0,
       beforeSend: sanitizeEvent,
     });
   } catch {
@@ -51,11 +62,11 @@ export async function initMonitoring(): Promise<void> {
 }
 
 export async function captureSentryTestError(): Promise<boolean> {
-  if (!SENTRY_DSN || isExpoGo()) return false;
+  if (!getSentryDsn() || isExpoGo()) return false;
   await initMonitoring();
   if (!initialized) return false;
 
-  const Sentry = await import('@sentry/react-native');
+  const Sentry = loadSentry();
   Sentry.captureException(new Error('eveplan Sentry test error'));
   return true;
 }
