@@ -16,7 +16,7 @@ Include, if you can:
 - A short description of the issue and its impact.
 - Steps to reproduce (or a proof-of-concept) against the staging environment
   at `https://beta.hommrich.app` — never against production
-  (`https://hommrich.app`).
+  (`https://eveplan.de`).
 - The app version / commit you tested against.
 - Whether you would like public credit in the fix commit.
 
@@ -28,7 +28,8 @@ message and we will reply with the public key.
 In scope:
 
 - This repository (the React Native / Expo client).
-- The APIs it consumes on `hommrich.app` and `beta.hommrich.app`.
+- The APIs it consumes on `eveplan.de` (production) and
+  `beta.hommrich.app` (staging).
 - Content the app writes to the device (Keychain / Keystore entries listed in
   [`docs/storage-keys.md`](docs/storage-keys.md)).
 
@@ -88,6 +89,17 @@ copies you made, and let us know.
 
 For bugs, feature requests or UX regressions, please open a regular issue on
 GitHub instead. Response times above apply only to security reports.
+
+## Content moderation
+
+User-generated content is limited to wedding photos and photo-game uploads.
+Until the in-app report/block controls are shipped, moderation requests should
+go to the same contact address listed above. Target response time for content
+reports is 48 hours.
+
+The store-release tracker in [`docs/STORE_RELEASE.md`](docs/STORE_RELEASE.md)
+keeps the Apple Guideline 1.2 checklist: report content, block users, visible
+support contact and backend-side filtering.
 
 ## Data-protection concerns
 

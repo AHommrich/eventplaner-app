@@ -6,6 +6,11 @@ const en = {
     unknownError: 'Unknown error',
     refreshed: 'Updated',
   },
+  a11y: {
+    back: 'Go back',
+    closePhoto: 'Close photo',
+    uploadPhoto: 'Upload photo',
+  },
   tabs: {
     home: 'Home',
     photos: 'Photos',
@@ -96,12 +101,21 @@ const en = {
     language: 'Language',
     german: 'German',
     english: 'English',
+    imprint: 'Imprint',
     privacy: 'Privacy policy',
     consents: 'Manage consents',
     exportData: 'Export my data',
     deleteAccount: 'Delete my account',
   },
   legal: {
+    imprint: {
+      title: 'Imprint',
+      updatedAt: 'Last updated: %{date}',
+      offlineTitle: 'Unavailable',
+      offlineMessage: "The imprint couldn't be loaded. You can read it in your browser.",
+      openInBrowser: 'Open in browser',
+      retry: 'Retry',
+    },
     privacy: {
       title: 'Privacy policy',
       updatedAt: 'Last updated: %{date}',
@@ -127,6 +141,10 @@ const en = {
     photoGame: {
       title: 'Sharing your photo task',
       body: 'For the photo task you receive an assignment and upload exactly one photo. Your image is shown together with your name inside the task view and is used only for evaluation by the couple. It is stored for up to 30 days after the event and then deleted automatically. Withdrawal is possible at any time.',
+    },
+    cameraScan: {
+      title: 'Camera access for QR scan',
+      body: 'We need your camera once to read your invitation QR code. No image is stored, nothing is shared with third parties, and nothing is recorded in the background.',
     },
   },
   drinks: {

@@ -114,6 +114,7 @@ export default function RootLayout() {
               <Stack.Screen name="declined" />
               <Stack.Screen name="blocked" />
               <Stack.Screen name="(tabs)" />
+              <Stack.Screen name="legal/imprint" />
               <Stack.Screen name="legal/privacy" />
               <Stack.Screen name="consents/index" />
               <Stack.Screen name="data-export" />

@@ -52,7 +52,9 @@ describe('lib/consents', () => {
   });
 
   it('ALL_PURPOSES lists every ConsentKey', () => {
-    expect(ALL_PURPOSES).toEqual(expect.arrayContaining(['photo_upload', 'photo_game']));
-    expect(ALL_PURPOSES.length).toBe(2);
+    expect(ALL_PURPOSES).toEqual(
+      expect.arrayContaining(['photo_upload', 'photo_game', 'camera_scan'])
+    );
+    expect(ALL_PURPOSES.length).toBe(3);
   });
 });

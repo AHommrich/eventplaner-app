@@ -288,6 +288,8 @@ export default function PhotosScreen() {
           )}
           <Pressable
             onPress={() => setSelected(null)}
+            accessibilityRole="button"
+            accessibilityLabel={t('a11y.closePhoto')}
             style={{ position: 'absolute', top: insets.top + 12, right: 20 }}
           >
             <Ionicons name="close" size={28} color="#fff" />
@@ -299,6 +301,8 @@ export default function PhotosScreen() {
       <Pressable
         onPress={showUploadOptions}
         disabled={uploading}
+        accessibilityRole="button"
+        accessibilityLabel={t('a11y.uploadPhoto')}
         style={{
           position: 'absolute',
           bottom: 24,

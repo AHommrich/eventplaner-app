@@ -75,18 +75,44 @@ macht weiter.
 
 ## ⚠️ Entscheidungen, die vor Start geklärt werden müssen
 
-| # | Entscheidung | Betrifft | Status |
-| - | ------------ | -------- | ------ |
-| E1 | Apple Developer Account ($99/J) aktiv? | T15, T22, T25, T27 | offen |
-| E2 | Google Play Console Account ($25 einm.) aktiv? | T15, T23, T26, T28 | offen |
-| E3 | Support-Email für Store-Listing | T15, T20 | offen — Vorschläge: `security@hommrich.app`, `support@eveplan.de`, neu |
-| E4 | Impressum-URL: Wo lebt die Web-Version? | T16 | offen — vermutlich `eveplan.de/impressum` im Backend-Repo |
-| E5 | UGC-Report/Block-Endpoints Backend | T17 | offen — existieren nicht, müssen im Backend-Repo als Task |
-| E6 | HTML-Datenschutz-URL für Store-Formular | T10 (aus altem Plan) | offen — `eveplan.de/datenschutz` im Backend-Repo |
-| E7 | Content-Rating-Selbsteinschätzung: Drinks-Feature | T21 | offen — realistisch 12+ / USK 12 |
+| # | Entscheidung | Kategorie | Betrifft | Status |
+| - | ------------ | --------- | -------- | ------ |
+| E1 | Apple Developer Account ($99/J) aktiv? | Extern / Account | T15, T22, T25, T27 | offen |
+| E2 | Google Play Console Account ($25 einm.) aktiv? | Extern / Account | T15, T23, T26, T28 | offen |
+| E3 | Support-Email für Store-Listing | Extern / Branding | T15, T20 | offen — Default-Vorschlag: `support@eveplan.de` |
+| E4 | Impressum-URL: Wo lebt die Web-Version? | Backend / Legal | T16 | offen — Zielannahme: `https://eveplan.de/impressum` |
+| E5 | UGC-Report/Block-Endpoints Backend | Backend / Moderation | T17 | offen — existieren nicht, müssen im Backend-Repo als Task |
+| E6 | HTML-Datenschutz-URL für Store-Formular | Backend / Legal | T10 (aus altem Plan) | offen — Zielannahme: `https://eveplan.de/datenschutz` |
+| E7 | Content-Rating-Selbsteinschätzung: Drinks-Feature | Store / Legal | T21 | offen — Arbeitshypothese: 12+ / USK 12 |
 
-Bevor T15 (Ende Woche 1) startet, sollten E1–E7 beantwortet sein.
-E4/E5/E6 sind Backend-Tasks — separat im Backend-Repo tracken.
+Bevor T15 (Ende Woche 1) startet, sollten E1–E7 beantwortet oder als
+bewusste Annahme in [`docs/STORE_RELEASE.md`](STORE_RELEASE.md) dokumentiert
+sein. E4/E5/E6 sind Backend-Tasks und werden separat im Backend-Repo getrackt.
+
+### Bearbeitungsmodus für E1-E7
+
+Diese Punkte sind keine normalen App-Repo-Tickets. Der saubere Modus ist:
+
+- **Entscheidungspunkte**: E1, E2, E3, E7. Codex kann vorbereiten, prüfen und
+  dokumentieren; Andre muss final entscheiden bzw. Accounts anlegen.
+- **Backend-Punkte**: E4, E5, E6. Codex kann API-Kontrakte,
+  Akzeptanzkriterien und App-Integration vorbereiten; Umsetzung braucht das
+  Backend-Repo oder ein Backend-Ticket.
+- **App-Repo-Punkte**: T15, T16 Client-Teil, T17 Client-Teil, T20, T21. Diese
+  koennen im App-Repo umgesetzt werden, sobald die oben genannten Annahmen
+  bestaetigt oder als vorlaeufig markiert sind.
+
+### Entscheidungspakete
+
+| # | Naechste Aktion | Vorlaeufige Annahme | Akzeptanzkriterium |
+| - | --------------- | ------------------- | ------------------ |
+| E1 | Apple Developer Membership pruefen/anlegen; Team-ID und App Store Connect Zugriff in `STORE_RELEASE.md` eintragen. | Account wird fuer `ahommrichs-organization` genutzt. | App Store Connect App kann fuer `com.ahommrichsorganization.eveplan` angelegt werden. |
+| E2 | Google Play Console pruefen/anlegen; Package Name und Zugriff in `STORE_RELEASE.md` eintragen. | Android Package Name bleibt Expo/EAS-konform bei `com.ahommrichsorganization.eveplan`. | Play Console App kann fuer den finalen Package Name angelegt werden. |
+| E3 | Support-Adresse festlegen und in `SECURITY.md`, Store-Metadaten und Legal-Texten verwenden. | `support@eveplan.de` fuer Store/Support, `security@hommrich.app` nur falls bewusst getrennt. | Eine erreichbare Mailadresse ist in Store-Listing, Privacy/Imprint und Security-Doku konsistent. |
+| E4 | Backend-Ticket fuer HTML-Impressum + JSON-Imprint-Endpoint anlegen. | `https://eveplan.de/impressum` und `GET /api/legal/imprint?locale=de\|en`. | URL ist browseroeffentlich erreichbar; App kann Impressum offline-cachen analog Privacy. |
+| E5 | Backend-Ticket fuer UGC Report/Block/Contact anlegen; App-Client danach bauen. | Minimaler Moderationsumfang reicht: Foto melden, Gast blockieren/ausblenden, Supportkontakt. | Apple Guideline 1.2 ist mit UI, API und Review Notes belegbar. |
+| E6 | Backend-Ticket fuer HTML-Datenschutz anlegen. | `https://eveplan.de/datenschutz`; JSON-Endpoint bleibt fuer App-Inhalte. | Store-Formulare bekommen eine browseroeffentliche Datenschutz-URL. |
+| E7 | Store-Fragebogen mit Drinks-Feature konservativ beantworten. | 12+ / USK 12 wegen Alkohol-/Drinks-Kontext ohne Verkauf oder Konsumanreiz. | Age Rating in `STORE_RELEASE.md` dokumentiert; Store-Fragebogen-Antworten sind nachvollziehbar. |
 
 ---
 

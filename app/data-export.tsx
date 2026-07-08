@@ -102,7 +102,12 @@ export default function DataExportScreen() {
             paddingVertical: theme.spacing.sm,
           }}
         >
-          <TouchableOpacity onPress={() => router.back()} style={{ padding: theme.spacing.sm }}>
+          <TouchableOpacity
+            onPress={() => router.back()}
+            accessibilityRole="button"
+            accessibilityLabel={t('a11y.back')}
+            style={{ padding: theme.spacing.sm }}
+          >
             <Ionicons name="chevron-back" size={24} color={colors.cardText} />
           </TouchableOpacity>
           <ThemedText

@@ -1,19 +1,8 @@
 /**
- * In-app privacy notice screen (Art. 13 DSGVO).
+ * In-app imprint screen (§ 5 DDG).
  *
- * Content comes from the backend so wording updates roll out without an App
- * Store submission. States:
- *
- *   - loading .... first fetch not yet resolved.
- *   - error ...... fetch failed AND no cache was available. Renders an
- *                   offline card with a "open in browser" fallback link and
- *                   a retry button.
- *   - success .... sections rendered as plain text with the section heading
- *                   in bold. The `updated_at` timestamp sits above the first
- *                   section so guests know how fresh the copy is.
- *
- * A stale cache (older than 24 h) is preferred over the error state when the
- * network is down — `lib/legal.ts` handles that transparently.
+ * Mirrors the privacy-notice screen: backend-served legal copy, 24 h cache,
+ * stale-cache fallback and a browser-open button when no cache is available.
  */
 import { useCallback, useEffect, useState } from 'react';
 import { ScrollView, View, TouchableOpacity, ActivityIndicator, Linking } from 'react-native';
@@ -23,13 +12,11 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useLanguage } from '../../lib/LanguageContext';
 import { useEventTheme } from '../../lib/EventThemeContext';
-import { fetchPrivacyNotice, PrivacyNotice } from '../../lib/legal';
+import { fetchImprint, ImprintNotice } from '../../lib/legal';
 import { API_BASE } from '../../constants/env';
 import { theme } from '../../constants/theme';
 
-// The web privacy page lives on the same host as the API. Consumed by the
-// offline fallback button so guests always have a reachable copy.
-const FALLBACK_URL = `${API_BASE}/datenschutz`;
+const FALLBACK_URL = `${API_BASE}/impressum`;
 
 function formatUpdatedAt(iso: string, locale: string): string {
   return new Date(iso).toLocaleDateString(locale === 'de' ? 'de-DE' : 'en-GB', {
@@ -39,13 +26,13 @@ function formatUpdatedAt(iso: string, locale: string): string {
   });
 }
 
-export default function PrivacyScreen() {
+export default function ImprintScreen() {
   const router = useRouter();
   const { t, language } = useLanguage();
   const { colors } = useEventTheme();
   const insets = useSafeAreaInsets();
 
-  const [notice, setNotice] = useState<PrivacyNotice | null>(null);
+  const [notice, setNotice] = useState<ImprintNotice | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
 
@@ -53,7 +40,7 @@ export default function PrivacyScreen() {
     setLoading(true);
     setError(false);
     try {
-      const data = await fetchPrivacyNotice(language);
+      const data = await fetchImprint(language);
       setNotice(data);
     } catch {
       setError(true);
@@ -63,19 +50,12 @@ export default function PrivacyScreen() {
   }, [language]);
 
   useEffect(() => {
-    // Bootstrap fetch → setNotice / setError / setLoading. Same shape as
-    // `app/consents/index.tsx`: state updates happen in the resolved-promise
-    // microtask, not synchronously within the effect body.
     // eslint-disable-next-line react-hooks/set-state-in-effect
     load();
   }, [load]);
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.screenBg }}>
-      {/* Header card — same treatment as consents/data-export: wraps the
-          back arrow + title in a card-coloured strip so `colors.cardText`
-          stays legible even when it happens to be close to
-          `colors.screenBg` in the current palette. */}
       <View
         style={{
           backgroundColor: colors.card,
@@ -108,7 +88,7 @@ export default function PrivacyScreen() {
               marginLeft: theme.spacing.xs,
             }}
           >
-            {t('legal.privacy.title')}
+            {t('legal.imprint.title')}
           </ThemedText>
         </View>
       </View>
@@ -136,7 +116,7 @@ export default function PrivacyScreen() {
               textAlign: 'center',
             }}
           >
-            {t('legal.privacy.offlineTitle')}
+            {t('legal.imprint.offlineTitle')}
           </ThemedText>
           <ThemedText
             style={{
@@ -147,7 +127,7 @@ export default function PrivacyScreen() {
               lineHeight: 20,
             }}
           >
-            {t('legal.privacy.offlineMessage')}
+            {t('legal.imprint.offlineMessage')}
           </ThemedText>
           <TouchableOpacity
             onPress={() => Linking.openURL(FALLBACK_URL)}
@@ -160,7 +140,7 @@ export default function PrivacyScreen() {
             }}
           >
             <ThemedText style={{ color: colors.cardButtonText, fontWeight: '600' }}>
-              {t('legal.privacy.openInBrowser')}
+              {t('legal.imprint.openInBrowser')}
             </ThemedText>
           </TouchableOpacity>
           <TouchableOpacity
@@ -168,7 +148,7 @@ export default function PrivacyScreen() {
             style={{ marginTop: theme.spacing.md, padding: theme.spacing.sm }}
           >
             <ThemedText style={{ color: colors.cardText, fontSize: 14 }}>
-              {t('legal.privacy.retry')}
+              {t('legal.imprint.retry')}
             </ThemedText>
           </TouchableOpacity>
         </View>
@@ -182,7 +162,7 @@ export default function PrivacyScreen() {
           <ThemedText
             style={{ fontSize: 12, color: theme.colors.muted, marginBottom: theme.spacing.lg }}
           >
-            {t('legal.privacy.updatedAt', { date: formatUpdatedAt(notice.updated_at, language) })}
+            {t('legal.imprint.updatedAt', { date: formatUpdatedAt(notice.updated_at, language) })}
           </ThemedText>
           {notice.sections.map((section) => (
             <View key={section.id} style={{ marginBottom: theme.spacing.lg }}>

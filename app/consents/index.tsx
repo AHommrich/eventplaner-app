@@ -27,6 +27,7 @@ import { theme } from '../../constants/theme';
 const LOCALE_SHARD: Record<ConsentKey, string> = {
   photo_upload: 'photoUpload',
   photo_game: 'photoGame',
+  camera_scan: 'cameraScan',
 };
 
 function formatGrantedAt(iso: string, locale: string): string {
@@ -45,13 +46,18 @@ export default function ConsentsScreen() {
   const [records, setRecords] = useState<Record<ConsentKey, ConsentRecord | null>>({
     photo_upload: null,
     photo_game: null,
+    camera_scan: null,
   });
 
   const load = useCallback(async () => {
     const entries = await Promise.all(
       ALL_PURPOSES.map(async (p) => [p, await getConsent(p)] as const)
     );
-    const next: Record<ConsentKey, ConsentRecord | null> = { photo_upload: null, photo_game: null };
+    const next: Record<ConsentKey, ConsentRecord | null> = {
+      photo_upload: null,
+      photo_game: null,
+      camera_scan: null,
+    };
     for (const [p, r] of entries) next[p] = r;
     setRecords(next);
   }, []);
@@ -100,7 +106,12 @@ export default function ConsentsScreen() {
             paddingVertical: theme.spacing.sm,
           }}
         >
-          <TouchableOpacity onPress={() => router.back()} style={{ padding: theme.spacing.xs }}>
+          <TouchableOpacity
+            onPress={() => router.back()}
+            accessibilityRole="button"
+            accessibilityLabel={t('a11y.back')}
+            style={{ padding: theme.spacing.xs }}
+          >
             <Ionicons name="chevron-back" size={24} color={colors.cardText} />
           </TouchableOpacity>
           <ThemedText

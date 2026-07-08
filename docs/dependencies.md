@@ -24,11 +24,20 @@ them to `API_BASE` from `constants/env.ts`:
 
 | Package                | Phones home?                                                                                                                                          | To whom                                               | Notes                                                                                                                                                                                                                         |
 | ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `axios`                | Only to `constants/env.ts::API_BASE`                                                                                                                  | `hommrich.app` (prod) / `beta.hommrich.app` (staging) | Sole HTTP client. All backend calls funnel through `lib/api.ts`, which enforces the base URL and attaches the bearer via interceptor.                                                                                         |
+| `axios`                | Only to `constants/env.ts::API_BASE`                                                                                                                  | `beta.hommrich.app` (Expo Go / EAS Preview) / `eveplan.de` (EAS Production) | Sole HTTP client. All backend calls funnel through `lib/api.ts`, which enforces the base URL and attaches the bearer via interceptor.                                                                                         |
 | `react-native-webview` | Only when we render a WebView; the only such surface is `lib/QrFromImage.tsx` which loads an inline HTML string (no remote URL, no `src` attributes). | —                                                     | Never used to render remote URLs. The HTML template inlines a vendored `jsQR` copy (`lib/vendor/jsQRSource.ts`) — the previous CDN reference to `cdn.jsdelivr.net` was removed so the WebView produces zero outbound traffic. |
 
 Everything else in the list is either pure UI, a native module wrapping a
 local device capability, or a bundle-time helper.
+
+### Why two backend domains?
+
+Staging (`beta.hommrich.app`) has its own database with local test guests and
+separate logs. Store builds speak to `eveplan.de`, because the production guest
+tokens live there. A staging token used against production is rejected, and the
+reverse is rejected as well. That is why staging is the safe default in
+`constants/env.ts`, while `eas.json` deliberately injects `https://eveplan.de`
+for the production profile.
 
 ## Fonts (locally bundled, zero CDN traffic)
 
@@ -65,7 +74,7 @@ Nothing over the wire.
 | `expo-clipboard`         | Read/write system clipboard.                                                                     | No                                                                                                         |
 | `expo-constants`         | Reads env values baked into the bundle.                                                          | No                                                                                                         |
 | `expo-font`              | Loads font assets registered by `@expo-google-fonts/*`.                                          | No                                                                                                         |
-| `expo-image`             | Native image renderer; caches decoded bitmaps on disk under the OS-managed sandbox.              | Only when we pass it a remote URL (e.g. photo gallery items) — those URLs already point at `hommrich.app`. |
+| `expo-image`             | Native image renderer; caches decoded bitmaps on disk under the OS-managed sandbox.              | Only when we pass it a remote URL (e.g. photo gallery items) — those URLs already point at the configured backend (`beta.hommrich.app` or `eveplan.de`). |
 | `expo-image-manipulator` | On-device rotate/resize/crop. Runs in-process.                                                   | No                                                                                                         |
 | `expo-image-picker`      | System photo-library / camera picker.                                                            | No                                                                                                         |
 | `expo-linear-gradient`   | Gradient renderer.                                                                               | No                                                                                                         |
@@ -98,9 +107,11 @@ Nothing over the wire.
 
 ## Summary
 
-- **1** package makes network calls (`axios`) — only to `hommrich.app`.
+- **1** package makes network calls (`axios`) — only to the configured backend
+  (`beta.hommrich.app` for Expo Go / EAS Preview, `eveplan.de` for EAS
+  Production).
 - **1** package renders content on demand from a URL we pass (`expo-image`) —
-  the URLs point at `hommrich.app`.
+  the URLs point at the same configured backend.
 - **10** font packages ship font files locally with no CDN fallback.
 - **1** vendored copy of `jsqr` ships inside the JS bundle so the gallery-
   based QR decoder needs zero CDN traffic (`lib/vendor/jsQRSource.ts`).

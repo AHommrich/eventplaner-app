@@ -8,7 +8,8 @@
  *      imports a tracking module.
  *   3. No source file references a public CDN host at runtime — the app
  *      must fetch its assets from either the JS bundle or the backend at
- *      `hommrich.app`, never from jsDelivr, unpkg, Google Fonts, etc.
+ *      `beta.hommrich.app` for staging builds or `eveplan.de` for
+ *      production builds, never from jsDelivr, unpkg, Google Fonts, etc.
  *
  * When a new tracking name enters the ecosystem, extend `TRACKING_PATTERNS`;
  * the test will fail if any current dep or import matches. Same for CDN

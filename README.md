@@ -125,13 +125,16 @@ npx expo start                       # Metro + Expo Go pairing QR
 
 Open Expo Go on a real device, scan the Metro QR, and use one of the DEV
 tokens on the scan screen (`app/scan.tsx`). Production QR codes point at
-`https://hommrich.app`; the development tokens documented in `CLAUDE.md`
-target the local Laravel instance and will not authenticate on staging or
-production.
+`https://eveplan.de`; local development tokens live in `CLAUDE.local.md`
+(gitignored) and will not authenticate on staging or production.
 
-`API_BASE` lives in [`constants/env.ts`](constants/env.ts) — staging by
-default (`https://beta.hommrich.app`). Flip to production only for a
-release build.
+`API_BASE` lives in [`constants/env.ts`](constants/env.ts):
+
+| Build variant | API_BASE | Purpose |
+| ------------- | -------- | ------- |
+| Expo Go / `npm start` | `https://beta.hommrich.app` | local development against staging |
+| `eas build --profile preview` | `https://beta.hommrich.app` | internal preview builds |
+| `eas build --profile production` | `https://eveplan.de` | TestFlight / Play Store |
 
 ---
 

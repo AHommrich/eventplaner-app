@@ -44,6 +44,7 @@ type Pending = {
 const LOCALE_SHARD: Record<ConsentKey, string> = {
   photo_upload: 'photoUpload',
   photo_game: 'photoGame',
+  camera_scan: 'cameraScan',
 };
 
 export function ConsentGateProvider({ children }: { children: ReactNode }) {

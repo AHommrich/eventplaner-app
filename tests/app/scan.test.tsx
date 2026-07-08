@@ -13,9 +13,11 @@ import React from 'react';
 import { Alert } from 'react-native';
 import { act, fireEvent, render, waitFor } from '@testing-library/react-native';
 import { router } from 'expo-router';
+import * as SecureStore from 'expo-secure-store';
 
 const mockApiGet = jest.fn();
 const mockApiPost = jest.fn();
+const mockRequestPermission = jest.fn();
 jest.mock('../../lib/api', () => ({
   __esModule: true,
   default: { get: (...a: any[]) => mockApiGet(...a), post: (...a: any[]) => mockApiPost(...a) },
@@ -37,34 +39,52 @@ jest.mock('expo-camera', () => {
       barcodeHandler = props.onBarcodeScanned;
       return React.createElement(View, { testID: 'camera-view' });
     },
-    useCameraPermissions: () => [{ granted: true }, jest.fn()],
+    useCameraPermissions: () => [{ granted: true }, mockRequestPermission],
   };
 });
 
 import ScanScreen from '../../app/scan';
 import { LanguageProvider } from '../../lib/LanguageContext';
 import { EventThemeProvider } from '../../lib/EventThemeContext';
+import { ConsentGateProvider } from '../../components/ConsentGate';
+import { grantConsent } from '../../lib/consents';
 
 function renderScreen() {
   return render(
     <LanguageProvider>
       <EventThemeProvider>
-        <ScanScreen />
+        <ConsentGateProvider>
+          <ScanScreen />
+        </ConsentGateProvider>
       </EventThemeProvider>
     </LanguageProvider>
   );
 }
 
 describe('app/scan', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     barcodeHandler = null;
     mockApiGet.mockReset();
     mockApiPost.mockReset();
     mockSaveSession.mockReset();
+    mockRequestPermission.mockReset();
     (router.replace as jest.Mock).mockClear();
+    (router.back as jest.Mock).mockClear();
+    await SecureStore.deleteItemAsync('consent_camera_scan');
+  });
+
+  it('asks for camera_scan consent before rendering the camera preview', async () => {
+    const { findByText, findByTestId, queryByTestId } = renderScreen();
+
+    expect(queryByTestId('camera-view')).toBeNull();
+    fireEvent.press(await findByText('Ich stimme zu'));
+
+    await findByTestId('camera-view');
+    expect(mockRequestPermission).not.toHaveBeenCalled();
   });
 
   it('solo token: saves session and redirects to `/`', async () => {
+    await grantConsent('camera_scan');
     mockApiGet.mockResolvedValue({
       data: {
         type: 'solo',
@@ -81,7 +101,8 @@ describe('app/scan', () => {
       },
     });
 
-    renderScreen();
+    const { findByTestId } = renderScreen();
+    await findByTestId('camera-view');
     // Trigger the barcode-scanned handler manually.
     await act(async () => {
       barcodeHandler?.({ data: 'https://hommrich.app/qr/tok-solo' });
@@ -97,6 +118,7 @@ describe('app/scan', () => {
   });
 
   it('family token: opens the picker with every group member', async () => {
+    await grantConsent('camera_scan');
     mockApiGet.mockResolvedValue({
       data: {
         type: 'family',
@@ -108,7 +130,8 @@ describe('app/scan', () => {
       },
     });
 
-    const { findByText } = renderScreen();
+    const { findByText, findByTestId } = renderScreen();
+    await findByTestId('camera-view');
     await act(async () => {
       barcodeHandler?.({ data: 'https://hommrich.app/qr/fam-token' });
     });
@@ -122,6 +145,7 @@ describe('app/scan', () => {
   });
 
   it('409 on select: greys out the row and shows the alert', async () => {
+    await grantConsent('camera_scan');
     mockApiGet.mockResolvedValue({
       data: {
         type: 'family',
@@ -139,7 +163,8 @@ describe('app/scan', () => {
 
     const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
 
-    const { findByText } = renderScreen();
+    const { findByText, findByTestId } = renderScreen();
+    await findByTestId('camera-view');
     await act(async () => {
       barcodeHandler?.({ data: 'https://hommrich.app/qr/fam-token' });
     });

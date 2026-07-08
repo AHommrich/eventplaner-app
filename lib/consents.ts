@@ -13,7 +13,7 @@
 import * as SecureStore from 'expo-secure-store';
 
 /** Every purpose the app asks explicit consent for. */
-export type ConsentKey = 'photo_upload' | 'photo_game';
+export type ConsentKey = 'photo_upload' | 'photo_game' | 'camera_scan';
 
 /** Persisted shape. `granted_at` is the audit-trail anchor. */
 export type ConsentRecord = {
@@ -53,4 +53,4 @@ export async function revokeConsent(purpose: ConsentKey): Promise<void> {
  * management screen so a new purpose only needs an addition here + a
  * matching pair of locale strings.
  */
-export const ALL_PURPOSES: ConsentKey[] = ['photo_upload', 'photo_game'];
+export const ALL_PURPOSES: ConsentKey[] = ['photo_upload', 'photo_game', 'camera_scan'];
