@@ -34,11 +34,11 @@ the full preflight before building.
 
 ## Build Profiles
 
-| Command | Backend | Purpose |
-| ------- | ------- | ------- |
-| `eas build --profile preview --platform all` | `https://beta.hommrich.app` | Internal device testing |
-| `eas build --profile production --platform ios` | `https://eveplan.de` | TestFlight / App Store |
-| `eas build --profile production --platform android` | `https://eveplan.de` | Play Internal / Closed Testing |
+| Command                                             | Backend                     | Purpose                        |
+| --------------------------------------------------- | --------------------------- | ------------------------------ |
+| `eas build --profile preview --platform all`        | `https://beta.hommrich.app` | Internal device testing        |
+| `eas build --profile production --platform ios`     | `https://eveplan.de`        | TestFlight / App Store         |
+| `eas build --profile production --platform android` | `https://eveplan.de`        | Play Internal / Closed Testing |
 
 The production backend override comes from `eas.json`. Do not edit
 `constants/env.ts` for a production release.
@@ -63,17 +63,17 @@ Before submission, confirm `docs/STORE_RELEASE.md` contains:
 
 Run this once on iOS and once on Android before store upload:
 
-| Area | Check |
-| ---- | ----- |
-| Login | Fresh install, scan a real solo QR, land on the correct post-login route. |
-| RSVP | Submit or update RSVP and verify the expected route/tab state. |
-| Home | Countdown, cover image and venue navigation render; maps handoff opens. |
-| Photos | Gallery loads, upload asks for consent, successful upload refreshes. |
-| Photo game | Assignment loads; consent gate appears before photo submission. |
-| Drinks | Drink list, search, log action and leaderboard load when enabled. |
-| Legal | Impressum, Datenschutz, Consents, Data Export and Erasure routes open. |
-| Language | Switch DE/EN in settings and verify tab + legal labels update. |
-| Logout | Session clears and the welcome screen appears on restart. |
+| Area       | Check                                                                     |
+| ---------- | ------------------------------------------------------------------------- |
+| Login      | Fresh install, scan a real solo QR, land on the correct post-login route. |
+| RSVP       | Submit or update RSVP and verify the expected route/tab state.            |
+| Home       | Countdown, cover image and venue navigation render; maps handoff opens.   |
+| Photos     | Gallery loads, upload asks for consent, successful upload refreshes.      |
+| Photo game | Assignment loads; consent gate appears before photo submission.           |
+| Drinks     | Drink list, search, log action and leaderboard load when enabled.         |
+| Legal      | Impressum, Datenschutz, Consents, Data Export and Erasure routes open.    |
+| Language   | Switch DE/EN in settings and verify tab + legal labels update.            |
+| Logout     | Session clears and the welcome screen appears on restart.                 |
 
 For reviewer builds, also verify the demo-token flow documented in
 `docs/STORE_RELEASE.md`.

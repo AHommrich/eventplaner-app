@@ -75,15 +75,15 @@ macht weiter.
 
 ## ⚠️ Entscheidungen, die vor Start geklärt werden müssen
 
-| # | Entscheidung | Kategorie | Betrifft | Status |
-| - | ------------ | --------- | -------- | ------ |
-| E1 | Apple Developer Account ($99/J) aktiv? | Extern / Account | T15, T22, T25, T27 | offen |
-| E2 | Google Play Console Account ($25 einm.) aktiv? | Extern / Account | T15, T23, T26, T28 | offen |
-| E3 | Support-Email für Store-Listing | Extern / Branding | T15, T20 | offen — Default-Vorschlag: `support@eveplan.de` |
-| E4 | Impressum-URL: Wo lebt die Web-Version? | Backend / Legal | T16 | umgesetzt im Backend — Ziel: `https://eveplan.de/impressum` |
-| E5 | UGC-Report/Hide-Content Backend | Backend / Moderation | T17 | umgesetzt — App-UI + Backend vorhanden, deploy/smoke-test offen |
-| E6 | HTML-Datenschutz-URL für Store-Formular | Backend / Legal | T10 (aus altem Plan) | umgesetzt im Backend — Ziel: `https://eveplan.de/datenschutz` |
-| E7 | Content-Rating-Selbsteinschätzung: Drinks-Feature | Store / Legal | T21 | offen — Arbeitshypothese: 12+ / USK 12 |
+| #   | Entscheidung                                      | Kategorie            | Betrifft             | Status                                                          |
+| --- | ------------------------------------------------- | -------------------- | -------------------- | --------------------------------------------------------------- |
+| E1  | Apple Developer Account ($99/J) aktiv?            | Extern / Account     | T15, T22, T25, T27   | offen                                                           |
+| E2  | Google Play Console Account ($25 einm.) aktiv?    | Extern / Account     | T15, T23, T26, T28   | offen                                                           |
+| E3  | Support-Email für Store-Listing                   | Extern / Branding    | T15, T20             | offen — Default-Vorschlag: `support@eveplan.de`                 |
+| E4  | Impressum-URL: Wo lebt die Web-Version?           | Backend / Legal      | T16                  | umgesetzt im Backend — Ziel: `https://eveplan.de/impressum`     |
+| E5  | UGC-Report/Hide-Content Backend                   | Backend / Moderation | T17                  | umgesetzt — App-UI + Backend vorhanden, deploy/smoke-test offen |
+| E6  | HTML-Datenschutz-URL für Store-Formular           | Backend / Legal      | T10 (aus altem Plan) | umgesetzt im Backend — Ziel: `https://eveplan.de/datenschutz`   |
+| E7  | Content-Rating-Selbsteinschätzung: Drinks-Feature | Store / Legal        | T21                  | offen — Arbeitshypothese: 12+ / USK 12                          |
 
 Bevor T15 (Ende Woche 1) startet, sollten E1–E7 beantwortet oder als
 bewusste Annahme in [`docs/STORE_RELEASE.md`](STORE_RELEASE.md) dokumentiert
@@ -104,30 +104,30 @@ Diese Punkte sind keine normalen App-Repo-Tickets. Der saubere Modus ist:
 
 ### Entscheidungspakete
 
-| # | Naechste Aktion | Vorlaeufige Annahme | Akzeptanzkriterium |
-| - | --------------- | ------------------- | ------------------ |
-| E1 | Apple Developer Membership pruefen/anlegen; Team-ID und App Store Connect Zugriff in `STORE_RELEASE.md` eintragen. | Account wird fuer `ahommrichs-organization` genutzt. | App Store Connect App kann fuer `com.ahommrichsorganization.eveplan` angelegt werden. |
-| E2 | Google Play Console pruefen/anlegen; Package Name und Zugriff in `STORE_RELEASE.md` eintragen. | Android Package Name bleibt Expo/EAS-konform bei `com.ahommrichsorganization.eveplan`. | Play Console App kann fuer den finalen Package Name angelegt werden. |
-| E3 | Support-Adresse festlegen und in `SECURITY.md`, Store-Metadaten und Legal-Texten verwenden. | `support@eveplan.de` fuer Store/Support, `security@hommrich.app` nur falls bewusst getrennt. | Eine erreichbare Mailadresse ist in Store-Listing, Privacy/Imprint und Security-Doku konsistent. |
-| E4 | Backend-Ticket fuer HTML-Impressum + JSON-Imprint-Endpoint anlegen. | `https://eveplan.de/impressum` und `GET /api/legal/imprint?locale=de\|en`. | URL ist browseroeffentlich erreichbar; App kann Impressum offline-cachen analog Privacy. |
-| E5 | Backend-Ticket fuer UGC Report/Block/Contact anlegen; App-Client danach bauen. | Minimaler Moderationsumfang reicht: Foto melden, Gast blockieren/ausblenden, Supportkontakt. | Apple Guideline 1.2 ist mit UI, API und Review Notes belegbar. |
-| E6 | Backend-Ticket fuer HTML-Datenschutz anlegen. | `https://eveplan.de/datenschutz`; JSON-Endpoint bleibt fuer App-Inhalte. | Store-Formulare bekommen eine browseroeffentliche Datenschutz-URL. |
-| E7 | Store-Fragebogen mit Drinks-Feature konservativ beantworten. | 12+ / USK 12 wegen Alkohol-/Drinks-Kontext ohne Verkauf oder Konsumanreiz. | Age Rating in `STORE_RELEASE.md` dokumentiert; Store-Fragebogen-Antworten sind nachvollziehbar. |
+| #   | Naechste Aktion                                                                                                    | Vorlaeufige Annahme                                                                          | Akzeptanzkriterium                                                                               |
+| --- | ------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| E1  | Apple Developer Membership pruefen/anlegen; Team-ID und App Store Connect Zugriff in `STORE_RELEASE.md` eintragen. | Account wird fuer `ahommrichs-organization` genutzt.                                         | App Store Connect App kann fuer `com.ahommrichsorganization.eveplan` angelegt werden.            |
+| E2  | Google Play Console pruefen/anlegen; Package Name und Zugriff in `STORE_RELEASE.md` eintragen.                     | Android Package Name bleibt Expo/EAS-konform bei `com.ahommrichsorganization.eveplan`.       | Play Console App kann fuer den finalen Package Name angelegt werden.                             |
+| E3  | Support-Adresse festlegen und in `SECURITY.md`, Store-Metadaten und Legal-Texten verwenden.                        | `support@eveplan.de` fuer Store/Support, `security@hommrich.app` nur falls bewusst getrennt. | Eine erreichbare Mailadresse ist in Store-Listing, Privacy/Imprint und Security-Doku konsistent. |
+| E4  | Backend-Ticket fuer HTML-Impressum + JSON-Imprint-Endpoint anlegen.                                                | `https://eveplan.de/impressum` und `GET /api/legal/imprint?locale=de\|en`.                   | URL ist browseroeffentlich erreichbar; App kann Impressum offline-cachen analog Privacy.         |
+| E5  | Backend-Ticket fuer UGC Report/Block/Contact anlegen; App-Client danach bauen.                                     | Minimaler Moderationsumfang reicht: Foto melden, Gast blockieren/ausblenden, Supportkontakt. | Apple Guideline 1.2 ist mit UI, API und Review Notes belegbar.                                   |
+| E6  | Backend-Ticket fuer HTML-Datenschutz anlegen.                                                                      | `https://eveplan.de/datenschutz`; JSON-Endpoint bleibt fuer App-Inhalte.                     | Store-Formulare bekommen eine browseroeffentliche Datenschutz-URL.                               |
+| E7  | Store-Fragebogen mit Drinks-Feature konservativ beantworten.                                                       | 12+ / USK 12 wegen Alkohol-/Drinks-Kontext ohne Verkauf oder Konsumanreiz.                   | Age Rating in `STORE_RELEASE.md` dokumentiert; Store-Fragebogen-Antworten sind nachvollziehbar.  |
 
 ---
 
 ## Timeline auf einen Blick
 
-| Woche | Fokus | Deliverable |
-| ----- | ----- | ----------- |
-| **1** (07.07.–13.07.) | Polish + Store-Prep-Check | T1–T15 committed |
-| **2** (14.07.–20.07.) | Impressum + UGC-Moderation + Info.plist | App rechtlich store-tauglich |
-| **3** (21.07.–27.07.) | Screenshots + Store-Texte + Fragebögen | Alle Store-Assets fertig |
-| **4** (28.07.–03.08.) | Store Setup + erster Prod-Build | Build hochladbar |
-| **5** (04.08.–10.08.) | TestFlight Internal + Play Internal Testing | ~5 interne Tester |
-| **6** (11.08.–17.08.) | External Review (Apple) + Closed Testing (Play) | Beide Stores approved |
-| **7** (18.08.–24.08.) | Externe Tester onboarden + Rechts-Check | Beta läuft |
-| **8** (25.08.–31.08.) | Reject-Response-Puffer | Version 1.0 released |
+| Woche                 | Fokus                                           | Deliverable                  |
+| --------------------- | ----------------------------------------------- | ---------------------------- |
+| **1** (07.07.–13.07.) | Polish + Store-Prep-Check                       | T1–T15 committed             |
+| **2** (14.07.–20.07.) | Impressum + UGC-Moderation + Info.plist         | App rechtlich store-tauglich |
+| **3** (21.07.–27.07.) | Screenshots + Store-Texte + Fragebögen          | Alle Store-Assets fertig     |
+| **4** (28.07.–03.08.) | Store Setup + erster Prod-Build                 | Build hochladbar             |
+| **5** (04.08.–10.08.) | TestFlight Internal + Play Internal Testing     | ~5 interne Tester            |
+| **6** (11.08.–17.08.) | External Review (Apple) + Closed Testing (Play) | Beide Stores approved        |
+| **7** (18.08.–24.08.) | Externe Tester onboarden + Rechts-Check         | Beta läuft                   |
+| **8** (25.08.–31.08.) | Reject-Response-Puffer                          | Version 1.0 released         |
 
 **Realistisches Release-Datum:** ~1. September 2026 (Puffer inklusive 1 Rejection).
 
@@ -183,6 +183,7 @@ CLAUDE.local.md so the public repo carries no credentials.
 ### Tag 2 · Domain-Story konsistent machen (≈ 2.5 h)
 
 **Kontext:** Absicht ist:
+
 - Expo Go, EAS Preview → `beta.hommrich.app` (Staging)
 - EAS Production (TestFlight, Play Store) → `eveplan.de`
 - `hommrich.app` ist Legacy und sollte in der Doku nicht mehr Haupt-Wording sein.
@@ -208,11 +209,11 @@ against eveplan.de. Document both explicitly so audit trail matches config.
 
 - Im "Quick start"-Abschnitt eine Tabelle einfügen:
 
-  | Build-Variante | API_BASE | Zweck |
-  | -------------- | -------- | ----- |
-  | Expo Go / `npm start` | `beta.hommrich.app` | lokale Entwicklung |
-  | `eas build --profile preview` | `beta.hommrich.app` | interne Preview-APKs |
-  | `eas build --profile production` | `eveplan.de` | TestFlight / Play Store |
+  | Build-Variante                   | API_BASE            | Zweck                   |
+  | -------------------------------- | ------------------- | ----------------------- |
+  | Expo Go / `npm start`            | `beta.hommrich.app` | lokale Entwicklung      |
+  | `eas build --profile preview`    | `beta.hommrich.app` | interne Preview-APKs    |
+  | `eas build --profile production` | `eveplan.de`        | TestFlight / Play Store |
 
 - Zeile "Flip to production only for a release build" ersetzen durch Verweis auf die Tabelle.
 
@@ -579,6 +580,7 @@ In `docs/STORE_RELEASE.md` unter "Fragebögen" festhalten (damit du sie beim
 Ausfüllen 1:1 kopieren kannst):
 
 **Apple App Privacy (Nutrition Label):**
+
 - Data linked to you:
   - Contact Info → Name (Vorname + Nachname, für Anzeige)
   - User Content → Photos (Foto-Galerie + Foto-Spiel-Uploads)
@@ -587,12 +589,14 @@ Ausfüllen 1:1 kopieren kannst):
 - Third-party analytics: **None**
 
 **Google Data Safety Form:**
+
 - Data collected: Name, Photos (both linked, not shared with third parties)
 - Data encrypted in transit: Yes (HTTPS)
 - Data can be deleted: Yes (in-app via Art. 17 Erasure)
 - Committed to Play Families Policy: n/a (nicht für Kinder gedacht)
 
 **Age Rating:**
+
 - Apple: 12+ (wegen Alcohol-References im Drinks-Feature)
 - Google: PEGI 12 (analog); USK 12 (analog)
 - **Alternative:** wenn das Drinks-Feature per default disabled ist bei Store-Launch, könnte 4+ / USK 0 gehen. **Entscheidung E7.**
@@ -679,6 +683,7 @@ answers on the first attempt.
    - Screenshot des QR beilegen.
 
 **Umsetzung im Repo:**
+
 - `docs/STORE_RELEASE.md`: neuer Abschnitt "App Review Notes" mit fertigem Text zum Einfügen in App Store Connect.
 - Falls Reviewer-Token-Ansatz gewählt: Backend-Task in Backend-Repo tracken.
 
