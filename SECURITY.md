@@ -92,14 +92,10 @@ GitHub instead. Response times above apply only to security reports.
 
 ## Content moderation
 
-User-generated content is limited to wedding photos and photo-game uploads.
-Until the in-app report/block controls are shipped, moderation requests should
-go to the same contact address listed above. Target response time for content
-reports is 48 hours.
-
-The store-release tracker in [`docs/STORE_RELEASE.md`](docs/STORE_RELEASE.md)
-keeps the Apple Guideline 1.2 checklist: report content, hide uploader
-content, visible support contact and backend-side filtering.
+User-generated content is limited to event photos and photo-game uploads.
+Moderation requests should go to the same contact address listed above. Target
+response time for content reports is 48 hours. Store-review notes and reviewer
+credentials are kept outside the public repository.
 
 ## Data-protection concerns
 

@@ -62,7 +62,7 @@ picks a different name.
   individually-personalised cards for every family. Wedding stationery
   is a design object; every family gets one card by convention. Doing
   one card per guest would also encourage guests to swap cards ("give
-  me André's, I'll do his RSVP for him"), silently poisoning the
+  me another guest's, I'll do their RSVP for them"), silently poisoning the
   attendance list.
 - **Passwords or one-time email codes.** A guest opening the app once
   should not need an inbox. Email-based recovery was rejected because

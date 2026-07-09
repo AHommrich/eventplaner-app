@@ -1,7 +1,8 @@
 # Release Playbook
 
-This file is the operational checklist for preview, TestFlight and Play Store
-builds. Store metadata and account state live in `docs/STORE_RELEASE.md`.
+This file is a public-safe operational checklist for preview, TestFlight and
+Play Store builds. Store metadata, account state and reviewer credentials live
+outside the public repository.
 
 ## Preflight
 
@@ -33,30 +34,35 @@ development builds, TestFlight and Play Store builds, set:
 | `EXPO_PUBLIC_SENTRY_DSN`                | yes      | Public DSN for runtime error reporting. Leave unset to disable Sentry.      |
 | `EXPO_PUBLIC_SENTRY_TRACES_SAMPLE_RATE` | no       | Defaults to `0`; keep low or disabled unless performance tracing is needed. |
 | `EXPO_PUBLIC_ENABLE_SENTRY_TEST_BUTTON` | no       | Set to `1` only for a temporary TestFlight/preview verification build.      |
-| `SENTRY_ORG`                            | no       | Defaults to `ahommrich` in `app.config.js`; override only if project moves. |
-| `SENTRY_PROJECT`                        | no       | Defaults to `react-native` in `app.config.js`; override only if renamed.    |
+| `SENTRY_ORG`                            | no       | Optional source-map upload org slug. Use an example or private EAS value.   |
+| `SENTRY_PROJECT`                        | no       | Optional source-map upload project slug. Use an example or private EAS value. |
 | `SENTRY_AUTH_TOKEN`                     | release  | Secret for source-map upload. Configure in EAS/CI, never commit.            |
+| `SENTRY_ALLOW_FAILURE`                  | build    | Set to `true` in `eas.json` so a Sentry upload issue never blocks archives. |
 
 The client config in `lib/monitoring.ts` is crash-only: `sendDefaultPii: false`,
-no Session Replay and no Sentry Logs. If Sentry SaaS is used, keep
-`docs/STORE_RELEASE.md` in sync because diagnostics are shared with a third
-party for operational purposes.
+no Session Replay and no Sentry Logs. If Sentry SaaS is used, keep the app's
+public privacy text in sync because diagnostics are shared with a third party
+for operational purposes.
 
 Run these once per EAS environment. The DSN is public but still kept out of the
 repo so preview and production can diverge later if needed:
 
 ```bash
-eas env:create --environment preview --name EXPO_PUBLIC_SENTRY_DSN --value "https://8b68f769c5f943cd71adba3c5715fea2@o4511683645997056.ingest.de.sentry.io/4511701402517584" --visibility plaintext
-eas env:create --environment production --name EXPO_PUBLIC_SENTRY_DSN --value "https://8b68f769c5f943cd71adba3c5715fea2@o4511683645997056.ingest.de.sentry.io/4511701402517584" --visibility plaintext
+eas env:create --environment preview --name EXPO_PUBLIC_SENTRY_DSN --value "" --visibility plaintext
+eas env:create --environment production --name EXPO_PUBLIC_SENTRY_DSN --value "" --visibility plaintext
 eas env:create --environment preview --name EXPO_PUBLIC_SENTRY_TRACES_SAMPLE_RATE --value "0" --visibility plaintext
 eas env:create --environment production --name EXPO_PUBLIC_SENTRY_TRACES_SAMPLE_RATE --value "0" --visibility plaintext
 eas env:create --environment preview --name SENTRY_AUTH_TOKEN --value "<sentry-auth-token>" --visibility secret
 eas env:create --environment production --name SENTRY_AUTH_TOKEN --value "<sentry-auth-token>" --visibility secret
 ```
 
-`app.config.js` already wires the Sentry Expo plugin to org `ahommrich` and
-project `react-native`. Only `SENTRY_AUTH_TOKEN` is still missing for source-map
-upload; do not commit that token.
+`app.config.js` wires the Sentry Expo plugin from `SENTRY_ORG` and
+`SENTRY_PROJECT`, with example defaults only. `SENTRY_AUTH_TOKEN` is required
+for source-map upload; do not commit that token. EAS builds set
+`SENTRY_ALLOW_FAILURE=true` so an invalid Sentry project/token cannot fail an
+App Store archive. Treat any Sentry upload warning as a release follow-up and
+verify the real org/project slugs in Sentry before relying on de-obfuscated
+production stack traces.
 
 For a temporary TestFlight verification build, enable the hidden Settings row:
 
@@ -103,7 +109,7 @@ eas submit --profile production --platform ios
 eas submit --profile production --platform android
 ```
 
-Before submission, confirm `docs/STORE_RELEASE.md` contains:
+Before submission, confirm the private store checklist contains:
 
 - Apple Developer and Play Console access status
 - Support email
@@ -128,8 +134,8 @@ Run this once on iOS and once on Android before store upload:
 | Language   | Switch DE/EN in settings and verify tab + legal labels update.            |
 | Logout     | Session clears and the welcome screen appears on restart.                 |
 
-For reviewer builds, also verify the demo-token flow documented in
-`docs/STORE_RELEASE.md`.
+For reviewer builds, also verify the private demo-token or reviewer access
+flow. Never commit real reviewer tokens.
 
 ## Rollback
 

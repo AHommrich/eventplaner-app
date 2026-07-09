@@ -4,10 +4,8 @@
 #   - Development build of the app is installed (Expo Go or a native dev
 #     client — see .maestro/README.md).
 #   - Backend (staging or local Laravel) reachable at `constants/env.ts::API_BASE`.
-#   - `MAESTRO_SOLO_TOKEN` env var set to a **local-only** solo QR token
-#     (see CLAUDE.md — the checked-in token `GbuyIYNTncT9tflws9vFcezcuFUyQvOE`
-#     works against the local backend, NOT against staging). Never store a
-#     real production token in a flow file.
+#   - `MAESTRO_SOLO_TOKEN` env var set to a **local-only** or dedicated demo
+#     solo QR token. Never store a real production token in a flow file.
 #
 # What this flow verifies end-to-end:
 #   1. Launching the app renders the welcome screen (session probe finds no
