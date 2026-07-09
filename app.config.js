@@ -1,7 +1,7 @@
 const baseConfig = require('./app.json');
 
-const SENTRY_ORG = process.env.SENTRY_ORG ?? 'ahommrich';
-const SENTRY_PROJECT = process.env.SENTRY_PROJECT ?? 'react-native';
+const SENTRY_ORG = process.env.SENTRY_ORG ?? 'example-org';
+const SENTRY_PROJECT = process.env.SENTRY_PROJECT ?? 'example-project';
 
 const plugins = baseConfig.expo.plugins.map((plugin) => {
   if (plugin !== '@sentry/react-native/expo') return plugin;

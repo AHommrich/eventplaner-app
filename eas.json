@@ -7,17 +7,24 @@
     "development": {
       "developmentClient": true,
       "distribution": "internal",
-      "environment": "preview"
+      "environment": "preview",
+      "env": {
+        "SENTRY_ALLOW_FAILURE": "true"
+      }
     },
     "preview": {
       "distribution": "internal",
-      "environment": "preview"
+      "environment": "preview",
+      "env": {
+        "SENTRY_ALLOW_FAILURE": "true"
+      }
     },
     "production": {
       "autoIncrement": true,
       "environment": "production",
       "env": {
-        "EXPO_PUBLIC_API_BASE": "https://eveplan.de"
+        "EXPO_PUBLIC_API_BASE": "https://eveplan.de",
+        "SENTRY_ALLOW_FAILURE": "true"
       }
     }
   },

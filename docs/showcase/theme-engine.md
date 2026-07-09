@@ -7,7 +7,7 @@ brand values.
 ## The constraint
 
 The client is a wedding-guest app but the code is a **couple-neutral
-template**. The same TypeScript bundle needs to render André & Tabea's
+template**. The same TypeScript bundle needs to render one event's
 wedding today and, in principle, someone else's wedding tomorrow. That
 rules out the usual "define your brand palette in `theme.ts` and be done"
 approach — the palette has to come from the backend at runtime.

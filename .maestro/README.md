@@ -55,10 +55,9 @@ Jest could plausibly have caught but did not.
    export MAESTRO_SOLO_TOKEN='<solo QR token>'
    ```
 
-   The tokens checked into [`CLAUDE.md`](../CLAUDE.md) are **local-only**
-   and will not authenticate against staging or production. The flow
-   references the env var, not the raw token, so nothing sensitive is
-   committed to the repo.
+   Use a **local-only** or dedicated demo token that will not authenticate
+   against production. The flow references the env var, not the raw token, so
+   nothing sensitive is committed to the repo.
 
 ## Running the flows
 
