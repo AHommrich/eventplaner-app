@@ -2,7 +2,8 @@
  * In-app imprint screen (§ 5 DDG).
  *
  * Mirrors the privacy-notice screen: backend-served legal copy, 24 h cache,
- * stale-cache fallback and a browser-open button when no cache is available.
+ * stale-cache fallback, bundled static fallback and a browser-open escape
+ * hatch for unexpected failures.
  */
 import { useCallback, useEffect, useState } from 'react';
 import { ScrollView, View, TouchableOpacity, ActivityIndicator, Linking } from 'react-native';

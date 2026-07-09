@@ -179,16 +179,21 @@ Alle Punkte darunter sind kleiner als die drei Kernpunkte, aber müssen
 
 ### 4.1 Kritisch (Blocker für den Wedding-Live-Einsatz)
 
-- [ ] **Fallback-Impressum + Fallback-Datenschutzerklärung statisch im
-      Bundle** — für den Fall „erster Start ohne Netzverbindung". Aktuell
-      wirft [`lib/legal.ts`](../lib/legal.ts) den Axios-Error weiter, wenn
-      kein Cache existiert. Statischer Textinhalt in
+- [x] **Fallback-Impressum + Fallback-Datenschutzerklärung statisch im
+      Bundle** — für den Fall „erster Start ohne Netzverbindung". Statischer
+      Textinhalt in
       `constants/legal-fallback.ts` (de + en), in `app/legal/*.tsx` als
       letzter Fallback einbinden. Rechtlich für DE relevant.
-- [ ] **Produktions-Sentry-DSN in EAS-Secrets** setzen
+      Status: umgesetzt am 2026-07-09; Backend-Text und Cache bleiben
+      vorrangig, Bundle-Text ist via `lib/legal.ts` nur der letzte
+      Offline-Fallback.
+- [x] **Produktions-Sentry-DSN in EAS-Secrets** setzen
       (`EXPO_PUBLIC_SENTRY_DSN`, optional `SENTRY_AUTH_TOKEN` für
       Sourcemaps). Einmalige Verifikation über den vorhandenen
       `captureSentryTestError()`-Button im Settings-Screen.
+      Status: TestFlight-Testfehler wurde am 2026-07-09 erfolgreich bis
+      Sentry übertragen. Sourcemap-Symbolication separat im Sentry-Event
+      prüfen, falls noch nicht erfolgt.
 - [ ] **End-to-End-Smoke auf echtem iOS- + Android-Gerät** gegen
       `https://eveplan.de`:
   - Solo-Login → RSVP → Home → Foto-Upload → Consent-Widerruf → Erasure
@@ -199,6 +204,11 @@ Alle Punkte darunter sind kleiner als die drei Kernpunkte, aber müssen
 - [ ] **Backend-Datenschutzerklärung + Impressum live verifiziert** unter
       `/api/legal/*` gegen `eveplan.de`. Muss dieselben Sections wie in
       `lib/legal.ts::PrivacySection` zurückliefern.
+      Status 2026-07-09: `https://eveplan.de/datenschutz` und
+      `https://eveplan.de/impressum` liefern HTTP 200; die Privacy-API
+      liefert fuer `de` und `en` den erwarteten JSON-Shape. Die Imprint-API
+      liefert fuer `de` und `en` aktuell HTTP 404 und bleibt
+      Backend-Deploy-/Routing-Blocker.
 - [ ] **App-Icon + Splash + Adaptive-Icons final** auf allen Zielauflösungen
       pixelgenau am echten Device prüfen (Assets sind in `assets/`
       vorhanden).
