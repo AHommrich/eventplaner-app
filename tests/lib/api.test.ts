@@ -31,6 +31,7 @@ import apiDefault, {
   registerDrinksBlockedHandler,
   clearDrinksBlockedHandler,
   resetDrinksBlocked,
+  resetUnauthorizedRedirect,
 } from '../../lib/api';
 
 const axiosInstance = require('axios').default.__instance;
@@ -89,9 +90,16 @@ describe('lib/api — request interceptor', () => {
 });
 
 describe('lib/api — response interceptor', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     clearBlocked();
     clearDrinksBlockedHandler();
+    resetUnauthorizedRedirect();
+    await SecureStore.deleteItemAsync('guest_token');
+    await SecureStore.deleteItemAsync('guest_id');
+    await SecureStore.deleteItemAsync('guest_firstname');
+    await SecureStore.deleteItemAsync('guest_lastname');
+    await SecureStore.deleteItemAsync('guest_type');
+    await SecureStore.deleteItemAsync('guest_family_name');
     (router.replace as jest.Mock).mockClear();
   });
 
@@ -139,6 +147,47 @@ describe('lib/api — response interceptor', () => {
     resetDrinksBlocked();
     responseOnError({ response: { data: { code: 'drinks_blocked' } } });
     expect(handler).toHaveBeenCalledTimes(2);
+  });
+
+  it('clears the local session and routes to / on authenticated 401s', async () => {
+    await SecureStore.setItemAsync('guest_token', 'expired-token');
+    await SecureStore.setItemAsync('guest_id', '42');
+    await SecureStore.setItemAsync('guest_firstname', 'Ada');
+    await SecureStore.setItemAsync('guest_lastname', 'Lovelace');
+    await SecureStore.setItemAsync('guest_type', 'solo');
+    await SecureStore.setItemAsync('guest_family_name', 'Lovelace');
+
+    responseOnError({
+      config: { url: '/api/guest/me', headers: { Authorization: 'Bearer expired-token' } },
+      response: { status: 401, data: {} },
+    });
+    await Promise.resolve();
+
+    expect(await SecureStore.getItemAsync('guest_token')).toBeNull();
+    expect(await SecureStore.getItemAsync('guest_id')).toBeNull();
+    expect(await SecureStore.getItemAsync('guest_firstname')).toBeNull();
+    expect(await SecureStore.getItemAsync('guest_lastname')).toBeNull();
+    expect(await SecureStore.getItemAsync('guest_type')).toBeNull();
+    expect(await SecureStore.getItemAsync('guest_family_name')).toBeNull();
+    expect(router.replace).toHaveBeenCalledWith('/');
+  });
+
+  it('does not treat unauthenticated QR/login 401s as session expiry', async () => {
+    const err = {
+      config: { url: '/api/auth/qr/bad-token', headers: {} },
+      response: { status: 401, data: {} },
+    };
+    await expect(responseOnError(err)).rejects.toBe(err);
+    expect(router.replace).not.toHaveBeenCalled();
+  });
+
+  it('lets logout 401s bubble so clearSession can finish local cleanup', async () => {
+    const err = {
+      config: { url: '/api/auth/logout', headers: { Authorization: 'Bearer expired-token' } },
+      response: { status: 401, data: {} },
+    };
+    await expect(responseOnError(err)).rejects.toBe(err);
+    expect(router.replace).not.toHaveBeenCalled();
   });
 
   it('rejects unrelated errors verbatim', async () => {

@@ -226,7 +226,7 @@ describe('lib/guest — Art. 15 / Art. 17 GDPR endpoints', () => {
 
 describe('lib/guest — UGC moderation endpoints', () => {
   it('reportPhoto posts reason and optional message to the photo report endpoint', async () => {
-    api.post.mockResolvedValueOnce({ data: { id: 7, status: 'open', auto_hidden: true } });
+    api.post.mockResolvedValueOnce({ data: { id: 7, status: 'pending', auto_hidden: true } });
     const result = await reportPhoto(42, { reason: 'other', message: 'Bitte prüfen' });
 
     expect(api.post).toHaveBeenCalledWith('/api/photos/42/report', {

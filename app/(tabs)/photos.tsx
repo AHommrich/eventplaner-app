@@ -36,6 +36,7 @@ import * as ImagePicker from 'expo-image-picker';
 import * as ImageManipulator from 'expo-image-manipulator';
 import { Ionicons } from '@expo/vector-icons';
 import api from '../../lib/api';
+import { getSession } from '../../lib/auth';
 import { theme } from '../../constants/theme';
 import { useLanguage } from '../../lib/LanguageContext';
 import { useEventTheme } from '../../lib/EventThemeContext';
@@ -80,6 +81,10 @@ type Photo = {
   created_at: string;
 };
 
+type PhotoUploadResponse = Omit<Photo, 'guest_id'> & {
+  guest_id?: number | null;
+};
+
 const REPORT_REASONS: PhotoReportReason[] = ['inappropriate_content', 'privacy', 'other'];
 
 // --- Grid layout constants ---
@@ -95,6 +100,7 @@ export default function PhotosScreen() {
   const [photos, setPhotos] = useState<Photo[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
+  const [currentGuestId, setCurrentGuestId] = useState<number | null>(null);
   const [selected, setSelected] = useState<Photo | null>(null);
   const [reportingPhoto, setReportingPhoto] = useState<Photo | null>(null);
   const [reportReason, setReportReason] = useState<PhotoReportReason>('inappropriate_content');
@@ -128,6 +134,7 @@ export default function PhotosScreen() {
 
   useEffect(() => {
     fetchPhotos();
+    getSession().then((session) => setCurrentGuestId(session?.guestId ?? null));
     intervalRef.current = setInterval(fetchPhotos, POLL_INTERVAL);
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
@@ -153,11 +160,16 @@ export default function PhotosScreen() {
     } as any);
     setUploading(true);
     try {
-      const res = await api.post<Photo>('/api/photos', formData, {
+      const res = await api.post<PhotoUploadResponse>('/api/photos', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
         transformRequest: (data) => data,
       });
-      setPhotos((prev) => [res.data, ...prev]);
+      const session = await getSession();
+      const uploadedPhoto: Photo = {
+        ...res.data,
+        guest_id: res.data.guest_id ?? session?.guestId ?? null,
+      };
+      setPhotos((prev) => [uploadedPhoto, ...prev]);
     } catch (e: any) {
       const msg = e?.response?.data?.message ?? e?.message ?? t('common.unknownError');
       Alert.alert(t('common.error'), msg);
@@ -295,6 +307,28 @@ export default function PhotosScreen() {
     }
   }
 
+  function confirmDeletePhoto(photo: Photo) {
+    Alert.alert(t('photos.deleteTitle'), t('photos.deleteDescription'), [
+      { text: t('common.cancel'), style: 'cancel' },
+      {
+        text: t('photos.deletePhoto'),
+        style: 'destructive',
+        onPress: () => deletePhoto(photo),
+      },
+    ]);
+  }
+
+  async function deletePhoto(photo: Photo) {
+    try {
+      await api.delete(`/api/photos/${photo.id}`);
+      setPhotos((prev) => prev.filter((p) => p.id !== photo.id));
+      setSelected(null);
+      Alert.alert(t('photos.deleteSuccess'));
+    } catch {
+      Alert.alert(t('common.error'), t('photos.deleteError'));
+    }
+  }
+
   const selectedIndex = selected
     ? Math.max(
         photos.findIndex((photo) => photo.id === selected.id),
@@ -399,26 +433,48 @@ export default function PhotosScreen() {
                 {selected.guest_name}
               </ThemedText>
               <View style={{ flexDirection: 'row', gap: 10, marginTop: theme.spacing.md }}>
-                <Pressable
-                  testID="report-photo-button"
-                  onPress={() => openReport(selected)}
-                  style={{
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    gap: 6,
-                    borderWidth: 1,
-                    borderColor: 'rgba(255,255,255,0.35)',
-                    borderRadius: theme.borderRadius.md,
-                    paddingHorizontal: theme.spacing.md,
-                    paddingVertical: theme.spacing.sm,
-                  }}
-                >
-                  <Ionicons name="flag-outline" size={16} color="#fff" />
-                  <ThemedText style={{ color: '#fff', fontSize: 13 }}>
-                    {t('photos.report')}
-                  </ThemedText>
-                </Pressable>
-                {selected.guest_id !== null && (
+                {selected.guest_id === currentGuestId ? (
+                  <Pressable
+                    testID="delete-photo-button"
+                    onPress={() => confirmDeletePhoto(selected)}
+                    style={{
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      gap: 6,
+                      borderWidth: 1,
+                      borderColor: 'rgba(255,255,255,0.35)',
+                      borderRadius: theme.borderRadius.md,
+                      paddingHorizontal: theme.spacing.md,
+                      paddingVertical: theme.spacing.sm,
+                    }}
+                  >
+                    <Ionicons name="trash-outline" size={16} color="#fff" />
+                    <ThemedText style={{ color: '#fff', fontSize: 13 }}>
+                      {t('photos.deletePhoto')}
+                    </ThemedText>
+                  </Pressable>
+                ) : (
+                  <Pressable
+                    testID="report-photo-button"
+                    onPress={() => openReport(selected)}
+                    style={{
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      gap: 6,
+                      borderWidth: 1,
+                      borderColor: 'rgba(255,255,255,0.35)',
+                      borderRadius: theme.borderRadius.md,
+                      paddingHorizontal: theme.spacing.md,
+                      paddingVertical: theme.spacing.sm,
+                    }}
+                  >
+                    <Ionicons name="flag-outline" size={16} color="#fff" />
+                    <ThemedText style={{ color: '#fff', fontSize: 13 }}>
+                      {t('photos.report')}
+                    </ThemedText>
+                  </Pressable>
+                )}
+                {selected.guest_id !== null && selected.guest_id !== currentGuestId && (
                   <Pressable
                     testID="hide-uploader-button"
                     onPress={() => confirmHideUploader(selected)}

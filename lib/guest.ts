@@ -222,7 +222,7 @@ export type PhotoReportReason = 'inappropriate_content' | 'privacy' | 'other';
 
 export type PhotoReportResponse = {
   id: number;
-  status: 'open';
+  status: 'pending';
   auto_hidden: boolean;
 };
 

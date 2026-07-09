@@ -220,6 +220,11 @@ const en = {
     reportRateLimited: 'Too many reports. Please wait.',
     reportValidationError: 'Please check your input.',
     reportNetworkError: "Report couldn't be sent. Please try again.",
+    deletePhoto: 'Delete',
+    deleteTitle: 'Delete photo?',
+    deleteDescription: 'This photo will be removed from the shared gallery.',
+    deleteSuccess: 'Photo deleted.',
+    deleteError: "Photo couldn't be deleted. Please try again.",
     hideUploader: 'Hide uploader',
     hideUploaderTitle: 'Hide uploader?',
     hideUploaderDescription:
