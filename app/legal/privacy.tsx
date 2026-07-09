@@ -5,15 +5,14 @@
  * Store submission. States:
  *
  *   - loading .... first fetch not yet resolved.
- *   - error ...... fetch failed AND no cache was available. Renders an
- *                   offline card with a "open in browser" fallback link and
- *                   a retry button.
+ *   - error ...... unexpected failure before backend, cache or bundled
+ *                   fallback could render. Keeps a browser-open escape hatch.
  *   - success .... sections rendered as plain text with the section heading
  *                   in bold. The `updated_at` timestamp sits above the first
  *                   section so guests know how fresh the copy is.
  *
- * A stale cache (older than 24 h) is preferred over the error state when the
- * network is down — `lib/legal.ts` handles that transparently.
+ * A stale cache (older than 24 h) is preferred when the network is down; if no
+ * cache exists, `lib/legal.ts` returns the bundled legal fallback.
  */
 import { useCallback, useEffect, useState } from 'react';
 import { ScrollView, View, TouchableOpacity, ActivityIndicator, Linking } from 'react-native';

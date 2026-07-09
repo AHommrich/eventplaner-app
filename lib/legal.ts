@@ -8,11 +8,12 @@
  * pushes the day before the wedding lands with the next open.
  *
  * On network / endpoint failure we return a stale cache entry if any exists,
- * otherwise the caller receives the raw axios error and is expected to
- * surface the "open in browser" fallback path.
+ * otherwise a static bundle fallback is shown so first-launch offline never
+ * produces a blank legal screen.
  */
 import api from './api';
 import * as SecureStore from 'expo-secure-store';
+import { getFallbackImprint, getFallbackPrivacyNotice } from '../constants/legal-fallback';
 
 const PRIVACY_CACHE_KEY_PREFIX = 'legal_privacy_cache_';
 const IMPRINT_CACHE_KEY_PREFIX = 'legal_imprint_cache_';
@@ -48,10 +49,9 @@ type CacheEntry = {
  * Fallback order on failure:
  *   1. any cached copy (even if stale — the guest strongly prefers something
  *      readable over a blank screen).
- *   2. re-throw the original error so the caller can show its offline UI.
+ *   2. static bundle copy.
  *
  * @param locale — active app locale (`de` or `en`).
- * @throws the underlying axios error when no cache is available.
  */
 export async function fetchPrivacyNotice(locale: string): Promise<PrivacyNotice> {
   try {
@@ -66,7 +66,7 @@ export async function fetchPrivacyNotice(locale: string): Promise<PrivacyNotice>
   } catch (e) {
     const stale = await readCachedPrivacyNotice(locale, true);
     if (stale) return stale;
-    throw e;
+    return getFallbackPrivacyNotice(locale);
   }
 }
 
@@ -106,7 +106,7 @@ export async function fetchImprint(locale: string): Promise<ImprintNotice> {
   } catch (e) {
     const stale = await readCachedImprint(locale, true);
     if (stale) return stale;
-    throw e;
+    return getFallbackImprint(locale);
   }
 }
 

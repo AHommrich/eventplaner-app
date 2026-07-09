@@ -86,21 +86,21 @@
 
 ## Legal URLs
 
-| Feld            | Zielwert                         | Status                                                         |
-| --------------- | -------------------------------- | -------------------------------------------------------------- |
-| Datenschutz-URL | `https://eveplan.de/datenschutz` | Backend umgesetzt; deploy/verifizieren                         |
-| Impressum-URL   | `https://eveplan.de/impressum`   | Backend umgesetzt; App-Screen vorbereitet; deploy/verifizieren |
-| Kontakt/Support | offen                            | Haengt an E3.                                                  |
+| Feld            | Zielwert                         | Status                         |
+| --------------- | -------------------------------- | ------------------------------ |
+| Datenschutz-URL | `https://eveplan.de/datenschutz` | live verifiziert am 2026-07-09 |
+| Impressum-URL   | `https://eveplan.de/impressum`   | live verifiziert am 2026-07-09 |
+| Kontakt/Support | offen                            | Haengt an E3.                  |
 
 ## Backend-Tickets
 
-| Ticket           | Minimaler Scope                                                         | Status                                                         |
-| ---------------- | ----------------------------------------------------------------------- | -------------------------------------------------------------- |
-| Imprint          | `GET /api/legal/imprint?locale=de\|en` + `https://eveplan.de/impressum` | Backend umgesetzt; App-Client vorbereitet; deploy/verifizieren |
-| Privacy HTML     | `https://eveplan.de/datenschutz` als browseroeffentliche HTML-Seite     | Backend umgesetzt; deploy/verifizieren                         |
-| UGC Report       | `POST /api/photos/:photoId/report` + App-Report-Modal                   | umgesetzt; deploy/smoke-test                                   |
-| UGC Hide Content | `POST/DELETE /api/guests/:guestId/hide-content` + Hidden-Guests-Screen  | umgesetzt; deploy/smoke-test                                   |
-| UGC Contact      | erreichbarer Supportkontakt fuer Moderationsfaelle                      | dokumentiert; E3 finalisieren                                  |
+| Ticket           | Minimaler Scope                                                           | Status                                                         |
+| ---------------- | ------------------------------------------------------------------------- | -------------------------------------------------------------- |
+| Imprint          | `GET /api/legal/imprint?locale=de\|en` + `https://eveplan.de/impressum`   | HTML live verifiziert; API liefert am 2026-07-09 noch HTTP 404 |
+| Privacy HTML/API | `https://eveplan.de/datenschutz` + `GET /api/legal/privacy?locale=de\|en` | live verifiziert am 2026-07-09                                 |
+| UGC Report       | `POST /api/photos/:photoId/report` + App-Report-Modal                     | umgesetzt; deploy/smoke-test                                   |
+| UGC Hide Content | `POST/DELETE /api/guests/:guestId/hide-content` + Hidden-Guests-Screen    | umgesetzt; deploy/smoke-test                                   |
+| UGC Contact      | erreichbarer Supportkontakt fuer Moderationsfaelle                        | dokumentiert; E3 finalisieren                                  |
 
 ### Backend Contract Draft
 

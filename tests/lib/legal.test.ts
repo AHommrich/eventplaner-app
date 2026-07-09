@@ -12,6 +12,7 @@ import {
   readCachedPrivacyNotice,
   PrivacyNotice,
 } from '../../lib/legal';
+import { getFallbackImprint, getFallbackPrivacyNotice } from '../../constants/legal-fallback';
 
 jest.mock('../../lib/api', () => {
   const mock = {
@@ -80,10 +81,13 @@ describe('lib/legal', () => {
     expect(result).toEqual(notice);
   });
 
-  it('re-throws when no network AND no cache', async () => {
-    const err = new Error('offline');
-    api.get.mockRejectedValueOnce(err);
-    await expect(fetchPrivacyNotice('de')).rejects.toBe(err);
+  it('falls back to the bundled privacy notice when no network AND no cache', async () => {
+    api.get.mockRejectedValueOnce(new Error('offline'));
+    const result = await fetchPrivacyNotice('de');
+
+    expect(result.locale).toBe('de');
+    expect(result.sections.map((section) => section.id)).toContain('controller');
+    expect(result.sections.map((section) => section.id)).toContain('rights');
   });
 
   it('caches per-locale so a language switch does not serve the wrong notice', async () => {
@@ -129,10 +133,13 @@ describe('lib/legal — imprint', () => {
     await expect(readCachedImprint('de')).resolves.toBeNull();
   });
 
-  it('re-throws when the imprint network call fails and no cache exists', async () => {
-    const err = new Error('offline');
-    api.get.mockRejectedValueOnce(err);
-    await expect(fetchImprint('de')).rejects.toBe(err);
+  it('falls back to the bundled imprint when the network call fails and no cache exists', async () => {
+    api.get.mockRejectedValueOnce(new Error('offline'));
+    const result = await fetchImprint('de');
+
+    expect(result.locale).toBe('de');
+    expect(result.sections.map((section) => section.id)).toContain('provider');
+    expect(result.sections.map((section) => section.id)).toContain('contact');
   });
 });
 
@@ -177,5 +184,22 @@ describe('lib/legal — readCachedPrivacyNotice', () => {
     await SecureStore.setItemAsync('legal_privacy_cache_de', '{not valid json');
     const result = await readCachedPrivacyNotice('de');
     expect(result).toBeNull();
+  });
+});
+
+describe('constants/legal-fallback', () => {
+  it('ships German and English privacy fallbacks', () => {
+    expect(getFallbackPrivacyNotice('de').locale).toBe('de');
+    expect(getFallbackPrivacyNotice('en').locale).toBe('en');
+  });
+
+  it('ships German and English imprint fallbacks', () => {
+    expect(getFallbackImprint('de').locale).toBe('de');
+    expect(getFallbackImprint('en').locale).toBe('en');
+  });
+
+  it('falls back to English for unsupported locales', () => {
+    expect(getFallbackPrivacyNotice('fr').locale).toBe('en');
+    expect(getFallbackImprint('fr').locale).toBe('en');
   });
 });
