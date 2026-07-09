@@ -57,10 +57,6 @@ function findFab(root: any) {
   return pressNodes[pressNodes.length - 1];
 }
 
-function formDataParts(formData: any): [string, any][] {
-  return formData?._parts ?? [];
-}
-
 describe('app/(tabs)/photos', () => {
   beforeEach(async () => {
     mockApiGet.mockReset();
@@ -156,6 +152,7 @@ describe('app/(tabs)/photos', () => {
       JSON.stringify({ granted_at: new Date().toISOString() })
     );
     const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+    const formDataAppendSpy = jest.spyOn(FormData.prototype, 'append');
 
     const { UNSAFE_root, findByText, findByTestId } = renderScreen();
     await findByText('Noch keine Fotos');
@@ -181,9 +178,11 @@ describe('app/(tabs)/photos', () => {
       )
     );
     const [, formData, options] = mockApiPost.mock.calls[0];
-    expect(formDataParts(formData)).toEqual([
-      ['photo', { uri: 'file:///tmp/fixture-library.jpg', name: 'photo.jpg', type: 'image/jpeg' }],
-    ]);
+    expect(formDataAppendSpy).toHaveBeenCalledWith('photo', {
+      uri: 'file:///tmp/fixture-library.jpg',
+      name: 'photo.jpg',
+      type: 'image/jpeg',
+    });
     expect(options.transformRequest(formData)).toBe(formData);
     fireEvent.press(await findByTestId('photo-99'));
     await findByText('Ada');
@@ -192,6 +191,7 @@ describe('app/(tabs)/photos', () => {
       quality: 1,
       allowsEditing: false,
     });
+    formDataAppendSpy.mockRestore();
     alertSpy.mockRestore();
   });
 
