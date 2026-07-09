@@ -19,6 +19,8 @@
  *          `BlockedFeaturesContext` (which polls for re-enable) and swallow
  *          the rejection so the calling screen renders its own placeholder
  *          without an alert.
+ *        - authenticated 401: the backend no longer accepts the bearer token;
+ *          clear the local session and navigate back to `/`.
  *
  * All other errors bubble up to the caller unchanged.
  */
@@ -26,6 +28,7 @@ import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
 import { router } from 'expo-router';
 import { API_BASE } from '../constants/env';
+import { deleteGuestSession } from './sessionStorage';
 
 // `axios.create` is the officially blessed factory for a custom instance.
 // The named `create` re-export exists too, but the `axios.<method>` shape
@@ -56,6 +59,16 @@ api.interceptors.request.use(async (config) => {
 let _blocked = false;
 let _drinksBlocked = false;
 let _drinksBlockedHandler: (() => void) | null = null;
+let _unauthorized = false;
+
+function requestHadAuthorization(error: any) {
+  const headers = error.config?.headers;
+  return Boolean(headers?.Authorization ?? headers?.authorization);
+}
+
+function isLogoutRequest(error: any) {
+  return error.config?.url === '/api/auth/logout';
+}
 
 // --- Response interceptor: swallow app_blocked and drinks_blocked ---
 api.interceptors.response.use(
@@ -77,6 +90,19 @@ api.interceptors.response.use(
         _drinksBlockedHandler?.();
       }
       return new Promise(() => {}); // same swallow-strategy as above
+    }
+    if (
+      error.response?.status === 401 &&
+      requestHadAuthorization(error) &&
+      !isLogoutRequest(error)
+    ) {
+      if (!_unauthorized) {
+        _unauthorized = true;
+        deleteGuestSession().finally(() => {
+          router.replace('/');
+        });
+      }
+      return new Promise(() => {});
     }
     return Promise.reject(error);
   }
@@ -114,6 +140,11 @@ export function clearDrinksBlockedHandler() {
  */
 export function resetDrinksBlocked() {
   _drinksBlocked = false;
+}
+
+/** Reset the auth-expired debounce after a new login writes a fresh token. */
+export function resetUnauthorizedRedirect() {
+  _unauthorized = false;
 }
 
 export default api;

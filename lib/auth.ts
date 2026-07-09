@@ -15,7 +15,8 @@
  * the whole bundle.
  */
 import * as SecureStore from 'expo-secure-store';
-import api from './api';
+import api, { resetUnauthorizedRedirect } from './api';
+import { deleteGuestSession } from './sessionStorage';
 
 /** Shape passed to `saveSession` and returned by `getSession`. */
 export type GuestSession = {
@@ -33,6 +34,7 @@ export type GuestSession = {
  * this back synchronously to pick the right post-login route.
  */
 export async function saveSession(session: GuestSession): Promise<void> {
+  resetUnauthorizedRedirect();
   await SecureStore.setItemAsync('guest_token', session.token);
   await SecureStore.setItemAsync('guest_id', String(session.guestId));
   await SecureStore.setItemAsync('guest_firstname', session.firstname);
@@ -83,10 +85,5 @@ export async function clearSession(): Promise<void> {
     // Server-side revoke may fail (offline, backend down) — still clear
     // locally so the next launch does not think we're logged in.
   }
-  await SecureStore.deleteItemAsync('guest_token');
-  await SecureStore.deleteItemAsync('guest_id');
-  await SecureStore.deleteItemAsync('guest_firstname');
-  await SecureStore.deleteItemAsync('guest_lastname');
-  await SecureStore.deleteItemAsync('guest_type');
-  await SecureStore.deleteItemAsync('guest_family_name');
+  await deleteGuestSession();
 }

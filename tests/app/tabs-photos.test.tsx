@@ -6,21 +6,26 @@
  *   - the consent gate wrapping the upload FAB (already-granted → alert
  *     appears immediately; missing → the modal appears first).
  *
- * The multipart upload path itself is intentionally not exercised end-to-end:
- * that touches `expo-image-manipulator`, `expo-image-picker` and a manual
- * `FormData` body — a real regression there would be visible in the manual
- * Phase 12 smoke, not in a screen test.
+ * Upload coverage stays at the screen contract level: picker → JPEG
+ * normalisation → multipart `photo` field → optimistic gallery prepend.
+ * Native camera/library behaviour is still covered by manual smoke tests.
  */
 import React from 'react';
 import { Alert, Dimensions } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
+import * as ImagePicker from 'expo-image-picker';
 import { act, fireEvent, render, waitFor } from '@testing-library/react-native';
 
 const mockApiGet = jest.fn();
 const mockApiPost = jest.fn();
+const mockApiDelete = jest.fn();
 jest.mock('../../lib/api', () => ({
   __esModule: true,
-  default: { get: (...a: any[]) => mockApiGet(...a), post: (...a: any[]) => mockApiPost(...a) },
+  default: {
+    get: (...a: any[]) => mockApiGet(...a),
+    post: (...a: any[]) => mockApiPost(...a),
+    delete: (...a: any[]) => mockApiDelete(...a),
+  },
 }));
 
 // Same rationale as the other tab tests — safe-area hook stubbed to avoid the
@@ -47,11 +52,23 @@ function renderScreen() {
   );
 }
 
+function findFab(root: any) {
+  const pressNodes = root.findAll((n: any) => typeof n?.props?.onPress === 'function');
+  return pressNodes[pressNodes.length - 1];
+}
+
+function formDataParts(formData: any): [string, any][] {
+  return formData?._parts ?? [];
+}
+
 describe('app/(tabs)/photos', () => {
   beforeEach(async () => {
     mockApiGet.mockReset();
     mockApiPost.mockReset();
+    mockApiDelete.mockReset();
     await SecureStore.deleteItemAsync('consent_photo_upload');
+    await SecureStore.deleteItemAsync('guest_token');
+    await SecureStore.deleteItemAsync('guest_id');
   });
 
   it('renders the grid after a successful fetch', async () => {
@@ -96,12 +113,8 @@ describe('app/(tabs)/photos', () => {
     // Wait for the empty-state to appear so the render tree is stable.
     await findByText('Noch keine Fotos');
 
-    // The FAB is the last node in the tree that carries an `onPress` handler.
-    const pressNodes = UNSAFE_root.findAll((n: any) => typeof n?.props?.onPress === 'function');
-    const fab = pressNodes[pressNodes.length - 1];
-
     await act(async () => {
-      fireEvent.press(fab);
+      fireEvent.press(findFab(UNSAFE_root));
     });
 
     await waitFor(() => expect(alertSpy).toHaveBeenCalled());
@@ -116,17 +129,69 @@ describe('app/(tabs)/photos', () => {
 
     await findByText('Noch keine Fotos');
 
-    const pressNodes = UNSAFE_root.findAll((n: any) => typeof n?.props?.onPress === 'function');
-    const fab = pressNodes[pressNodes.length - 1];
-
     await act(async () => {
-      fireEvent.press(fab);
+      fireEvent.press(findFab(UNSAFE_root));
     });
 
     // Modal-title copy for the consent gate.
     await findByText('Ich stimme zu');
     // Upload alert has NOT fired yet — the modal blocks it.
     expect(alertSpy).not.toHaveBeenCalled();
+    alertSpy.mockRestore();
+  });
+
+  it('uploads the selected image as multipart photo and prepends the backend response', async () => {
+    mockApiGet.mockResolvedValue({ data: { data: [] } });
+    mockApiPost.mockResolvedValue({
+      data: {
+        id: 99,
+        url: 'https://x/uploaded.jpg',
+        guest_name: 'Ada',
+        created_at: '2026-07-09T12:00:00.000000Z',
+      },
+    });
+    await SecureStore.setItemAsync('guest_id', '42');
+    await SecureStore.setItemAsync(
+      'consent_photo_upload',
+      JSON.stringify({ granted_at: new Date().toISOString() })
+    );
+    const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+
+    const { UNSAFE_root, findByText, findByTestId } = renderScreen();
+    await findByText('Noch keine Fotos');
+
+    await act(async () => {
+      fireEvent.press(findFab(UNSAFE_root));
+    });
+    const [, , buttons] = alertSpy.mock.calls[0] as any;
+    const libraryButton = buttons.find((button: any) => button.text === 'Aus Bibliothek');
+
+    await act(async () => {
+      await libraryButton.onPress();
+    });
+
+    await waitFor(() =>
+      expect(mockApiPost).toHaveBeenCalledWith(
+        '/api/photos',
+        expect.any(Object),
+        expect.objectContaining({
+          headers: { 'Content-Type': 'multipart/form-data' },
+          transformRequest: expect.any(Function),
+        })
+      )
+    );
+    const [, formData, options] = mockApiPost.mock.calls[0];
+    expect(formDataParts(formData)).toEqual([
+      ['photo', { uri: 'file:///tmp/fixture-library.jpg', name: 'photo.jpg', type: 'image/jpeg' }],
+    ]);
+    expect(options.transformRequest(formData)).toBe(formData);
+    fireEvent.press(await findByTestId('photo-99'));
+    await findByText('Ada');
+    expect(ImagePicker.launchImageLibraryAsync).toHaveBeenCalledWith({
+      mediaTypes: ['images'],
+      quality: 1,
+      allowsEditing: false,
+    });
     alertSpy.mockRestore();
   });
 
@@ -228,7 +293,7 @@ describe('app/(tabs)/photos', () => {
         ],
       },
     });
-    mockApiPost.mockResolvedValue({ data: { id: 9, status: 'open', auto_hidden: true } });
+    mockApiPost.mockResolvedValue({ data: { id: 9, status: 'pending', auto_hidden: true } });
     const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
 
     const { findByTestId, findByText, queryByTestId } = renderScreen();
@@ -291,6 +356,75 @@ describe('app/(tabs)/photos', () => {
     const { findByTestId, queryByText } = renderScreen();
     fireEvent.press(await findByTestId('photo-1'));
     expect(queryByText('Uploader ausblenden')).toBeNull();
+  });
+
+  it('own photos show delete instead of report and hide actions', async () => {
+    mockApiGet.mockResolvedValue({
+      data: {
+        data: [
+          {
+            id: 1,
+            url: 'https://x/1.jpg',
+            guest_id: 42,
+            guest_name: 'Ada',
+            created_at: '2026-06-01T00:00:00Z',
+          },
+        ],
+      },
+    });
+    await SecureStore.setItemAsync('guest_token', 'test-token');
+    await SecureStore.setItemAsync('guest_id', '42');
+
+    const { findByTestId, queryByTestId, queryByText } = renderScreen();
+    fireEvent.press(await findByTestId('photo-1'));
+
+    await findByTestId('delete-photo-button');
+    expect(queryByTestId('report-photo-button')).toBeNull();
+    expect(queryByText('Uploader ausblenden')).toBeNull();
+  });
+
+  it('delete confirm calls the guest delete endpoint and removes the photo locally', async () => {
+    mockApiGet.mockResolvedValue({
+      data: {
+        data: [
+          {
+            id: 1,
+            url: 'https://x/1.jpg',
+            guest_id: 42,
+            guest_name: 'Ada',
+            created_at: '2026-06-01T00:00:00Z',
+          },
+          {
+            id: 2,
+            url: 'https://x/2.jpg',
+            guest_id: 12,
+            guest_name: 'Bea',
+            created_at: '2026-06-01T00:00:00Z',
+          },
+        ],
+      },
+    });
+    mockApiDelete.mockResolvedValue({ data: undefined });
+    await SecureStore.setItemAsync('guest_token', 'test-token');
+    await SecureStore.setItemAsync('guest_id', '42');
+    const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+
+    const { findByTestId, queryByTestId } = renderScreen();
+    fireEvent.press(await findByTestId('photo-1'));
+    fireEvent.press(await findByTestId('delete-photo-button'));
+
+    const [, , buttons] = alertSpy.mock.calls[0] as any;
+    await act(async () => {
+      await buttons[1].onPress();
+    });
+
+    await waitFor(() => expect(mockApiDelete).toHaveBeenCalledWith('/api/photos/1'));
+    await waitFor(() => {
+      expect(queryByTestId('photo-1')).toBeNull();
+      expect(queryByTestId('photo-2')).not.toBeNull();
+    });
+    expect(alertSpy).toHaveBeenCalledWith('Foto gelöscht.');
+    alertSpy.mockRestore();
   });
 
   it('hide-uploader confirm posts and removes every photo from that guest', async () => {

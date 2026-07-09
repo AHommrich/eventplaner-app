@@ -221,6 +221,11 @@ const de = {
     reportRateLimited: 'Zu viele Meldungen. Bitte warte eine Weile.',
     reportValidationError: 'Bitte prüfe deine Eingabe.',
     reportNetworkError: 'Meldung konnte nicht gesendet werden. Bitte versuche es erneut.',
+    deletePhoto: 'Löschen',
+    deleteTitle: 'Foto löschen?',
+    deleteDescription: 'Dieses Foto wird aus der gemeinsamen Galerie entfernt.',
+    deleteSuccess: 'Foto gelöscht.',
+    deleteError: 'Foto konnte nicht gelöscht werden. Bitte versuche es erneut.',
     hideUploader: 'Uploader ausblenden',
     hideUploaderTitle: 'Uploader ausblenden?',
     hideUploaderDescription:

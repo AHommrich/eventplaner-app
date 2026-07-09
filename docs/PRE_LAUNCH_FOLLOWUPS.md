@@ -11,6 +11,16 @@ Verwandte Docs:
 
 ---
 
+## 0. Auth-Reset / 401-Handling — erledigt
+
+**Priorität: KRITISCH.** Wenn das Backend einen angemeldeten Zustand
+zurücksetzt und bestehende Bearer-Token mit `401 Unauthorized` ablehnt, muss
+die App die lokale Session löschen und zurück zur Startseite navigieren.
+Abgedeckt über den globalen Axios-Response-Interceptor in `lib/api.ts`, damit
+Screens nicht in einem halb angemeldeten Zustand hängen bleiben.
+
+---
+
 ## 1. Upload-Queue — persistente Offline-Warteschlange für alle Write-Aktionen
 
 **Priorität: KRITISCH.** Ohne diese Schicht verliert der Gast bei kurzem
