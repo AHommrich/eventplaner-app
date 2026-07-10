@@ -272,8 +272,9 @@ export default function PhotosScreen() {
   }, [dragY, entryOpacity]);
 
   const handleClosePress = useCallback(() => {
-    Animated.timing(entryOpacity, { toValue: 0, duration: 200, useNativeDriver: true })
-      .start(doCloseDetail);
+    Animated.timing(entryOpacity, { toValue: 0, duration: 200, useNativeDriver: true }).start(
+      doCloseDetail
+    );
   }, [entryOpacity, doCloseDetail]);
 
   // Swipe-down or swipe-up to dismiss. useMemo avoids recreating the responder
@@ -284,9 +285,7 @@ export default function PhotosScreen() {
     () =>
       PanResponder.create({
         onMoveShouldSetPanResponderCapture: (_, { dy, dx }) =>
-          !reportingPhoto &&
-          Math.abs(dy) > 10 &&
-          Math.abs(dy) > Math.abs(dx) * 1.5,
+          !reportingPhoto && Math.abs(dy) > 10 && Math.abs(dy) > Math.abs(dx) * 1.5,
         onPanResponderMove: (_, { dy }) => {
           dragY.setValue(dy);
         },
@@ -320,9 +319,8 @@ export default function PhotosScreen() {
     entryOpacity.setValue(0);
     dragY.setValue(0);
     Animated.timing(entryOpacity, { toValue: 1, duration: 120, useNativeDriver: true }).start();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [detailMounted]);
-
 
   function openReport(photo: Photo) {
     setReportReason('inappropriate_content');
@@ -412,7 +410,10 @@ export default function PhotosScreen() {
   }
 
   const selectedIndex = selected
-    ? Math.max(photos.findIndex((p) => p.id === selected.id), 0)
+    ? Math.max(
+        photos.findIndex((p) => p.id === selected.id),
+        0
+      )
     : 0;
 
   if (loading) {
@@ -456,7 +457,13 @@ export default function PhotosScreen() {
           </View>
         }
         renderItem={({ item }) => (
-          <Pressable testID={`photo-${item.id}`} onPress={() => { setDetailMounted(true); setSelected(item); }}>
+          <Pressable
+            testID={`photo-${item.id}`}
+            onPress={() => {
+              setDetailMounted(true);
+              setSelected(item);
+            }}
+          >
             <Image
               source={item.url}
               style={{ width: TILE_SIZE, height: TILE_SIZE, borderRadius: 2 }}
@@ -482,19 +489,24 @@ export default function PhotosScreen() {
           {/* Scrim — semi-transparent so the gallery shows through but
               controls remain legible; fades out while swiping to dismiss */}
           <Animated.View
-            style={[StyleSheet.absoluteFillObject, { backgroundColor: 'rgba(0,0,0,0.25)', opacity: dragInterp }]}
+            style={[
+              StyleSheet.absoluteFillObject,
+              { backgroundColor: 'rgba(0,0,0,0.25)', opacity: dragInterp },
+            ]}
             pointerEvents="none"
           />
           {/* Pan gesture wrapper */}
           <View style={StyleSheet.absoluteFillObject} {...panResponder.panHandlers}>
-
             {/* ── Photo pager ─────────────────────────────────────────────
                 Only the photo gets the fly-off transform so the controls
                 stay pinned when the user swipes to dismiss.              */}
             <Animated.View
               style={[
                 StyleSheet.absoluteFillObject,
-                { justifyContent: 'center', transform: [{ translateY: dragY }, { scale: photoScale }] },
+                {
+                  justifyContent: 'center',
+                  transform: [{ translateY: dragY }, { scale: photoScale }],
+                },
               ]}
             >
               {selected && (
@@ -516,10 +528,7 @@ export default function PhotosScreen() {
                     const raw = event.nativeEvent.contentOffset.x;
                     const nextIndex = Math.max(
                       0,
-                      Math.min(
-                        Math.round((raw + DETAIL_PEEK) / DETAIL_SNAP),
-                        photos.length - 1
-                      )
+                      Math.min(Math.round((raw + DETAIL_PEEK) / DETAIL_SNAP), photos.length - 1)
                     );
                     const nextPhoto = photos[nextIndex];
                     if (nextPhoto && selected && nextPhoto.id !== selected.id) {
@@ -613,110 +622,110 @@ export default function PhotosScreen() {
 
             {/* ── Report sheet ──────────────────────────────────────────── */}
             {reportingPhoto && (
-                <View
+              <View
+                style={{
+                  position: 'absolute',
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  backgroundColor: colors.card,
+                  borderTopLeftRadius: theme.borderRadius.lg,
+                  borderTopRightRadius: theme.borderRadius.lg,
+                  padding: theme.spacing.lg,
+                  paddingBottom: insets.bottom + theme.spacing.lg,
+                }}
+              >
+                <ThemedText
                   style={{
-                    position: 'absolute',
-                    left: 0,
-                    right: 0,
-                    bottom: 0,
-                    backgroundColor: colors.card,
-                    borderTopLeftRadius: theme.borderRadius.lg,
-                    borderTopRightRadius: theme.borderRadius.lg,
-                    padding: theme.spacing.lg,
-                    paddingBottom: insets.bottom + theme.spacing.lg,
+                    color: colors.cardText,
+                    fontSize: 18,
+                    fontWeight: '700',
+                    marginBottom: theme.spacing.sm,
                   }}
                 >
-                  <ThemedText
-                    style={{
-                      color: colors.cardText,
-                      fontSize: 18,
-                      fontWeight: '700',
-                      marginBottom: theme.spacing.sm,
-                    }}
-                  >
-                    {t('photos.reportTitle')}
-                  </ThemedText>
-                  <ThemedText
-                    style={{ color: colors.cardText, fontSize: 14, marginBottom: theme.spacing.md }}
-                  >
-                    {t('photos.reportDescription')}
-                  </ThemedText>
+                  {t('photos.reportTitle')}
+                </ThemedText>
+                <ThemedText
+                  style={{ color: colors.cardText, fontSize: 14, marginBottom: theme.spacing.md }}
+                >
+                  {t('photos.reportDescription')}
+                </ThemedText>
 
-                  {REPORT_REASONS.map((reason) => (
-                    <Pressable
-                      key={reason}
-                      onPress={() => setReportReason(reason)}
-                      style={{
-                        flexDirection: 'row',
-                        alignItems: 'center',
-                        gap: theme.spacing.sm,
-                        paddingVertical: theme.spacing.sm,
-                      }}
-                    >
-                      <Ionicons
-                        name={reportReason === reason ? 'radio-button-on' : 'radio-button-off'}
-                        size={20}
-                        color={colors.cardText}
-                      />
-                      <ThemedText style={{ color: colors.cardText, fontSize: 15 }}>
-                        {t(`photos.reason.${reason}`)}
-                      </ThemedText>
-                    </Pressable>
-                  ))}
-
-                  <TextInput
-                    value={reportMessage}
-                    onChangeText={(text) => {
-                      setReportMessage(text.slice(0, 1000));
-                      setReportError(null);
-                    }}
-                    placeholder={t('photos.reportMessagePlaceholder')}
-                    placeholderTextColor={colors.cardText + '88'}
-                    multiline
-                    maxLength={1000}
-                    style={{
-                      minHeight: 84,
-                      borderWidth: 1,
-                      borderColor: reportError ? theme.colors.error : colors.border + '66',
-                      borderRadius: theme.borderRadius.md,
-                      padding: theme.spacing.md,
-                      marginTop: theme.spacing.md,
-                      color: colors.cardText,
-                      textAlignVertical: 'top',
-                    }}
-                  />
-                  {reportError && (
-                    <ThemedText
-                      style={{ color: theme.colors.error, fontSize: 13, marginTop: theme.spacing.xs }}
-                    >
-                      {reportError}
-                    </ThemedText>
-                  )}
-
+                {REPORT_REASONS.map((reason) => (
                   <Pressable
-                    onPress={submitReport}
-                    disabled={submittingReport}
+                    key={reason}
+                    onPress={() => setReportReason(reason)}
                     style={{
-                      marginTop: theme.spacing.lg,
-                      backgroundColor: colors.cardButton,
-                      borderRadius: theme.borderRadius.md,
-                      paddingVertical: theme.spacing.md,
+                      flexDirection: 'row',
                       alignItems: 'center',
-                      opacity: submittingReport ? 0.65 : 1,
+                      gap: theme.spacing.sm,
+                      paddingVertical: theme.spacing.sm,
                     }}
                   >
-                    <ThemedText style={{ color: colors.cardButtonText, fontWeight: '700' }}>
-                      {t('photos.reportSubmit')}
+                    <Ionicons
+                      name={reportReason === reason ? 'radio-button-on' : 'radio-button-off'}
+                      size={20}
+                      color={colors.cardText}
+                    />
+                    <ThemedText style={{ color: colors.cardText, fontSize: 15 }}>
+                      {t(`photos.reason.${reason}`)}
                     </ThemedText>
                   </Pressable>
-                  <Pressable
-                    onPress={() => setReportingPhoto(null)}
-                    style={{ paddingVertical: theme.spacing.md, alignItems: 'center' }}
+                ))}
+
+                <TextInput
+                  value={reportMessage}
+                  onChangeText={(text) => {
+                    setReportMessage(text.slice(0, 1000));
+                    setReportError(null);
+                  }}
+                  placeholder={t('photos.reportMessagePlaceholder')}
+                  placeholderTextColor={colors.cardText + '88'}
+                  multiline
+                  maxLength={1000}
+                  style={{
+                    minHeight: 84,
+                    borderWidth: 1,
+                    borderColor: reportError ? theme.colors.error : colors.border + '66',
+                    borderRadius: theme.borderRadius.md,
+                    padding: theme.spacing.md,
+                    marginTop: theme.spacing.md,
+                    color: colors.cardText,
+                    textAlignVertical: 'top',
+                  }}
+                />
+                {reportError && (
+                  <ThemedText
+                    style={{ color: theme.colors.error, fontSize: 13, marginTop: theme.spacing.xs }}
                   >
-                    <ThemedText style={{ color: colors.cardText }}>{t('common.cancel')}</ThemedText>
-                  </Pressable>
-                </View>
-              )}
+                    {reportError}
+                  </ThemedText>
+                )}
+
+                <Pressable
+                  onPress={submitReport}
+                  disabled={submittingReport}
+                  style={{
+                    marginTop: theme.spacing.lg,
+                    backgroundColor: colors.cardButton,
+                    borderRadius: theme.borderRadius.md,
+                    paddingVertical: theme.spacing.md,
+                    alignItems: 'center',
+                    opacity: submittingReport ? 0.65 : 1,
+                  }}
+                >
+                  <ThemedText style={{ color: colors.cardButtonText, fontWeight: '700' }}>
+                    {t('photos.reportSubmit')}
+                  </ThemedText>
+                </Pressable>
+                <Pressable
+                  onPress={() => setReportingPhoto(null)}
+                  style={{ paddingVertical: theme.spacing.md, alignItems: 'center' }}
+                >
+                  <ThemedText style={{ color: colors.cardText }}>{t('common.cancel')}</ThemedText>
+                </Pressable>
+              </View>
+            )}
           </View>
         </Animated.View>
       </Modal>
