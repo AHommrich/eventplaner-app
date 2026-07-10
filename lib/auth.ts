@@ -6,7 +6,7 @@
  * guest type (solo vs family). All of it lives in `expo-secure-store` —
  * intentionally NOT in AsyncStorage. Reason: SecureStore is Keychain on iOS
  * and encrypted-SharedPreferences on Android; the bearer token functions as
- * a password because tokens never expire on the backend (see CLAUDE.md).
+ * a password because tokens are intentionally long-lived for event UX.
  * Storing it in plaintext would expose an unrevokable credential to any
  * process that reads app-private storage.
  *

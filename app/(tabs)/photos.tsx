@@ -44,6 +44,7 @@ import { useRefreshToast } from '../../lib/useRefreshToast';
 import { RefreshToast } from '../../components/RefreshToast';
 import { useConsentGate } from '../../components/ConsentGate';
 import { hideGuestContent, PhotoReportReason, reportPhoto } from '../../lib/guest';
+import { captureException } from '../../lib/monitoring';
 
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
 
@@ -324,7 +325,8 @@ export default function PhotosScreen() {
       setPhotos((prev) => prev.filter((p) => p.id !== photo.id));
       setSelected(null);
       Alert.alert(t('photos.deleteSuccess'));
-    } catch {
+    } catch (e) {
+      captureException(e);
       Alert.alert(t('common.error'), t('photos.deleteError'));
     }
   }

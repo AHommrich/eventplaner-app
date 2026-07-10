@@ -29,17 +29,17 @@ echte Eventdaten sind nicht Teil dieses Repositories.
 
 ## Tech-Stack
 
-| Schicht    | Wahl                                                 |
-| ---------- | ---------------------------------------------------- |
-| App        | Expo SDK 54, Expo Router v6, React Native            |
-| Sprache    | TypeScript, strict mode                              |
+| Schicht    | Wahl                                                  |
+| ---------- | ----------------------------------------------------- |
+| App        | Expo SDK 54, Expo Router v6, React Native             |
+| Sprache    | TypeScript, strict mode                               |
 | Styling    | NativeWind v4, Tailwind v3, backend-gesteuertes Theme |
-| Daten      | Axios-Client mit Bearer-Interceptor                  |
-| Storage    | `expo-secure-store` fuer Gast-/Session-State         |
-| i18n       | `i18n-js` mit deutschen und englischen Dictionaries  |
-| Monitoring | Optionale Sentry-React-Native-Integration            |
-| Tests      | Jest, `jest-expo`, React Native Testing Library      |
-| E2E        | Lokale Maestro-Smoke-Flows                           |
+| Daten      | Axios-Client mit Bearer-Interceptor                   |
+| Storage    | `expo-secure-store` fuer Gast-/Session-State          |
+| i18n       | `i18n-js` mit deutschen und englischen Dictionaries   |
+| Monitoring | Optionale Sentry-React-Native-Integration             |
+| Tests      | Jest, `jest-expo`, React Native Testing Library       |
+| E2E        | Lokale Maestro-Smoke-Flows                            |
 
 Die App erwartet ein Laravel-/Sanctum-Backend mit der API-Form aus
 [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) und
@@ -62,33 +62,33 @@ niemals committen. Fuer lokale Smoke-Tests wird ein Token ueber
 [`constants/env.ts`](constants/env.ts) und kann zur Build-Zeit ueberschrieben
 werden:
 
-| Build-Variante                   | API-Base-Verhalten                         |
-| -------------------------------- | ------------------------------------------ |
-| Expo Go / `npm start`            | Nutzt den Default aus `constants/env.ts`   |
-| `eas build --profile preview`    | Nutzt die Preview-EAS-Umgebung             |
+| Build-Variante                   | API-Base-Verhalten                          |
+| -------------------------------- | ------------------------------------------- |
+| Expo Go / `npm start`            | Nutzt den Default aus `constants/env.ts`    |
+| `eas build --profile preview`    | Nutzt die Preview-EAS-Umgebung              |
 | `eas build --profile production` | Nutzt den Production-Override in `eas.json` |
 
 Optionale Monitoring-Variablen:
 
-| Variable                                | Zweck                                             |
-| --------------------------------------- | ------------------------------------------------- |
-| `EXPO_PUBLIC_SENTRY_DSN`                | Aktiviert Sentry-Runtime-Reporting, wenn gesetzt  |
-| `EXPO_PUBLIC_SENTRY_TRACES_SAMPLE_RATE` | Optionales Tracing-Sampling, Standard ist `0`     |
-| `SENTRY_ORG` / `SENTRY_PROJECT`         | Optionale Overrides fuer Source-Map-Upload-Ziel   |
-| `SENTRY_AUTH_TOKEN`                     | Geheimer Build-Time-Token, niemals committen      |
+| Variable                                | Zweck                                            |
+| --------------------------------------- | ------------------------------------------------ |
+| `EXPO_PUBLIC_SENTRY_DSN`                | Aktiviert Sentry-Runtime-Reporting, wenn gesetzt |
+| `EXPO_PUBLIC_SENTRY_TRACES_SAMPLE_RATE` | Optionales Tracing-Sampling, Standard ist `0`    |
+| `SENTRY_ORG` / `SENTRY_PROJECT`         | Optionale Overrides fuer Source-Map-Upload-Ziel  |
+| `SENTRY_AUTH_TOKEN`                     | Geheimer Build-Time-Token, niemals committen     |
 
 ## Skripte
 
-| Skript                  | Zweck                            |
-| ----------------------- | -------------------------------- |
-| `npm start`             | Expo / Metro starten             |
-| `npm run ios`           | iOS-Ziel starten                 |
-| `npm run android`       | Android-Ziel starten             |
-| `npm run lint`          | ESLint ausfuehren                |
-| `npm run format:check`  | Prettier-Formatierung pruefen    |
-| `npm run typecheck`     | `tsc --noEmit` ausfuehren        |
-| `npm test`              | Jest einmal ausfuehren           |
-| `npm run test:coverage` | Jest mit Coverage-Schwellen      |
+| Skript                  | Zweck                         |
+| ----------------------- | ----------------------------- |
+| `npm start`             | Expo / Metro starten          |
+| `npm run ios`           | iOS-Ziel starten              |
+| `npm run android`       | Android-Ziel starten          |
+| `npm run lint`          | ESLint ausfuehren             |
+| `npm run format:check`  | Prettier-Formatierung pruefen |
+| `npm run typecheck`     | `tsc --noEmit` ausfuehren     |
+| `npm test`              | Jest einmal ausfuehren        |
+| `npm run test:coverage` | Jest mit Coverage-Schwellen   |
 
 ## Projektstruktur
 

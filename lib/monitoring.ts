@@ -61,6 +61,16 @@ export async function initMonitoring(): Promise<void> {
   }
 }
 
+export function captureException(error: unknown): void {
+  if (!getSentryDsn() || isExpoGo() || !initialized) return;
+  try {
+    const Sentry = loadSentry();
+    Sentry.captureException(error);
+  } catch {
+    // SDK nicht verfügbar — still ignorieren
+  }
+}
+
 export async function captureSentryTestError(): Promise<boolean> {
   if (!getSentryDsn() || isExpoGo()) return false;
   await initMonitoring();
