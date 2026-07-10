@@ -14,8 +14,8 @@
  *      means someone already claimed this slot (grey out the row).
  *
  * The DEV token input at the bottom is guarded by `__DEV__` and lets the
- * developer paste a test token without needing a QR image. See CLAUDE.md
- * for the local test tokens.
+ * developer paste a local or demo token without needing a QR image. Never
+ * commit real guest tokens.
  */
 import { useCallback, useEffect, useState } from 'react';
 import {
@@ -296,7 +296,7 @@ export default function ScanScreen() {
         </View>
       )}
 
-      {/* DEV-only: manual token input — see CLAUDE.md for local test tokens. */}
+      {/* DEV-only: manual token input for local or demo tokens. */}
       {__DEV__ && (
         <View style={styles.devContainer}>
           {showDevInput ? (

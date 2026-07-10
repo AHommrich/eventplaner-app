@@ -29,15 +29,15 @@ the full preflight before building.
 Sentry is optional at runtime and intentionally disabled in Expo Go. For
 development builds, TestFlight and Play Store builds, set:
 
-| Variable                                | Required | Notes                                                                       |
-| --------------------------------------- | -------- | --------------------------------------------------------------------------- |
-| `EXPO_PUBLIC_SENTRY_DSN`                | yes      | Public DSN for runtime error reporting. Leave unset to disable Sentry.      |
-| `EXPO_PUBLIC_SENTRY_TRACES_SAMPLE_RATE` | no       | Defaults to `0`; keep low or disabled unless performance tracing is needed. |
-| `EXPO_PUBLIC_ENABLE_SENTRY_TEST_BUTTON` | no       | Set to `1` only for a temporary TestFlight/preview verification build.      |
-| `SENTRY_ORG`                            | no       | Optional source-map upload org slug. Use an example or private EAS value.   |
+| Variable                                | Required | Notes                                                                         |
+| --------------------------------------- | -------- | ----------------------------------------------------------------------------- |
+| `EXPO_PUBLIC_SENTRY_DSN`                | yes      | Public DSN for runtime error reporting. Leave unset to disable Sentry.        |
+| `EXPO_PUBLIC_SENTRY_TRACES_SAMPLE_RATE` | no       | Defaults to `0`; keep low or disabled unless performance tracing is needed.   |
+| `EXPO_PUBLIC_ENABLE_SENTRY_TEST_BUTTON` | no       | Set to `1` only for a temporary TestFlight/preview verification build.        |
+| `SENTRY_ORG`                            | no       | Optional source-map upload org slug. Use an example or private EAS value.     |
 | `SENTRY_PROJECT`                        | no       | Optional source-map upload project slug. Use an example or private EAS value. |
-| `SENTRY_AUTH_TOKEN`                     | release  | Secret for source-map upload. Configure in EAS/CI, never commit.            |
-| `SENTRY_ALLOW_FAILURE`                  | build    | Set to `true` in `eas.json` so a Sentry upload issue never blocks archives. |
+| `SENTRY_AUTH_TOKEN`                     | release  | Secret for source-map upload. Configure in EAS/CI, never commit.              |
+| `SENTRY_ALLOW_FAILURE`                  | build    | Set to `true` in `eas.json` so a Sentry upload issue never blocks archives.   |
 
 The client config in `lib/monitoring.ts` is crash-only: `sendDefaultPii: false`,
 no Session Replay and no Sentry Logs. If Sentry SaaS is used, keep the app's
