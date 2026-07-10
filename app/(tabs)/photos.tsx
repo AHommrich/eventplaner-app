@@ -16,16 +16,20 @@
  * swipeable pager. Each page keeps the same zoomable `ScrollView`
  * (`maximumZoomScale=4`) at cover-fit resolution.
  */
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  Animated,
   Dimensions,
   FlatList,
   Modal,
+  PanResponder,
+  Platform,
   Pressable,
   RefreshControl,
   ScrollView,
+  StyleSheet,
   TextInput,
   View,
 } from 'react-native';
@@ -50,11 +54,11 @@ const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
 
 /**
  * Detail-modal image with pinch-to-zoom. `ScrollView` gives us that for free
- * on both iOS and Android without pulling in `react-native-gesture-handler`
- * for one screen. `contentFit="contain"` prevents cropping when the image
+ * on both iOS and Android without extra libraries.
+ * `contentFit="contain"` prevents cropping when the image
  * aspect ratio doesn't match the viewport.
  */
-function ZoomableImage({ uri }: { uri: string }) {
+function ZoomableImage({ uri, width = SCREEN_W }: { uri: string; width?: number }) {
   return (
     <ScrollView
       maximumZoomScale={4}
@@ -62,11 +66,11 @@ function ZoomableImage({ uri }: { uri: string }) {
       centerContent
       showsHorizontalScrollIndicator={false}
       showsVerticalScrollIndicator={false}
-      style={{ width: SCREEN_W, height: SCREEN_H * 0.8 }}
+      style={{ width, height: SCREEN_H * 0.8 }}
     >
       <Image
         source={uri}
-        style={{ width: SCREEN_W, height: SCREEN_H * 0.8 }}
+        style={{ width, height: SCREEN_H * 0.8 }}
         contentFit="contain"
         cachePolicy="disk"
       />
@@ -94,6 +98,10 @@ const GAP = 2;
 const TILE_SIZE = (Dimensions.get('window').width - GAP * (COLUMNS + 1)) / COLUMNS;
 const POLL_INTERVAL = 30_000;
 
+const DETAIL_ITEM_W = SCREEN_W;
+const DETAIL_SNAP = SCREEN_W;
+const DETAIL_PEEK = 0;
+
 export default function PhotosScreen() {
   const { t } = useLanguage();
   const { colors, loadTheme } = useEventTheme();
@@ -108,11 +116,27 @@ export default function PhotosScreen() {
   const [reportMessage, setReportMessage] = useState('');
   const [reportError, setReportError] = useState<string | null>(null);
   const [submittingReport, setSubmittingReport] = useState(false);
+  const [detailMounted, setDetailMounted] = useState(false);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const detailListRef = useRef<FlatList<Photo>>(null);
   const insets = useSafeAreaInsets();
   const { refreshing, refreshed, onRefresh } = useRefreshToast(async () => {
     await fetchPhotos();
     loadTheme();
+  });
+
+  const dragY = useRef(new Animated.Value(0)).current;
+  const entryOpacity = useRef(new Animated.Value(0)).current;
+  // Scrim fades out while dragging (both directions) so the gallery shows through
+  const dragInterp = dragY.interpolate({
+    inputRange: [-300, 0, 300],
+    outputRange: [0, 1, 0],
+    extrapolate: 'clamp',
+  });
+  const photoScale = dragY.interpolate({
+    inputRange: [-300, 0, 300],
+    outputRange: [0.88, 1, 0.88],
+    extrapolate: 'clamp',
   });
 
   /**
@@ -238,11 +262,67 @@ export default function PhotosScreen() {
     ]);
   }
 
-  function closePhotoDetail() {
+  const doCloseDetail = useCallback(() => {
     setSelected(null);
     setReportingPhoto(null);
     setReportError(null);
-  }
+    setDetailMounted(false);
+    dragY.setValue(0);
+    entryOpacity.setValue(0);
+  }, [dragY, entryOpacity]);
+
+  const handleClosePress = useCallback(() => {
+    Animated.timing(entryOpacity, { toValue: 0, duration: 200, useNativeDriver: true })
+      .start(doCloseDetail);
+  }, [entryOpacity, doCloseDetail]);
+
+  // Swipe-down or swipe-up to dismiss. useMemo avoids recreating the responder
+  // on every render; it only rebuilds when reportingPhoto changes (enabled flag).
+  // Capture phase intercepts vertical-dominant drags before the FlatList
+  // can claim horizontal swipes.
+  const panResponder = useMemo(
+    () =>
+      PanResponder.create({
+        onMoveShouldSetPanResponderCapture: (_, { dy, dx }) =>
+          !reportingPhoto &&
+          Math.abs(dy) > 10 &&
+          Math.abs(dy) > Math.abs(dx) * 1.5,
+        onPanResponderMove: (_, { dy }) => {
+          dragY.setValue(dy);
+        },
+        onPanResponderRelease: (_, { dy, vy }) => {
+          const flickDown = vy > 1.2 || dy > 120;
+          const flickUp = vy < -1.2 || dy < -80;
+          if (flickDown || flickUp) {
+            const target = flickDown ? SCREEN_H : -SCREEN_H;
+            Animated.timing(dragY, {
+              toValue: target,
+              duration: 220,
+              useNativeDriver: true,
+            }).start(doCloseDetail);
+          } else {
+            Animated.spring(dragY, {
+              toValue: 0,
+              tension: 65,
+              friction: 11,
+              useNativeDriver: true,
+            }).start();
+          }
+        },
+      }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [reportingPhoto]
+  );
+
+  // Open animation + initial scroll when detail mounts
+  useEffect(() => {
+    if (!detailMounted || !selected) return;
+    entryOpacity.setValue(0);
+    dragY.setValue(0);
+    Animated.timing(entryOpacity, { toValue: 1, duration: 120, useNativeDriver: true }).start();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [detailMounted]);
+
 
   function openReport(photo: Photo) {
     setReportReason('inappropriate_content');
@@ -323,7 +403,7 @@ export default function PhotosScreen() {
     try {
       await api.delete(`/api/photos/${photo.id}`);
       setPhotos((prev) => prev.filter((p) => p.id !== photo.id));
-      setSelected(null);
+      doCloseDetail();
       Alert.alert(t('photos.deleteSuccess'));
     } catch (e) {
       captureException(e);
@@ -332,10 +412,7 @@ export default function PhotosScreen() {
   }
 
   const selectedIndex = selected
-    ? Math.max(
-        photos.findIndex((photo) => photo.id === selected.id),
-        0
-      )
+    ? Math.max(photos.findIndex((p) => p.id === selected.id), 0)
     : 0;
 
   if (loading) {
@@ -379,7 +456,7 @@ export default function PhotosScreen() {
           </View>
         }
         renderItem={({ item }) => (
-          <Pressable testID={`photo-${item.id}`} onPress={() => setSelected(item)}>
+          <Pressable testID={`photo-${item.id}`} onPress={() => { setDetailMounted(true); setSelected(item); }}>
             <Image
               source={item.url}
               style={{ width: TILE_SIZE, height: TILE_SIZE, borderRadius: 2 }}
@@ -392,235 +469,263 @@ export default function PhotosScreen() {
       />
       <RefreshToast visible={refreshed} refreshing={refreshing} />
 
-      {/* Detail modal — fades in and out so the transition doesn't clash with
-          the FlatList scroll position. */}
+      {/* Detail overlay — absolutely positioned in the same view hierarchy so
+          the gallery renders beneath it (no black UIViewController background). */}
       <Modal
-        visible={!!selected}
+        visible={detailMounted}
         transparent
-        animationType="fade"
-        onRequestClose={closePhotoDetail}
+        animationType="none"
+        onRequestClose={handleClosePress}
+        statusBarTranslucent
       >
-        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.95)', justifyContent: 'center' }}>
-          {selected && (
-            <FlatList
-              testID="photo-detail-pager"
-              data={photos}
-              horizontal
-              pagingEnabled
-              initialScrollIndex={selectedIndex}
-              getItemLayout={(_, index) => ({
-                length: SCREEN_W,
-                offset: SCREEN_W * index,
-                index,
-              })}
-              keyExtractor={(item) => String(item.id)}
-              showsHorizontalScrollIndicator={false}
-              onMomentumScrollEnd={(event) => {
-                const nextIndex = Math.round(event.nativeEvent.contentOffset.x / SCREEN_W);
-                const nextPhoto = photos[nextIndex];
-                if (nextPhoto && nextPhoto.id !== selected.id) {
-                  setSelected(nextPhoto);
-                  setReportingPhoto(null);
-                  setReportError(null);
-                }
-              }}
-              onScrollToIndexFailed={() => undefined}
-              renderItem={({ item }) => <ZoomableImage uri={item.url} />}
-              style={{ width: SCREEN_W, height: SCREEN_H * 0.8, flexGrow: 0 }}
-            />
-          )}
-          {selected && (
-            <View style={{ alignItems: 'center', marginTop: 16 }}>
-              <ThemedText style={{ color: '#fff', fontSize: 14, opacity: 0.7 }}>
-                {selected.guest_name}
-              </ThemedText>
-              <View style={{ flexDirection: 'row', gap: 10, marginTop: theme.spacing.md }}>
-                {selected.guest_id === currentGuestId ? (
-                  <Pressable
-                    testID="delete-photo-button"
-                    onPress={() => confirmDeletePhoto(selected)}
-                    style={{
-                      flexDirection: 'row',
-                      alignItems: 'center',
-                      gap: 6,
-                      borderWidth: 1,
-                      borderColor: 'rgba(255,255,255,0.35)',
-                      borderRadius: theme.borderRadius.md,
-                      paddingHorizontal: theme.spacing.md,
-                      paddingVertical: theme.spacing.sm,
-                    }}
-                  >
-                    <Ionicons name="trash-outline" size={16} color="#fff" />
-                    <ThemedText style={{ color: '#fff', fontSize: 13 }}>
-                      {t('photos.deletePhoto')}
-                    </ThemedText>
-                  </Pressable>
-                ) : (
-                  <Pressable
-                    testID="report-photo-button"
-                    onPress={() => openReport(selected)}
-                    style={{
-                      flexDirection: 'row',
-                      alignItems: 'center',
-                      gap: 6,
-                      borderWidth: 1,
-                      borderColor: 'rgba(255,255,255,0.35)',
-                      borderRadius: theme.borderRadius.md,
-                      paddingHorizontal: theme.spacing.md,
-                      paddingVertical: theme.spacing.sm,
-                    }}
-                  >
-                    <Ionicons name="flag-outline" size={16} color="#fff" />
-                    <ThemedText style={{ color: '#fff', fontSize: 13 }}>
-                      {t('photos.report')}
-                    </ThemedText>
-                  </Pressable>
-                )}
-                {selected.guest_id !== null && selected.guest_id !== currentGuestId && (
-                  <Pressable
-                    testID="hide-uploader-button"
-                    onPress={() => confirmHideUploader(selected)}
-                    style={{
-                      flexDirection: 'row',
-                      alignItems: 'center',
-                      gap: 6,
-                      borderWidth: 1,
-                      borderColor: 'rgba(255,255,255,0.35)',
-                      borderRadius: theme.borderRadius.md,
-                      paddingHorizontal: theme.spacing.md,
-                      paddingVertical: theme.spacing.sm,
-                    }}
-                  >
-                    <Ionicons name="eye-off-outline" size={16} color="#fff" />
-                    <ThemedText style={{ color: '#fff', fontSize: 13 }}>
-                      {t('photos.hideUploader')}
-                    </ThemedText>
-                  </Pressable>
-                )}
-              </View>
-            </View>
-          )}
-          <Pressable
-            onPress={closePhotoDetail}
-            accessibilityRole="button"
-            accessibilityLabel={t('a11y.closePhoto')}
-            style={{ position: 'absolute', top: insets.top + 12, right: 20 }}
-          >
-            <Ionicons name="close" size={28} color="#fff" />
-          </Pressable>
+        <Animated.View style={[StyleSheet.absoluteFillObject, { opacity: entryOpacity }]}>
+          {/* Scrim — semi-transparent so the gallery shows through but
+              controls remain legible; fades out while swiping to dismiss */}
+          <Animated.View
+            style={[StyleSheet.absoluteFillObject, { backgroundColor: 'rgba(0,0,0,0.25)', opacity: dragInterp }]}
+            pointerEvents="none"
+          />
+          {/* Pan gesture wrapper */}
+          <View style={StyleSheet.absoluteFillObject} {...panResponder.panHandlers}>
 
-          {reportingPhoto && (
-            <View
-              style={{
-                position: 'absolute',
-                left: 0,
-                right: 0,
-                bottom: 0,
-                backgroundColor: colors.card,
-                borderTopLeftRadius: theme.borderRadius.lg,
-                borderTopRightRadius: theme.borderRadius.lg,
-                padding: theme.spacing.lg,
-                paddingBottom: insets.bottom + theme.spacing.lg,
-              }}
+            {/* ── Photo pager ─────────────────────────────────────────────
+                Only the photo gets the fly-off transform so the controls
+                stay pinned when the user swipes to dismiss.              */}
+            <Animated.View
+              style={[
+                StyleSheet.absoluteFillObject,
+                { justifyContent: 'center', transform: [{ translateY: dragY }, { scale: photoScale }] },
+              ]}
             >
-              <ThemedText
+              {selected && (
+                <FlatList
+                  ref={detailListRef}
+                  testID="photo-detail-pager"
+                  data={photos}
+                  horizontal
+                  pagingEnabled
+                  initialScrollIndex={selectedIndex}
+                  getItemLayout={(_, index) => ({
+                    length: DETAIL_ITEM_W,
+                    offset: DETAIL_SNAP * index,
+                    index,
+                  })}
+                  keyExtractor={(item) => String(item.id)}
+                  showsHorizontalScrollIndicator={false}
+                  onMomentumScrollEnd={(event) => {
+                    const raw = event.nativeEvent.contentOffset.x;
+                    const nextIndex = Math.max(
+                      0,
+                      Math.min(
+                        Math.round((raw + DETAIL_PEEK) / DETAIL_SNAP),
+                        photos.length - 1
+                      )
+                    );
+                    const nextPhoto = photos[nextIndex];
+                    if (nextPhoto && selected && nextPhoto.id !== selected.id) {
+                      setSelected(nextPhoto);
+                      setReportingPhoto(null);
+                      setReportError(null);
+                    }
+                  }}
+                  onScrollToIndexFailed={() => undefined}
+                  renderItem={({ item }) => <ZoomableImage uri={item.url} width={DETAIL_ITEM_W} />}
+                  style={{ width: SCREEN_W, height: SCREEN_H * 0.8, flexGrow: 0 }}
+                />
+              )}
+            </Animated.View>
+
+            {/* ── Close button ──────────────────────────────────────────── */}
+            <Pressable
+              onPress={handleClosePress}
+              accessibilityRole="button"
+              accessibilityLabel={t('a11y.closePhoto')}
+              style={{ position: 'absolute', top: insets.top + 12, right: 20 }}
+            >
+              <Ionicons name="close" size={28} color="#fff" />
+            </Pressable>
+
+            {/* ── Info + action buttons ─────────────────────────────────
+                Positioned absolutely at the bottom — no transform, so
+                they stay put while the photo flies off.                  */}
+            {selected && (
+              <View
                 style={{
-                  color: colors.cardText,
-                  fontSize: 18,
-                  fontWeight: '700',
-                  marginBottom: theme.spacing.sm,
+                  position: 'absolute',
+                  bottom: insets.bottom + 28,
+                  left: 0,
+                  right: 0,
+                  alignItems: 'center',
+                  gap: theme.spacing.sm,
                 }}
               >
-                {t('photos.reportTitle')}
-              </ThemedText>
-              <ThemedText
-                style={{ color: colors.cardText, fontSize: 14, marginBottom: theme.spacing.md }}
-              >
-                {t('photos.reportDescription')}
-              </ThemedText>
-
-              {REPORT_REASONS.map((reason) => (
-                <Pressable
-                  key={reason}
-                  onPress={() => setReportReason(reason)}
+                <ThemedText
                   style={{
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    gap: theme.spacing.sm,
-                    paddingVertical: theme.spacing.sm,
+                    color: '#fff',
+                    fontSize: 14,
+                    fontWeight: '600',
+                    textShadowColor: 'rgba(0,0,0,0.6)',
+                    textShadowOffset: { width: 0, height: 1 },
+                    textShadowRadius: 4,
                   }}
                 >
-                  <Ionicons
-                    name={reportReason === reason ? 'radio-button-on' : 'radio-button-off'}
-                    size={20}
-                    color={colors.cardText}
-                  />
-                  <ThemedText style={{ color: colors.cardText, fontSize: 15 }}>
-                    {t(`photos.reason.${reason}`)}
-                  </ThemedText>
-                </Pressable>
-              ))}
+                  {selected.guest_name}
+                </ThemedText>
+                <View style={{ flexDirection: 'row', gap: 10 }}>
+                  {selected.guest_id === currentGuestId ? (
+                    <Pressable
+                      testID="delete-photo-button"
+                      onPress={() => confirmDeletePhoto(selected)}
+                      style={styles.detailBtn}
+                    >
+                      <Ionicons name="trash-outline" size={16} color={colors.cardButtonText} />
+                      <ThemedText style={{ color: colors.cardButtonText, fontSize: 13 }}>
+                        {t('photos.deletePhoto')}
+                      </ThemedText>
+                    </Pressable>
+                  ) : (
+                    <Pressable
+                      testID="report-photo-button"
+                      onPress={() => openReport(selected)}
+                      style={styles.detailBtn}
+                    >
+                      <Ionicons name="flag-outline" size={16} color={colors.cardButtonText} />
+                      <ThemedText style={{ color: colors.cardButtonText, fontSize: 13 }}>
+                        {t('photos.report')}
+                      </ThemedText>
+                    </Pressable>
+                  )}
+                  {selected.guest_id !== null && selected.guest_id !== currentGuestId && (
+                    <Pressable
+                      testID="hide-uploader-button"
+                      onPress={() => confirmHideUploader(selected)}
+                      style={styles.detailBtn}
+                    >
+                      <Ionicons name="eye-off-outline" size={16} color={colors.cardButtonText} />
+                      <ThemedText style={{ color: colors.cardButtonText, fontSize: 13 }}>
+                        {t('photos.hideUploader')}
+                      </ThemedText>
+                    </Pressable>
+                  )}
+                </View>
+              </View>
+            )}
 
-              <TextInput
-                value={reportMessage}
-                onChangeText={(text) => {
-                  setReportMessage(text.slice(0, 1000));
-                  setReportError(null);
-                }}
-                placeholder={t('photos.reportMessagePlaceholder')}
-                placeholderTextColor={colors.cardText + '88'}
-                multiline
-                maxLength={1000}
-                style={{
-                  minHeight: 84,
-                  borderWidth: 1,
-                  borderColor: reportError ? theme.colors.error : colors.border + '66',
-                  borderRadius: theme.borderRadius.md,
-                  padding: theme.spacing.md,
-                  marginTop: theme.spacing.md,
-                  color: colors.cardText,
-                  textAlignVertical: 'top',
-                }}
-              />
-              {reportError && (
-                <ThemedText
-                  style={{ color: theme.colors.error, fontSize: 13, marginTop: theme.spacing.xs }}
+            {/* ── Report sheet ──────────────────────────────────────────── */}
+            {reportingPhoto && (
+                <View
+                  style={{
+                    position: 'absolute',
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    backgroundColor: colors.card,
+                    borderTopLeftRadius: theme.borderRadius.lg,
+                    borderTopRightRadius: theme.borderRadius.lg,
+                    padding: theme.spacing.lg,
+                    paddingBottom: insets.bottom + theme.spacing.lg,
+                  }}
                 >
-                  {reportError}
-                </ThemedText>
-              )}
+                  <ThemedText
+                    style={{
+                      color: colors.cardText,
+                      fontSize: 18,
+                      fontWeight: '700',
+                      marginBottom: theme.spacing.sm,
+                    }}
+                  >
+                    {t('photos.reportTitle')}
+                  </ThemedText>
+                  <ThemedText
+                    style={{ color: colors.cardText, fontSize: 14, marginBottom: theme.spacing.md }}
+                  >
+                    {t('photos.reportDescription')}
+                  </ThemedText>
 
-              <Pressable
-                onPress={submitReport}
-                disabled={submittingReport}
-                style={{
-                  marginTop: theme.spacing.lg,
-                  backgroundColor: colors.cardButton,
-                  borderRadius: theme.borderRadius.md,
-                  paddingVertical: theme.spacing.md,
-                  alignItems: 'center',
-                  opacity: submittingReport ? 0.65 : 1,
-                }}
-              >
-                <ThemedText style={{ color: colors.cardButtonText, fontWeight: '700' }}>
-                  {t('photos.reportSubmit')}
-                </ThemedText>
-              </Pressable>
-              <Pressable
-                onPress={() => setReportingPhoto(null)}
-                style={{ paddingVertical: theme.spacing.md, alignItems: 'center' }}
-              >
-                <ThemedText style={{ color: colors.cardText }}>{t('common.cancel')}</ThemedText>
-              </Pressable>
-            </View>
-          )}
-        </View>
+                  {REPORT_REASONS.map((reason) => (
+                    <Pressable
+                      key={reason}
+                      onPress={() => setReportReason(reason)}
+                      style={{
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        gap: theme.spacing.sm,
+                        paddingVertical: theme.spacing.sm,
+                      }}
+                    >
+                      <Ionicons
+                        name={reportReason === reason ? 'radio-button-on' : 'radio-button-off'}
+                        size={20}
+                        color={colors.cardText}
+                      />
+                      <ThemedText style={{ color: colors.cardText, fontSize: 15 }}>
+                        {t(`photos.reason.${reason}`)}
+                      </ThemedText>
+                    </Pressable>
+                  ))}
+
+                  <TextInput
+                    value={reportMessage}
+                    onChangeText={(text) => {
+                      setReportMessage(text.slice(0, 1000));
+                      setReportError(null);
+                    }}
+                    placeholder={t('photos.reportMessagePlaceholder')}
+                    placeholderTextColor={colors.cardText + '88'}
+                    multiline
+                    maxLength={1000}
+                    style={{
+                      minHeight: 84,
+                      borderWidth: 1,
+                      borderColor: reportError ? theme.colors.error : colors.border + '66',
+                      borderRadius: theme.borderRadius.md,
+                      padding: theme.spacing.md,
+                      marginTop: theme.spacing.md,
+                      color: colors.cardText,
+                      textAlignVertical: 'top',
+                    }}
+                  />
+                  {reportError && (
+                    <ThemedText
+                      style={{ color: theme.colors.error, fontSize: 13, marginTop: theme.spacing.xs }}
+                    >
+                      {reportError}
+                    </ThemedText>
+                  )}
+
+                  <Pressable
+                    onPress={submitReport}
+                    disabled={submittingReport}
+                    style={{
+                      marginTop: theme.spacing.lg,
+                      backgroundColor: colors.cardButton,
+                      borderRadius: theme.borderRadius.md,
+                      paddingVertical: theme.spacing.md,
+                      alignItems: 'center',
+                      opacity: submittingReport ? 0.65 : 1,
+                    }}
+                  >
+                    <ThemedText style={{ color: colors.cardButtonText, fontWeight: '700' }}>
+                      {t('photos.reportSubmit')}
+                    </ThemedText>
+                  </Pressable>
+                  <Pressable
+                    onPress={() => setReportingPhoto(null)}
+                    style={{ paddingVertical: theme.spacing.md, alignItems: 'center' }}
+                  >
+                    <ThemedText style={{ color: colors.cardText }}>{t('common.cancel')}</ThemedText>
+                  </Pressable>
+                </View>
+              )}
+          </View>
+        </Animated.View>
       </Modal>
 
-      {/* Upload FAB — camera icon that swaps to a spinner during upload. */}
+      {/* Upload FAB — hidden while detail is open (Modal covers it anyway,
+          but explicit hide prevents accessibility issues). */}
       <Pressable
         onPress={showUploadOptions}
-        disabled={uploading}
+        disabled={uploading || detailMounted}
         accessibilityRole="button"
         accessibilityLabel={t('a11y.uploadPhoto')}
         style={{
@@ -649,3 +754,19 @@ export default function PhotosScreen() {
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  detailBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    borderRadius: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 9,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.18,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+});
