@@ -57,6 +57,23 @@ export type GuestMe = {
  * field added on the backend must appear here or TypeScript will refuse to
  * read it in a consumer.
  */
+/**
+ * One stop on the event timeline (registry office, lunch, party, …). Times are
+ * "HH:MM" local wall-clock; the absolute moment is composed with `EventInfo.date`.
+ * `ends_at` is null for open-ended stations. `address` is a display string;
+ * `lat`/`lng` drive map navigation when present.
+ */
+export type ScheduleStation = {
+  id: number;
+  title: string;
+  starts_at: string | null;
+  ends_at: string | null;
+  location_name: string | null;
+  address: string | null;
+  lat: number | null;
+  lng: number | null;
+};
+
 export type EventInfo = {
   name: string;
   date: string;
@@ -69,6 +86,9 @@ export type EventInfo = {
   venue_display_mode: 'address' | 'name' | 'both';
   dresscode: string | null;
   schedule: string | null;
+  // --- Structured schedule stations, already filtered to what this guest may
+  // see (backend applies per-group visibility). Ordered by the couple. ---
+  schedule_stations: ScheduleStation[];
   // --- Raw palette (backend picks primary/secondary/tertiary per event) ---
   color_primary: string | null;
   color_secondary: string | null;

@@ -49,6 +49,8 @@ const de = {
     countdownSeconds: 'Sek',
     countdownToday: 'Heute ist der große Tag! 🎉',
     countdownPast: 'Es war ein wunderschöner Tag.',
+    stationNow: 'Jetzt: %{title}',
+    stationCountdown: 'Noch %{time} bis %{title}',
     dresscode: 'Dresscode:',
     openInMaps: 'Adresse öffnen in',
     openInMapsHint:
@@ -119,10 +121,16 @@ const de = {
   },
   tabs: {
     home: 'Home',
+    schedule: 'Zeitplan',
     photos: 'Fotos',
     rsvp: 'Zusage',
     drinks: 'Spiel',
     settings: 'Einstellungen',
+  },
+  schedule: {
+    title: 'Zeitplan',
+    now: 'Jetzt',
+    empty: 'Der Zeitplan wird noch vorbereitet.',
   },
   rsvp: {
     title: 'Bist du dabei?',
