@@ -140,4 +140,21 @@ describe('app/(tabs)/rsvp', () => {
     });
     alertSpy.mockRestore();
   });
+
+  it('retries loadData when the error banner retry button is pressed', async () => {
+    mockFetchGuestMe.mockRejectedValueOnce(new Error('boom'));
+    mockFetchEventInfo.mockResolvedValue({ rsvp_deadline: '2099-08-01T00:00:00Z' });
+
+    const { findByText, findByTestId, queryByText } = renderScreen();
+    await findByText('Daten konnten nicht geladen werden.');
+
+    mockFetchGuestMe.mockResolvedValueOnce(soloGuest);
+    const retryButton = await findByTestId('error-banner-retry');
+    await act(async () => {
+      fireEvent.press(retryButton);
+    });
+
+    await findByText('Absagen');
+    expect(queryByText('Daten konnten nicht geladen werden.')).toBeNull();
+  });
 });

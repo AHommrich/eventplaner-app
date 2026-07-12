@@ -158,3 +158,43 @@ jest.mock('expo-splash-screen', () => ({
   preventAutoHideAsync: jest.fn(async () => {}),
   hideAsync: jest.fn(async () => {}),
 }));
+
+// --- expo-haptics ---
+// All async APIs resolve immediately; `lib/haptics.ts` fires these without
+// awaiting, so tests only need the calls recorded, not real device feedback.
+jest.mock('expo-haptics', () => ({
+  notificationAsync: jest.fn(async () => {}),
+  impactAsync: jest.fn(async () => {}),
+  selectionAsync: jest.fn(async () => {}),
+  NotificationFeedbackType: { Success: 'success', Warning: 'warning', Error: 'error' },
+  ImpactFeedbackStyle: { Light: 'light', Medium: 'medium', Heavy: 'heavy' },
+}));
+
+// --- @react-navigation/native ---
+// `useIsFocused` needs a real navigator context (via `useNavigation`), which
+// no screen test mounts — expo-router itself is mocked away in this suite.
+// Everything else stays real via `requireActual` in case something else in
+// the dependency tree needs it.
+jest.mock('@react-navigation/native', () => ({
+  ...jest.requireActual('@react-navigation/native'),
+  useIsFocused: () => true,
+}));
+
+// --- react-native-gesture-handler ---
+// `jestSetup` isn't itself a module replacement — it's a script that mocks
+// just the native submodules underneath (RNGestureHandlerModule etc.) via
+// its own `jest.mock()` calls. Requiring it directly (not through a
+// `jest.mock('react-native-gesture-handler', factory)` wrapper) lets those
+// inner mocks register while leaving `Gesture`/`GestureDetector` as the real,
+// functional JS API.
+require('react-native-gesture-handler/jestSetup');
+
+// --- react-native-reanimated ---
+// No explicit jest.mock() call here on purpose: Jest auto-applies any
+// `__mocks__/<package>.js` file under `roots` as that node_modules package's
+// mock. An explicit `jest.mock('react-native-reanimated', () =>
+// require('./__mocks__/react-native-reanimated'))` would make Jest's
+// manual-mock resolution recurse into itself (the required file lives in a
+// `__mocks__` dir, so it's already treated as the mock for this exact
+// specifier) — see tests/__mocks__/react-native-reanimated.js for the mock
+// implementation itself.

@@ -147,4 +147,34 @@ describe('app/(tabs)/drinks', () => {
     await waitFor(() => expect(mockApiGet).toHaveBeenCalledWith('/api/drinks/stats'));
     await findByText(/Zoe/);
   });
+
+  it('retries loadInitial when the error banner retry button is pressed', async () => {
+    mockApiGet.mockImplementation(async (path: string) => {
+      if (path === '/api/drinks') return Promise.reject(new Error('boom'));
+      if (path === '/api/drinks/stats') return Promise.reject(new Error('boom'));
+      if (path === '/api/event/info') return { data: { drink_game_end_time: null } };
+      return { data: {} };
+    });
+
+    const { findByText, findByTestId, queryByText } = renderScreen();
+    await findByText('Daten konnten nicht geladen werden.');
+
+    wireApi({
+      drinks: [
+        {
+          id: 1,
+          display_name: 'Bier',
+          category: 'beer',
+          category_label: 'Bier',
+          is_alcoholic: true,
+          sizes: [{ drink_id: 10, id: 1, amount_liter: 0.5, is_default: true, points: 2 }],
+        },
+      ],
+    });
+    const retryButton = await findByTestId('error-banner-retry');
+    fireEvent.press(retryButton);
+
+    await findByText('Bier');
+    expect(queryByText('Daten konnten nicht geladen werden.')).toBeNull();
+  });
 });

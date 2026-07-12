@@ -19,7 +19,7 @@
  * Deadline handling: `deadlinePassed` disables every button and shows a
  * copy string; no post-deadline mutation is possible.
  */
-import { useCallback, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import {
   View,
   TouchableOpacity,
@@ -28,13 +28,18 @@ import {
   RefreshControl,
   Alert,
 } from 'react-native';
+import Animated, { FadeIn, FadeOut, LinearTransition } from 'react-native-reanimated';
 import { ThemedText } from '../../components/ThemedText';
+import { CardSkeleton } from '../../components/ui/ScreenSkeletons';
+import { ErrorBanner } from '../../components/ui/ErrorBanner';
+import { haptics } from '../../lib/haptics';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLanguage } from '../../lib/LanguageContext';
 import { useEventTheme } from '../../lib/EventThemeContext';
 import { useRefreshToast } from '../../lib/useRefreshToast';
 import { RefreshToast } from '../../components/RefreshToast';
+import { Toast } from '../../components/ui/Toast';
 import {
   fetchGuestMe,
   fetchEventInfo,
@@ -94,14 +99,24 @@ export default function RsvpTabScreen() {
   const [guest, setGuest] = useState<GuestMe | null>(null);
   const [deadline, setDeadline] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [savingOwn, setSavingOwn] = useState(false);
   const [savingMemberId, setSavingMemberId] = useState<number | null>(null);
   const [deadlinePassed, setDeadlinePassed] = useState(false);
   const [expandedMemberId, setExpandedMemberId] = useState<number | null>(null);
+  const [savedToast, setSavedToast] = useState(false);
+  const savedToastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const { refreshing, refreshed, onRefresh } = useRefreshToast(async () => {
     await loadData(true);
     loadTheme();
   });
+
+  function showSavedToast() {
+    haptics.success();
+    setSavedToast(true);
+    if (savedToastTimer.current) clearTimeout(savedToastTimer.current);
+    savedToastTimer.current = setTimeout(() => setSavedToast(false), 2000);
+  }
 
   async function loadData(isRefresh = false) {
     if (!isRefresh) setLoading(true);
@@ -119,9 +134,9 @@ export default function RsvpTabScreen() {
       setGuest(g);
       setDeadline(info.rsvp_deadline);
       setDeadlinePassed(new Date(info.rsvp_deadline) < new Date());
-    } catch (e: any) {
-      const msg = e?.response?.data?.message ?? e?.message ?? String(e);
-      Alert.alert(t('common.error'), `${e?.response?.status ?? ''} ${msg}`);
+      setLoadError(false);
+    } catch {
+      setLoadError(true);
     } finally {
       setLoading(false);
     }
@@ -160,7 +175,9 @@ export default function RsvpTabScreen() {
         return;
       }
       setGuest((prev) => (prev ? { ...prev, rsvp_status: newStatus } : prev));
+      showSavedToast();
     } catch (e: any) {
+      haptics.error();
       Alert.alert(t('common.error'), e?.response?.data?.message ?? t('common.unknownError'));
     } finally {
       setSavingOwn(false);
@@ -196,7 +213,9 @@ export default function RsvpTabScreen() {
           ),
         };
       });
+      showSavedToast();
     } catch (e: any) {
+      haptics.error();
       Alert.alert(t('common.error'), e?.response?.data?.message ?? t('common.unknownError'));
     } finally {
       setSavingMemberId(null);
@@ -209,16 +228,29 @@ export default function RsvpTabScreen() {
         style={{
           flex: 1,
           backgroundColor: colors.screenBg,
-          alignItems: 'center',
-          justifyContent: 'center',
+          paddingTop: insets.top + theme.spacing.lg,
+          paddingHorizontal: theme.spacing.lg,
         }}
       >
-        <ActivityIndicator color={colors.tabTint} />
+        <CardSkeleton lines={3} showButton />
       </View>
     );
   }
 
-  if (!guest) return null;
+  if (!guest) {
+    return (
+      <View
+        style={{
+          flex: 1,
+          backgroundColor: colors.screenBg,
+          justifyContent: 'center',
+          padding: theme.spacing.lg,
+        }}
+      >
+        {loadError && <ErrorBanner message={t('common.loadFailed')} onRetry={() => loadData()} />}
+      </View>
+    );
+  }
 
   const ownAccepted = guest.rsvp_status === 'accepted_pending' || guest.rsvp_status === 'accepted';
   const ownDeclined = guest.rsvp_status === 'declined_pending' || guest.rsvp_status === 'declined';
@@ -377,100 +409,124 @@ export default function RsvpTabScreen() {
               const memberFullName = `${member.firstname} ${member.lastname}`;
 
               return (
-                <TouchableOpacity
-                  key={member.guest_id}
-                  activeOpacity={canSet ? 0.7 : 1}
-                  onPress={() => canSet && setExpandedMemberId(isExpanded ? null : member.guest_id)}
-                  style={{
-                    paddingHorizontal: theme.spacing.md,
-                    paddingVertical: theme.spacing.md,
-                    borderBottomWidth: 1,
-                    borderBottomColor: colors.border + '30',
-                  }}
-                >
-                  <View
+                <Animated.View key={member.guest_id} layout={LinearTransition.duration(180)}>
+                  <TouchableOpacity
+                    activeOpacity={canSet ? 0.7 : 1}
+                    onPress={() => {
+                      if (!canSet) return;
+                      haptics.selection();
+                      setExpandedMemberId(isExpanded ? null : member.guest_id);
+                    }}
                     style={{
-                      flexDirection: 'row',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
+                      paddingHorizontal: theme.spacing.md,
+                      paddingVertical: theme.spacing.md,
+                      borderBottomWidth: 1,
+                      borderBottomColor: colors.border + '30',
                     }}
                   >
-                    <ThemedText style={{ fontSize: 15, fontWeight: '600', color: colors.cardText }}>
-                      {memberFullName}
-                    </ThemedText>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                      <StatusBadge status={member.rsvp_status} t={t} />
-                      {canSet && (
-                        <Ionicons
-                          name={isExpanded ? 'chevron-up' : 'chevron-down'}
-                          size={16}
-                          color={colors.cardText}
-                        />
-                      )}
-                    </View>
-                  </View>
-                  {setByLabel && (
-                    <ThemedText
-                      style={{ fontSize: 12, color: colors.cardText + 'aa', marginTop: 2 }}
+                    <View
+                      style={{
+                        flexDirection: 'row',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                      }}
                     >
-                      {setByLabel}
-                    </ThemedText>
-                  )}
-                  {isExpanded &&
-                    (isSaving ? (
-                      <ActivityIndicator
-                        color={colors.primary}
-                        style={{ alignSelf: 'flex-start', marginTop: theme.spacing.sm }}
-                      />
-                    ) : (
-                      <View style={{ flexDirection: 'row', gap: 8, marginTop: theme.spacing.sm }}>
-                        <TouchableOpacity
-                          onPress={() => handleGroupRsvp(member.guest_id, true)}
-                          disabled={mAccepted}
-                          style={{
-                            flex: 1,
-                            paddingVertical: theme.spacing.sm,
-                            borderRadius: theme.borderRadius.md,
-                            alignItems: 'center',
-                            backgroundColor: theme.colors.sage,
-                            opacity: mAccepted ? 0.4 : 1,
-                          }}
-                        >
-                          <ThemedText style={{ fontWeight: '600', color: '#fff', fontSize: 14 }}>
-                            {t('rsvp.accept')}
-                          </ThemedText>
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                          onPress={() =>
-                            confirmDecline(
-                              () => handleGroupRsvp(member.guest_id, false),
-                              memberFullName
-                            )
-                          }
-                          disabled={mDeclined}
-                          style={{
-                            flex: 1,
-                            paddingVertical: theme.spacing.sm,
-                            borderRadius: theme.borderRadius.md,
-                            alignItems: 'center',
-                            backgroundColor: theme.colors.error,
-                            opacity: mDeclined ? 0.4 : 1,
-                          }}
-                        >
-                          <ThemedText style={{ fontWeight: '600', color: '#fff', fontSize: 14 }}>
-                            {t('rsvp.decline')}
-                          </ThemedText>
-                        </TouchableOpacity>
+                      <ThemedText
+                        style={{ fontSize: 15, fontWeight: '600', color: colors.cardText }}
+                      >
+                        {memberFullName}
+                      </ThemedText>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                        <StatusBadge status={member.rsvp_status} t={t} />
+                        {canSet && (
+                          <Ionicons
+                            name={isExpanded ? 'chevron-up' : 'chevron-down'}
+                            size={16}
+                            color={colors.cardText}
+                          />
+                        )}
                       </View>
-                    ))}
-                </TouchableOpacity>
+                    </View>
+                    {setByLabel && (
+                      <ThemedText
+                        style={{ fontSize: 12, color: colors.cardText + 'aa', marginTop: 2 }}
+                      >
+                        {setByLabel}
+                      </ThemedText>
+                    )}
+                    {isExpanded && (
+                      <Animated.View
+                        entering={FadeIn.duration(150)}
+                        exiting={FadeOut.duration(100)}
+                      >
+                        {isSaving ? (
+                          <ActivityIndicator
+                            color={colors.primary}
+                            style={{ alignSelf: 'flex-start', marginTop: theme.spacing.sm }}
+                          />
+                        ) : (
+                          <View
+                            style={{ flexDirection: 'row', gap: 8, marginTop: theme.spacing.sm }}
+                          >
+                            <TouchableOpacity
+                              onPress={() => handleGroupRsvp(member.guest_id, true)}
+                              disabled={mAccepted}
+                              style={{
+                                flex: 1,
+                                paddingVertical: theme.spacing.sm,
+                                borderRadius: theme.borderRadius.md,
+                                alignItems: 'center',
+                                backgroundColor: theme.colors.sage,
+                                opacity: mAccepted ? 0.4 : 1,
+                              }}
+                            >
+                              <ThemedText
+                                style={{ fontWeight: '600', color: '#fff', fontSize: 14 }}
+                              >
+                                {t('rsvp.accept')}
+                              </ThemedText>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                              onPress={() =>
+                                confirmDecline(
+                                  () => handleGroupRsvp(member.guest_id, false),
+                                  memberFullName
+                                )
+                              }
+                              disabled={mDeclined}
+                              style={{
+                                flex: 1,
+                                paddingVertical: theme.spacing.sm,
+                                borderRadius: theme.borderRadius.md,
+                                alignItems: 'center',
+                                backgroundColor: theme.colors.error,
+                                opacity: mDeclined ? 0.4 : 1,
+                              }}
+                            >
+                              <ThemedText
+                                style={{ fontWeight: '600', color: '#fff', fontSize: 14 }}
+                              >
+                                {t('rsvp.decline')}
+                              </ThemedText>
+                            </TouchableOpacity>
+                          </View>
+                        )}
+                      </Animated.View>
+                    )}
+                  </TouchableOpacity>
+                </Animated.View>
               );
             })}
           </View>
         )}
       </ScrollView>
 
-      <RefreshToast visible={refreshed} refreshing={refreshing} />
+      {!savedToast && <RefreshToast visible={refreshed} refreshing={refreshing} />}
+      <Toast visible={savedToast}>
+        <ThemedText style={{ color: colors.cardButtonText, fontSize: 14, fontWeight: '700' }}>
+          ✓ {t('rsvp.savedToast')}
+        </ThemedText>
+      </Toast>
     </View>
   );
 }

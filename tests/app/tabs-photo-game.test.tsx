@@ -55,6 +55,14 @@ describe('app/(tabs)/photo-game', () => {
     await findByText('Das Spiel ist beendet.');
   });
 
+  it('draft state renders the "not started yet" card, distinct from ended', async () => {
+    mockFetchPhotoGameStatus.mockResolvedValue({ status: 'draft', assignment: null });
+
+    const { findByText, queryByText } = renderScreen();
+    await findByText('Das Spiel hat noch nicht begonnen.');
+    expect(queryByText('Das Spiel ist beendet.')).toBeNull();
+  });
+
   it('no_assignment state renders the "get task" CTA', async () => {
     mockFetchPhotoGameStatus.mockResolvedValue({ status: 'active', assignment: null });
 
@@ -110,5 +118,20 @@ describe('app/(tabs)/photo-game', () => {
 
     await waitFor(() => expect(mockAssignPhotoGameTask).toHaveBeenCalled());
     await findByText('Fresh task description');
+  });
+
+  it('retries loadStatus when the error banner retry button is pressed', async () => {
+    mockFetchPhotoGameStatus.mockRejectedValueOnce(new Error('boom'));
+
+    const { findByText, findByTestId, queryByText } = renderScreen();
+    await findByText('boom');
+
+    mockFetchPhotoGameStatus.mockResolvedValueOnce({ status: 'active', assignment: null });
+    const retryButton = await findByTestId('error-banner-retry');
+    await act(async () => {
+      fireEvent.press(retryButton);
+    });
+
+    await waitFor(() => expect(queryByText('boom')).toBeNull());
   });
 });
