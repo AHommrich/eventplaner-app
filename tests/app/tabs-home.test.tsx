@@ -74,6 +74,7 @@ function baseEvent(overrides: any = {}) {
     venue_lng: 7.5,
     venue_display_mode: 'both',
     dresscode: null,
+    schedule_stations: [],
     ...overrides,
   };
 }

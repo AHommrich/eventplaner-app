@@ -25,9 +25,6 @@ import {
   RefreshControl,
   StyleSheet,
   TouchableOpacity,
-  Linking,
-  Platform,
-  Alert,
 } from 'react-native';
 import { ThemedText } from '../../components/ThemedText';
 import { CardSkeleton } from '../../components/ui/ScreenSkeletons';
@@ -40,64 +37,24 @@ import { getSession, GuestSession } from '../../lib/auth';
 import { useLanguage } from '../../lib/LanguageContext';
 import { useEventTheme } from '../../lib/EventThemeContext';
 import { fetchEventInfo, EventInfo } from '../../lib/guest';
+import { focusStation, scheduleStatus } from '../../lib/schedule';
+import { openLocationInMaps } from '../../lib/maps';
 import { useRefreshToast } from '../../lib/useRefreshToast';
 import { RefreshToast } from '../../components/RefreshToast';
 import { Ionicons } from '@expo/vector-icons';
 import { theme } from '../../constants/theme';
-import { haptics } from '../../lib/haptics';
 
-/**
- * Tap-to-navigate dispatcher for the venue.
- *
- * URL scheme matrix (verified against real devices — see CLAUDE.md):
- *
- *   Platform  |  Coords available            |  Address only
- *   ----------+-------------------------------+---------------------
- *   iOS       |  Alert: Apple Maps / GMaps    |  Same alert, geocoded
- *             |  `maps://?ll=lat,lng&q=label` |  `maps://?q=address`
- *             |  `comgooglemaps://?q=lat,lng` |  `comgooglemaps://?q=address`
- *   Android   |  `geo:lat,lng?q=lat,lng(lbl)` |  `geo:0,0?q=address`
- *
- * Never use `geo:lat,lng?q=address` — the `q=address` overrides the
- * coordinates and geocodes instead of pinning the exact spot.
- *
- * iOS falls back to Apple Maps when Google Maps isn't installed
- * (`Linking.openURL(googleUrl).catch(...)`).
- */
+/** Venue tap-to-navigate — delegates to the shared maps dispatcher. */
 function openInMaps(event: EventInfo, t: (k: string) => string) {
-  // Distinct from the lighter taps used elsewhere — signals "this hands off
-  // to another app" before the alert/deep link even appears.
-  haptics.impactMedium();
-  const label = encodeURIComponent(event.venue_name ?? event.venue_address ?? '');
-  const hasCoords = event.venue_lat != null && event.venue_lng != null;
-  const lat = event.venue_lat;
-  const lng = event.venue_lng;
-
-  // Apple Maps: `ll=` for exact coordinates, address geocode as fallback.
-  const appleUrl = hasCoords
-    ? `maps://?ll=${lat},${lng}&q=${label}`
-    : `maps://?q=${encodeURIComponent(event.venue_address ?? '')}`;
-  // Google Maps (iOS): `q=lat,lng` pins the exact spot.
-  const googleUrl = hasCoords
-    ? `comgooglemaps://?q=${lat},${lng}&zoom=16`
-    : `comgooglemaps://?q=${encodeURIComponent(event.venue_address ?? '')}`;
-  // Android: `q=lat,lng(label)` pins with a title.
-  const androidUrl = hasCoords
-    ? `geo:${lat},${lng}?q=${lat},${lng}(${label})`
-    : `geo:0,0?q=${encodeURIComponent(event.venue_address ?? '')}`;
-
-  if (Platform.OS === 'ios') {
-    Alert.alert(t('home.openInMaps'), t('home.openInMapsHint'), [
-      { text: t('home.mapsApple'), onPress: () => Linking.openURL(appleUrl) },
-      {
-        text: t('home.mapsGoogle'),
-        onPress: () => Linking.openURL(googleUrl).catch(() => Linking.openURL(appleUrl)),
-      },
-      { text: t('common.cancel'), style: 'cancel' },
-    ]);
-  } else {
-    Linking.openURL(androidUrl);
-  }
+  openLocationInMaps(
+    {
+      name: event.venue_name,
+      address: event.venue_address,
+      lat: event.venue_lat,
+      lng: event.venue_lng,
+    },
+    t
+  );
 }
 
 function formatEventDate(iso: string, locale: string): string {
@@ -139,6 +96,9 @@ export default function HomeScreen() {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [countdown, setCountdown] = useState<CountdownParts | null>(null);
+  // Ticks with the countdown so the station status can be derived purely from
+  // state in render (no `Date.now()` during render).
+  const [now, setNow] = useState(() => Date.now());
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const isFocused = useIsFocused();
 
@@ -184,7 +144,11 @@ export default function HomeScreen() {
     if (!eventInfo?.date || !isFocused) return;
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setCountdown(calcCountdown(eventInfo.date));
-    intervalRef.current = setInterval(() => setCountdown(calcCountdown(eventInfo!.date)), 1000);
+    setNow(Date.now());
+    intervalRef.current = setInterval(() => {
+      setCountdown(calcCountdown(eventInfo!.date));
+      setNow(Date.now());
+    }, 1000);
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
@@ -205,9 +169,33 @@ export default function HomeScreen() {
   const eventDate = eventInfo?.date ? formatEventDate(eventInfo.date, language) : null;
 
   function renderCountdown() {
-    if (!countdown) return null;
+    // When the event has timed stations, the pill walks through them: counts
+    // down to the next stop, then flips to "Now: <station>" while it runs, then
+    // moves on. Recomputed each render, which the 1 Hz ticker drives. Falls back
+    // to the plain event-date countdown when there are no stations.
+    const stations = eventInfo?.schedule_stations ?? [];
+    const status =
+      eventInfo?.date && stations.length
+        ? scheduleStatus(eventInfo.date, stations, new Date(now))
+        : null;
+
     let label: string;
-    if (countdown === 'today') {
+    if (status) {
+      if (status.kind === 'during') {
+        label = t('home.stationNow', { title: status.station.title });
+      } else if (status.kind === 'after') {
+        label = t('home.countdownPast');
+      } else {
+        const totalSec = Math.max(0, Math.floor((status.target.getTime() - now) / 1000));
+        const hours = Math.floor(totalSec / 3600);
+        const minutes = Math.floor((totalSec % 3600) / 60);
+        const seconds = totalSec % 60;
+        const time = `${hours}${t('home.countdownHours')} ${minutes}${t('home.countdownMinutes')} ${seconds}${t('home.countdownSeconds')}`;
+        label = t('home.stationCountdown', { time, title: status.station.title });
+      }
+    } else if (!countdown) {
+      return null;
+    } else if (countdown === 'today') {
       label = t('home.countdownToday');
     } else if (countdown === 'past') {
       label = t('home.countdownPast');
@@ -279,6 +267,62 @@ export default function HomeScreen() {
         <ThemedText style={[styles.meta, { color: textColor }]}>{eventDate}</ThemedText>
       )}
       {(() => {
+        // When the event has schedule stations, the location block follows the
+        // active/next station (same one the countdown pill walks) instead of the
+        // static venue — so guests always see where to head next.
+        const stations = eventInfo?.schedule_stations ?? [];
+        const focus =
+          eventInfo?.date && stations.length
+            ? focusStation(eventInfo.date, stations, new Date(now))
+            : null;
+        if (focus) {
+          const focusHasNav = !!(focus.address || (focus.lat != null && focus.lng != null));
+          if (!focusHasNav && !focus.location_name) return null;
+          const focusAddr = focus.address ?? `${focus.lat?.toFixed(4)}, ${focus.lng?.toFixed(4)}`;
+          const inner = (
+            <>
+              {!!focus.location_name && (
+                <ThemedText
+                  style={[styles.meta, { color: textColor, marginBottom: 0, fontSize: 18 }]}
+                >
+                  {focus.location_name}
+                </ThemedText>
+              )}
+              {focusHasNav && (
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                  <ThemedText
+                    style={[styles.meta, { color: textColor, marginBottom: 0, fontSize: 18 }]}
+                  >
+                    {focusAddr}
+                  </ThemedText>
+                  <Ionicons name="location-outline" size={15} color={textColor} />
+                </View>
+              )}
+            </>
+          );
+          return focusHasNav ? (
+            <TouchableOpacity
+              onPress={() =>
+                openLocationInMaps(
+                  {
+                    name: focus.location_name,
+                    address: focus.address,
+                    lat: focus.lat,
+                    lng: focus.lng,
+                  },
+                  t
+                )
+              }
+              activeOpacity={0.7}
+              style={{ alignItems: 'center', marginVertical: 8 }}
+            >
+              {inner}
+            </TouchableOpacity>
+          ) : (
+            <View style={{ alignItems: 'center', marginVertical: 8 }}>{inner}</View>
+          );
+        }
+
         // Venue block — three display modes controlled by
         // `venue_display_mode`: `'address'` shows address only, `'name'`
         // shows the venue name only, `'both'` stacks name over address with

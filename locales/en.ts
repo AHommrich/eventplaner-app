@@ -16,10 +16,16 @@ const en = {
   },
   tabs: {
     home: 'Home',
+    schedule: 'Schedule',
     photos: 'Photos',
     rsvp: 'RSVP',
     drinks: 'Game',
     settings: 'Settings',
+  },
+  schedule: {
+    title: 'Schedule',
+    now: 'Now',
+    empty: 'The schedule is still being prepared.',
   },
   rsvp: {
     title: 'Will you join us?',
@@ -91,6 +97,8 @@ const en = {
     countdownSeconds: 's',
     countdownToday: 'Today is the big day! 🎉',
     countdownPast: 'What a beautiful day it was.',
+    stationNow: 'Now: %{title}',
+    stationCountdown: '%{time} until %{title}',
     dresscode: 'Dress code:',
     openInMaps: 'Open address in',
     openInMapsHint:

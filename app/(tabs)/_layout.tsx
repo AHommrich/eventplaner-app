@@ -6,6 +6,8 @@
  *   - `home` .......... always shown; when a cover image is set it goes
  *                       "full-bleed" (transparent tab bar with the cover
  *                       image bleeding under it and light-on-dark tint).
+ *   - `schedule` ...... only when the guest can see at least two schedule
+ *                       stations; a single stop stays on the home card.
  *   - `rsvp` .......... only visible while the guest is in
  *                       `accepted_pending`. After a full `accepted` the tab
  *                       disappears because the RSVP is settled; the RSVP
@@ -68,6 +70,9 @@ export default function TabLayout() {
   const showRsvpTab = rsvpStatus === 'accepted_pending';
   const showDrinksTab = !drinksBlocked && eventInfo?.drink_game_enabled === true;
   const showPhotoGameTab = eventInfo?.photo_game_enabled === true;
+  // Only worth its own tab once there is more than one stop to walk through; a
+  // single station stays on the home card.
+  const showScheduleTab = (eventInfo?.schedule_stations?.length ?? 0) >= 2;
   const hasCover = !!eventInfo?.cover_image_url;
 
   return (
@@ -107,6 +112,16 @@ export default function TabLayout() {
               },
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="home-outline" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="schedule"
+        options={{
+          title: t('tabs.schedule'),
+          href: showScheduleTab ? undefined : null,
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="time-outline" size={size} color={color} />
           ),
         }}
       />
