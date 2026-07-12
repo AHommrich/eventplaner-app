@@ -475,4 +475,40 @@ describe('app/(tabs)/photos', () => {
     });
     alertSpy.mockRestore();
   });
+
+  it('retries fetchPhotos when the error banner retry button is pressed', async () => {
+    mockApiGet.mockImplementation(async (path: string) => {
+      if (path === '/api/photos') return Promise.reject(new Error('boom'));
+      return { data: {} };
+    });
+
+    const { findByText, findByTestId, queryByText } = renderScreen();
+    await findByText('Daten konnten nicht geladen werden.');
+
+    mockApiGet.mockImplementation(async (path: string) => {
+      if (path === '/api/photos') {
+        return {
+          data: {
+            data: [
+              {
+                id: 1,
+                url: 'https://x/1.jpg',
+                guest_id: 11,
+                guest_name: 'Ada',
+                created_at: '2026-06-01T00:00:00Z',
+              },
+            ],
+          },
+        };
+      }
+      return { data: {} };
+    });
+    const retryButton = await findByTestId('error-banner-retry');
+    await act(async () => {
+      fireEvent.press(retryButton);
+    });
+
+    await findByTestId('photo-1');
+    expect(queryByText('Daten konnten nicht geladen werden.')).toBeNull();
+  });
 });

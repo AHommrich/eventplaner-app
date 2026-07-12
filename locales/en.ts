@@ -6,6 +6,8 @@ const en = {
     unknownError: 'Unknown error',
     refreshed: 'Updated',
     notPossible: 'Not possible',
+    retry: 'Retry',
+    loadFailed: 'Data could not be loaded.',
   },
   a11y: {
     back: 'Go back',
@@ -39,6 +41,7 @@ const en = {
     declineConfirmMember:
       'If you decline on behalf of %{name}, %{name} will no longer have access to this event.',
     declineConfirmButton: 'Yes, decline',
+    savedToast: 'Saved',
   },
   declined: {
     titlePending: 'You have declined.',
@@ -188,8 +191,10 @@ const en = {
     submittedTitle: 'Submitted! 🎉',
     submittedBody: 'Thanks for participating.',
     endedTitle: 'The game has ended.',
+    notStartedTitle: 'The game has not started yet.',
     assigning: 'Assigning…',
     uploading: 'Uploading…',
+    uploadingProgress: 'Uploading… %{pct}%',
     errorRetry: 'Try again',
     replaceButton: 'Replace photo',
   },
@@ -230,6 +235,9 @@ const en = {
     hideUploaderDescription:
       'All future photos from %{name} will be hidden from you. Undo in Settings.',
     hideUploaderSuccess: '%{name} hidden.',
+    uploadPreparing: 'Preparing photo…',
+    uploadingProgress: 'Uploading… %{pct}%',
+    uploadSuccess: 'Photo uploaded.',
   },
   dataExport: {
     title: 'My data',

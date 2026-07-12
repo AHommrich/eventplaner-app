@@ -23,7 +23,6 @@ import {
   ImageBackground,
   ScrollView,
   RefreshControl,
-  ActivityIndicator,
   StyleSheet,
   TouchableOpacity,
   Linking,
@@ -31,7 +30,10 @@ import {
   Alert,
 } from 'react-native';
 import { ThemedText } from '../../components/ThemedText';
+import { CardSkeleton } from '../../components/ui/ScreenSkeletons';
+import { ErrorBanner } from '../../components/ui/ErrorBanner';
 import { useFocusEffect } from 'expo-router';
+import { useIsFocused } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import { getSession, GuestSession } from '../../lib/auth';
@@ -42,6 +44,7 @@ import { useRefreshToast } from '../../lib/useRefreshToast';
 import { RefreshToast } from '../../components/RefreshToast';
 import { Ionicons } from '@expo/vector-icons';
 import { theme } from '../../constants/theme';
+import { haptics } from '../../lib/haptics';
 
 /**
  * Tap-to-navigate dispatcher for the venue.
@@ -62,6 +65,9 @@ import { theme } from '../../constants/theme';
  * (`Linking.openURL(googleUrl).catch(...)`).
  */
 function openInMaps(event: EventInfo, t: (k: string) => string) {
+  // Distinct from the lighter taps used elsewhere — signals "this hands off
+  // to another app" before the alert/deep link even appears.
+  haptics.impactMedium();
   const label = encodeURIComponent(event.venue_name ?? event.venue_address ?? '');
   const hasCoords = event.venue_lat != null && event.venue_lng != null;
   const lat = event.venue_lat;
@@ -134,12 +140,14 @@ export default function HomeScreen() {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [countdown, setCountdown] = useState<CountdownParts | null>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const isFocused = useIsFocused();
 
   async function loadData() {
     try {
       const info = await fetchEventInfo();
       setEventInfo(info);
       await loadTheme();
+      setLoadError(null);
     } catch (e: any) {
       console.warn('[Home] fetchEventInfo failed:', e?.response?.status, e?.message);
       setLoadError(`${e?.response?.status ?? ''} ${e?.message ?? e}`);
@@ -170,19 +178,21 @@ export default function HomeScreen() {
   // BEFORE the first interval tick so the guest never sees a 1 s "empty"
   // frame — React 19's `set-state-in-effect` check is overzealous here
   // (same-value updates bail out of scheduling), so we opt out per line.
+  // Gated on `isFocused` so the interval doesn't keep ticking (and burning
+  // CPU) while the guest is on another tab — it reseeds correctly on refocus.
   useEffect(() => {
-    if (!eventInfo?.date) return;
+    if (!eventInfo?.date || !isFocused) return;
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setCountdown(calcCountdown(eventInfo.date));
     intervalRef.current = setInterval(() => setCountdown(calcCountdown(eventInfo!.date)), 1000);
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
-    // We only need to reset the ticker when the actual date changes. The
-    // full `eventInfo` object would trigger on every unrelated theme /
-    // schedule tweak the backend returns.
+    // We only need to reset the ticker when the actual date changes or focus
+    // flips. The full `eventInfo` object would trigger on every unrelated
+    // theme/schedule tweak the backend returns.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [eventInfo?.date]);
+  }, [eventInfo?.date, isFocused]);
 
   const { refreshing, refreshed, onRefresh } = useRefreshToast(loadData);
 
@@ -224,10 +234,12 @@ export default function HomeScreen() {
       <View
         style={[
           styles.container,
-          { backgroundColor: colors.screenBg, justifyContent: 'center', alignItems: 'center' },
+          { backgroundColor: colors.screenBg, paddingTop: insets.top + theme.spacing.lg },
         ]}
       >
-        <ActivityIndicator color={colors.tabTint} />
+        <View style={{ paddingHorizontal: theme.spacing.lg }}>
+          <CardSkeleton lines={4} />
+        </View>
       </View>
     );
   }
@@ -249,9 +261,11 @@ export default function HomeScreen() {
       }
     >
       {loadError && (
-        <ThemedText style={{ color: 'red', fontSize: 11, marginBottom: 8, textAlign: 'center' }}>
-          {t('home.loadError')}
-        </ThemedText>
+        <ErrorBanner
+          message={t('home.loadError')}
+          onRetry={loadData}
+          style={{ marginBottom: theme.spacing.sm }}
+        />
       )}
       {session && (
         <ThemedText style={[styles.welcome, { color: textColor }]}>

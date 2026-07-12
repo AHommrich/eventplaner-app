@@ -124,4 +124,26 @@ describe('app/(tabs)/home', () => {
     await findByText('Event-Infos konnten nicht geladen werden.');
     warn.mockRestore();
   });
+
+  it('retries loadData when the error banner retry button is pressed', async () => {
+    mockFetchEventInfo.mockRejectedValueOnce({ message: 'boom' });
+    const warn = jest.spyOn(console, 'warn').mockImplementation(() => {});
+
+    const { findByText, findByTestId, queryByText } = renderScreen();
+    await findByText('Event-Infos konnten nicht geladen werden.');
+
+    mockFetchEventInfo.mockResolvedValueOnce({
+      name: 'Anna & Ben',
+      date: '2099-06-01T12:00:00Z',
+      rsvp_deadline: '2099-05-01T00:00:00Z',
+    });
+    const retryButton = await findByTestId('error-banner-retry');
+    await act(async () => {
+      fireEvent.press(retryButton);
+    });
+
+    await findByText('Anna & Ben');
+    expect(queryByText('Event-Infos konnten nicht geladen werden.')).toBeNull();
+    warn.mockRestore();
+  });
 });

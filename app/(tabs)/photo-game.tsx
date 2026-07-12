@@ -23,12 +23,14 @@ import {
   View,
   ScrollView,
   RefreshControl,
-  ActivityIndicator,
   Alert,
   TouchableOpacity,
   StyleSheet,
 } from 'react-native';
 import { ThemedText } from '../../components/ThemedText';
+import { CardSkeleton } from '../../components/ui/ScreenSkeletons';
+import { ErrorBanner } from '../../components/ui/ErrorBanner';
+import { haptics } from '../../lib/haptics';
 import { useFocusEffect } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
@@ -57,6 +59,7 @@ export default function PhotoGameScreen() {
   const [loading, setLoading] = useState(true);
   const [assigning, setAssigning] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   /**
@@ -109,6 +112,7 @@ export default function PhotoGameScreen() {
             }
           : prev
       );
+      haptics.success();
     } catch (e: any) {
       if (e?.response?.status === 409) {
         await loadStatus();
@@ -171,9 +175,10 @@ export default function PhotoGameScreen() {
     });
 
     setUploading(true);
+    setUploadProgress(null);
     setError(null);
     try {
-      const submitted = await submitPhotoGamePhoto(jpeg.uri);
+      const submitted = await submitPhotoGamePhoto(jpeg.uri, setUploadProgress);
       setStatusData((prev) =>
         prev && prev.assignment
           ? {
@@ -186,6 +191,7 @@ export default function PhotoGameScreen() {
             }
           : prev
       );
+      haptics.success();
     } catch (e: any) {
       if (e?.response?.status === 409) {
         await loadStatus();
@@ -194,13 +200,21 @@ export default function PhotoGameScreen() {
       }
     } finally {
       setUploading(false);
+      setUploadProgress(null);
     }
   }
 
   if (loading && !statusData) {
     return (
-      <View style={[styles.center, { backgroundColor: colors.screenBg }]}>
-        <ActivityIndicator color={colors.tabTint} />
+      <View
+        style={[
+          styles.container,
+          { backgroundColor: colors.screenBg, paddingHorizontal: theme.spacing.lg },
+        ]}
+      >
+        <View style={{ paddingTop: insets.top + theme.spacing.lg }}>
+          <CardSkeleton lines={2} showButton />
+        </View>
       </View>
     );
   }
@@ -208,7 +222,15 @@ export default function PhotoGameScreen() {
   const status = statusData?.status;
   const assignment = statusData?.assignment ?? null;
   const isSubmitted = !!assignment?.submitted_at;
-  const isEnded = status === 'ended' || status === 'draft';
+  const isDraft = status === 'draft';
+  const isEnded = status === 'ended' || isDraft;
+
+  function uploadingLabel(): string {
+    if (uploadProgress != null) {
+      return t('photoGame.uploadingProgress', { pct: Math.round(uploadProgress * 100) });
+    }
+    return t('photoGame.uploading');
+  }
 
   /**
    * 4-way switch (see file header for the FSM). The order is important:
@@ -223,13 +245,13 @@ export default function PhotoGameScreen() {
           style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border + '33' }]}
         >
           <Ionicons
-            name="time-outline"
+            name={isDraft ? 'hourglass-outline' : 'time-outline'}
             size={32}
             color={colors.cardText}
             style={{ marginBottom: theme.spacing.sm }}
           />
           <ThemedText style={[styles.cardTitle, { color: colors.cardText }]}>
-            {t('photoGame.endedTitle')}
+            {isDraft ? t('photoGame.notStartedTitle') : t('photoGame.endedTitle')}
           </ThemedText>
         </View>
       );
@@ -261,9 +283,11 @@ export default function PhotoGameScreen() {
             {assignment.task.description}
           </ThemedText>
           {error && (
-            <ThemedText style={[styles.errorText, { color: theme.colors.error }]}>
-              {error}
-            </ThemedText>
+            <ErrorBanner
+              message={error}
+              onRetry={loadStatus}
+              style={{ marginBottom: theme.spacing.md, width: '100%' }}
+            />
           )}
           <TouchableOpacity
             onPress={handleUpload}
@@ -274,7 +298,7 @@ export default function PhotoGameScreen() {
             ]}
           >
             <ThemedText style={[styles.buttonText, { color: colors.cardButtonText }]}>
-              {uploading ? t('photoGame.uploading') : t('photoGame.replaceButton')}
+              {uploading ? uploadingLabel() : t('photoGame.replaceButton')}
             </ThemedText>
           </TouchableOpacity>
         </View>
@@ -293,9 +317,11 @@ export default function PhotoGameScreen() {
             {assignment.task.description}
           </ThemedText>
           {error && (
-            <ThemedText style={[styles.errorText, { color: theme.colors.error }]}>
-              {error}
-            </ThemedText>
+            <ErrorBanner
+              message={error}
+              onRetry={loadStatus}
+              style={{ marginBottom: theme.spacing.md, width: '100%' }}
+            />
           )}
           <TouchableOpacity
             onPress={handleUpload}
@@ -307,7 +333,7 @@ export default function PhotoGameScreen() {
           >
             {uploading ? (
               <ThemedText style={[styles.buttonText, { color: colors.cardButtonText }]}>
-                {t('photoGame.uploading')}
+                {uploadingLabel()}
               </ThemedText>
             ) : (
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
@@ -340,7 +366,11 @@ export default function PhotoGameScreen() {
           {t('photoGame.disclaimerBody')}
         </ThemedText>
         {error && (
-          <ThemedText style={[styles.errorText, { color: theme.colors.error }]}>{error}</ThemedText>
+          <ErrorBanner
+            message={error}
+            onRetry={loadStatus}
+            style={{ marginBottom: theme.spacing.md, width: '100%' }}
+          />
         )}
         <TouchableOpacity
           onPress={handleAssign}
@@ -445,10 +475,5 @@ const styles = StyleSheet.create({
     height: 200,
     borderRadius: theme.borderRadius.md,
     marginVertical: theme.spacing.md,
-  },
-  errorText: {
-    fontSize: 13,
-    textAlign: 'center',
-    marginBottom: theme.spacing.sm,
   },
 });

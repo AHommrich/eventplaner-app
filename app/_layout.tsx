@@ -26,6 +26,7 @@
  */
 import { useEffect, useState } from 'react';
 import { Animated, Image, StyleSheet, Text, View } from 'react-native';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useFonts } from 'expo-font';
@@ -105,49 +106,51 @@ export default function RootLayout() {
   }, [fontsLoaded, fadeAnim]);
 
   return (
-    <LanguageProvider>
-      <EventThemeProvider>
-        <BlockedFeaturesProvider>
-          <ConsentGateProvider>
-            <Stack screenOptions={{ headerShown: false }}>
-              <Stack.Screen name="index" options={{ gestureEnabled: false }} />
-              <Stack.Screen name="scan" options={{ gestureEnabled: false }} />
-              <Stack.Screen name="rsvp" />
-              <Stack.Screen name="declined" />
-              <Stack.Screen name="blocked" />
-              <Stack.Screen name="(tabs)" />
-              <Stack.Screen name="legal/imprint" />
-              <Stack.Screen name="legal/privacy" />
-              <Stack.Screen name="consents/index" />
-              <Stack.Screen name="data-export" />
-              <Stack.Screen name="hidden-guests" />
-              <Stack.Screen name="erasure-pending" />
-            </Stack>
-            {splashVisible && (
-              <Animated.View
-                style={[StyleSheet.absoluteFill, { opacity: fadeAnim }]}
-                pointerEvents="none"
-              >
-                <LinearGradient
-                  colors={SPLASH_COLORS}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
-                  style={StyleSheet.absoluteFill}
-                />
-                <View style={styles.splashLogoWrap}>
-                  <Image
-                    source={require('../assets/eve-logo.png')}
-                    style={styles.splashLogo}
-                    resizeMode="contain"
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <LanguageProvider>
+        <EventThemeProvider>
+          <BlockedFeaturesProvider>
+            <ConsentGateProvider>
+              <Stack screenOptions={{ headerShown: false }}>
+                <Stack.Screen name="index" options={{ gestureEnabled: false }} />
+                <Stack.Screen name="scan" options={{ gestureEnabled: false }} />
+                <Stack.Screen name="rsvp" />
+                <Stack.Screen name="declined" />
+                <Stack.Screen name="blocked" />
+                <Stack.Screen name="(tabs)" />
+                <Stack.Screen name="legal/imprint" />
+                <Stack.Screen name="legal/privacy" />
+                <Stack.Screen name="consents/index" />
+                <Stack.Screen name="data-export" />
+                <Stack.Screen name="hidden-guests" />
+                <Stack.Screen name="erasure-pending" />
+              </Stack>
+              {splashVisible && (
+                <Animated.View
+                  style={[StyleSheet.absoluteFill, { opacity: fadeAnim }]}
+                  pointerEvents="none"
+                >
+                  <LinearGradient
+                    colors={SPLASH_COLORS}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    style={StyleSheet.absoluteFill}
                   />
-                  <Text style={styles.splashTagline}>eveplan</Text>
-                </View>
-              </Animated.View>
-            )}
-          </ConsentGateProvider>
-        </BlockedFeaturesProvider>
-      </EventThemeProvider>
-    </LanguageProvider>
+                  <View style={styles.splashLogoWrap}>
+                    <Image
+                      source={require('../assets/eve-logo.png')}
+                      style={styles.splashLogo}
+                      resizeMode="contain"
+                    />
+                    <Text style={styles.splashTagline}>eveplan</Text>
+                  </View>
+                </Animated.View>
+              )}
+            </ConsentGateProvider>
+          </BlockedFeaturesProvider>
+        </EventThemeProvider>
+      </LanguageProvider>
+    </GestureHandlerRootView>
   );
 }
 

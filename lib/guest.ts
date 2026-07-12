@@ -205,13 +205,17 @@ export async function assignPhotoGameTask(): Promise<{
  * FormData as-is without JSON serialisation.
  */
 export async function submitPhotoGamePhoto(
-  photoUri: string
+  photoUri: string,
+  onUploadProgress?: (fraction: number | null) => void
 ): Promise<{ photo_url: string; submitted_at: string }> {
   const formData = new FormData();
   formData.append('photo', { uri: photoUri, name: 'photo.jpg', type: 'image/jpeg' } as any);
   const res = await api.post('/api/game/photo/submit', formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
     transformRequest: (data) => data,
+    onUploadProgress: onUploadProgress
+      ? (e) => onUploadProgress(e.total ? e.loaded / e.total : null)
+      : undefined,
   });
   return res.data;
 }

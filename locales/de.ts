@@ -6,6 +6,8 @@ const de = {
     unknownError: 'Unbekannter Fehler',
     refreshed: 'Aktualisiert',
     notPossible: 'Nicht möglich',
+    retry: 'Erneut versuchen',
+    loadFailed: 'Daten konnten nicht geladen werden.',
   },
   a11y: {
     back: 'Zurück',
@@ -142,6 +144,7 @@ const de = {
     declineConfirmMember:
       'Wenn du für %{name} absagst, hat %{name} keinen Zugriff mehr auf diese Veranstaltung.',
     declineConfirmButton: 'Ja, absagen',
+    savedToast: 'Gespeichert',
   },
   declined: {
     titlePending: 'Du hast abgesagt.',
@@ -189,8 +192,10 @@ const de = {
     submittedTitle: 'Eingereicht! 🎉',
     submittedBody: 'Danke für deine Teilnahme.',
     endedTitle: 'Das Spiel ist beendet.',
+    notStartedTitle: 'Das Spiel hat noch nicht begonnen.',
     assigning: 'Wird zugewiesen…',
     uploading: 'Wird hochgeladen…',
+    uploadingProgress: 'Wird hochgeladen… %{pct}%',
     errorRetry: 'Erneut versuchen',
     replaceButton: 'Foto ersetzen',
   },
@@ -231,6 +236,9 @@ const de = {
     hideUploaderDescription:
       'Alle zukünftigen Fotos von %{name} werden für Dich ausgeblendet. Rückgängig in den Einstellungen.',
     hideUploaderSuccess: '%{name} ausgeblendet.',
+    uploadPreparing: 'Foto wird vorbereitet…',
+    uploadingProgress: 'Wird hochgeladen… %{pct}%',
+    uploadSuccess: 'Foto hochgeladen.',
   },
   dataExport: {
     title: 'Meine Daten',

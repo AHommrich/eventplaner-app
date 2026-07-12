@@ -35,7 +35,13 @@ import {
   Pressable,
   TextInput,
 } from 'react-native';
+import Animated, { FadeIn, FadeOut, LinearTransition } from 'react-native-reanimated';
 import { ThemedText } from '../../components/ThemedText';
+import { ListSkeleton } from '../../components/ui/ScreenSkeletons';
+import { ErrorBanner } from '../../components/ui/ErrorBanner';
+import { Toast } from '../../components/ui/Toast';
+import { haptics } from '../../lib/haptics';
+import { useDebouncedValue } from '../../lib/useDebouncedValue';
 import { useFocusEffect } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
@@ -140,9 +146,12 @@ export default function DrinksScreen() {
   const [myStatsExpanded, setMyStatsExpanded] = useState(false);
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
   const [search, setSearch] = useState('');
+  const debouncedSearch = useDebouncedValue(search, 200);
   const [toast, setToast] = useState<ToastData | null>(null);
+  const [toastVisible, setToastVisible] = useState(false);
   const [gameEnded, setGameEnded] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [session, setSession] = useState<GuestSession | null>(null);
 
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -164,10 +173,20 @@ export default function DrinksScreen() {
 
   // Poll the game-end sentinel every 10 s. Cheap arithmetic — we compare the
   // configured end time against `Date.now()` — but critical: once past, every
-  // downstream button gates on `gameEnded`, freezing the UI.
+  // downstream button gates on `gameEnded`, freezing the UI. The refs guard
+  // the haptic so it fires only on a genuine live transition, not when the
+  // guest opens the screen after the game already ended.
+  const hasCheckedGameEnd = useRef(false);
+  const wasGameEnded = useRef(false);
   useEffect(() => {
     if (!endTime) return;
-    const check = () => setGameEnded(new Date(endTime).getTime() <= Date.now());
+    const check = () => {
+      const ended = new Date(endTime).getTime() <= Date.now();
+      if (hasCheckedGameEnd.current && ended && !wasGameEnded.current) haptics.warning();
+      hasCheckedGameEnd.current = true;
+      wasGameEnded.current = ended;
+      setGameEnded(ended);
+    };
     check();
     const interval = setInterval(check, 10_000);
     return () => clearInterval(interval);
@@ -177,10 +196,19 @@ export default function DrinksScreen() {
 
   // 1 Hz decrement of the cooldown counter. `Math.max(0, Math.ceil(c) - 1)`
   // ensures we settle exactly at 0 even if the initial value was a
-  // fractional `retry_after` from the backend (e.g. 59.7 s).
+  // fractional `retry_after` from the backend (e.g. 59.7 s). Fires a light
+  // haptic exactly once, the moment the guest can log again.
   useEffect(() => {
     if (cooldown <= 0) return;
-    const t = setTimeout(() => setCooldown((c) => Math.max(0, Math.ceil(c) - 1)), 1000);
+    const t = setTimeout(
+      () =>
+        setCooldown((c) => {
+          const next = Math.max(0, Math.ceil(c) - 1);
+          if (next === 0 && c > 0) haptics.impactLight();
+          return next;
+        }),
+      1000
+    );
     return () => clearTimeout(t);
   }, [cooldown]);
 
@@ -241,10 +269,13 @@ export default function DrinksScreen() {
       ]);
       setDrinks(drinksRes.data.data);
       applyStats(statsRes.data);
+      setLoadError(false);
     } catch {
-      // Errors are handled globally by the axios interceptor (app_blocked,
-      // drinks_blocked). Everything else is swallowed here — the empty
-      // state renders and the guest can retry via pull-to-refresh.
+      // `app_blocked`/`drinks_blocked` are handled globally by the axios
+      // interceptor. Everything else lands here — surface a retry banner
+      // only when there's no catalog to fall back to; a failed background
+      // refresh with data already on screen stays silent.
+      if (drinks.length === 0) setLoadError(true);
     } finally {
       setLoading(false);
     }
@@ -281,6 +312,8 @@ export default function DrinksScreen() {
       const res = await api.post<LogResponse>('/api/drinks/log', { drink_id: size.drink_id });
       const data = res.data;
       setCooldown(60);
+      if (data.binge_penalty) haptics.warning();
+      else haptics.success();
       showToast({ points: data.final_points, bingePenalty: data.binge_penalty });
       setSelectedSize(null);
       setSelectedGroup(null);
@@ -302,8 +335,9 @@ export default function DrinksScreen() {
 
   function showToast(data: ToastData) {
     setToast(data);
+    setToastVisible(true);
     if (toastTimer.current) clearTimeout(toastTimer.current);
-    toastTimer.current = setTimeout(() => setToast(null), 3000);
+    toastTimer.current = setTimeout(() => setToastVisible(false), 3000);
   }
 
   // ── Helpers ────────────────────────────────────────────────────────────────
@@ -349,6 +383,7 @@ export default function DrinksScreen() {
           ]}
           onPress={() => {
             if (disabled) return;
+            if (!isExpanded) haptics.selection();
             setSelectedSize(null);
             setSelectedGroup(isExpanded ? null : catalog.id);
           }}
@@ -356,7 +391,11 @@ export default function DrinksScreen() {
           disabled={disabled && !isExpanded}
         >
           {isExpanded ? (
-            <View style={styles.sizeButtonRow}>
+            <Animated.View
+              entering={FadeIn.duration(150)}
+              exiting={FadeOut.duration(100)}
+              style={styles.sizeButtonRow}
+            >
               {catalog.sizes.map((size) => (
                 <TouchableOpacity
                   key={size.id}
@@ -382,9 +421,13 @@ export default function DrinksScreen() {
                   )}
                 </TouchableOpacity>
               ))}
-            </View>
+            </Animated.View>
           ) : (
-            <>
+            <Animated.View
+              entering={FadeIn.duration(150)}
+              exiting={FadeOut.duration(100)}
+              style={{ flex: 1, flexDirection: 'row', alignItems: 'center' }}
+            >
               <ThemedText style={[styles.drinkName, { color: colors.cardText }]}>
                 {catalog.display_name}
               </ThemedText>
@@ -407,7 +450,7 @@ export default function DrinksScreen() {
                   );
                 })}
               </View>
-            </>
+            </Animated.View>
           )}
         </TouchableOpacity>
       );
@@ -431,6 +474,7 @@ export default function DrinksScreen() {
           if (isSelected) {
             handleLog(size);
           } else {
+            haptics.selection();
             setSelectedSize(size);
           }
         }}
@@ -438,7 +482,11 @@ export default function DrinksScreen() {
         disabled={disabled && !isSelected}
       >
         {isSelected ? (
-          <View style={styles.sizeButtonRow}>
+          <Animated.View
+            entering={FadeIn.duration(150)}
+            exiting={FadeOut.duration(100)}
+            style={styles.sizeButtonRow}
+          >
             <TouchableOpacity
               style={[
                 styles.sizeButton,
@@ -461,9 +509,13 @@ export default function DrinksScreen() {
                 </ThemedText>
               )}
             </TouchableOpacity>
-          </View>
+          </Animated.View>
         ) : (
-          <>
+          <Animated.View
+            entering={FadeIn.duration(150)}
+            exiting={FadeOut.duration(100)}
+            style={{ flex: 1, flexDirection: 'row', alignItems: 'center' }}
+          >
             <ThemedText style={[styles.drinkName, { color: colors.cardText }]}>
               {catalog.display_name}
             </ThemedText>
@@ -479,7 +531,7 @@ export default function DrinksScreen() {
                 </ThemedText>
               </View>
             )}
-          </>
+          </Animated.View>
         )}
       </TouchableOpacity>
     );
@@ -492,10 +544,21 @@ export default function DrinksScreen() {
       <View
         style={[
           styles.container,
-          { backgroundColor: colors.screenBg, justifyContent: 'center', alignItems: 'center' },
+          { backgroundColor: colors.screenBg, paddingTop: insets.top + theme.spacing.lg },
         ]}
       >
-        <ActivityIndicator color={colors.tabTint} />
+        <View
+          style={{
+            backgroundColor: colors.card,
+            borderRadius: theme.borderRadius.lg,
+            borderWidth: 2,
+            borderColor: colors.border + '33',
+            marginHorizontal: theme.spacing.lg,
+            overflow: 'hidden',
+          }}
+        >
+          <ListSkeleton rows={6} />
+        </View>
       </View>
     );
   }
@@ -503,33 +566,24 @@ export default function DrinksScreen() {
   return (
     <View style={[styles.container, { backgroundColor: colors.screenBg, paddingTop: insets.top }]}>
       {/* Log-result toast — replaces the refresh toast while active. */}
-      {toast && (
-        <View
-          style={[
-            styles.toast,
-            {
-              backgroundColor: colors.cardButton,
-              borderWidth: 2,
-              borderColor: colors.border + '33',
-              borderRadius: theme.borderRadius.lg - theme.spacing.xs,
-              top: insets.top + theme.spacing.sm,
-            },
-          ]}
-        >
-          <ThemedText style={[styles.toastPoints, { color: colors.cardButtonText }]}>
-            {toast.points >= 0
-              ? t('drinks.pointsEarned', { points: toast.points })
-              : t('drinks.pointsNeutral', { points: toast.points })}
-          </ThemedText>
-          {toast.bingePenalty && (
-            <ThemedText style={[styles.toastBinge, { color: colors.cardButtonText + 'cc' }]}>
-              {t('drinks.bingeToast')}
+      <Toast visible={toastVisible}>
+        {toast && (
+          <>
+            <ThemedText style={[styles.toastPoints, { color: colors.cardButtonText }]}>
+              {toast.points >= 0
+                ? t('drinks.pointsEarned', { points: toast.points })
+                : t('drinks.pointsNeutral', { points: toast.points })}
             </ThemedText>
-          )}
-        </View>
-      )}
+            {toast.bingePenalty && (
+              <ThemedText style={[styles.toastBinge, { color: colors.cardButtonText + 'cc' }]}>
+                {t('drinks.bingeToast')}
+              </ThemedText>
+            )}
+          </>
+        )}
+      </Toast>
 
-      {!toast && <RefreshToast visible={refreshed} refreshing={refreshing} />}
+      {!toastVisible && <RefreshToast visible={refreshed} refreshing={refreshing} />}
 
       {/* Card 1: view toggle + streak/game-end banner. */}
       <View
@@ -666,6 +720,14 @@ export default function DrinksScreen() {
               />
             }
           >
+            {loadError && drinks.length === 0 && (
+              <ErrorBanner
+                message={t('common.loadFailed')}
+                onRetry={loadInitial}
+                style={{ marginBottom: theme.spacing.md }}
+              />
+            )}
+
             {/* Card 2: search + drink list. */}
             <View
               style={{
@@ -702,9 +764,9 @@ export default function DrinksScreen() {
               </View>
 
               {/* Drink list — either flat search results or category accordion. */}
-              {search.trim().length > 0
+              {debouncedSearch.trim().length > 0
                 ? (() => {
-                    const q = search.trim().toLowerCase();
+                    const q = debouncedSearch.trim().toLowerCase();
                     const results = drinks.filter(
                       (d) =>
                         d.display_name.toLowerCase().includes(q) ||
@@ -739,13 +801,15 @@ export default function DrinksScreen() {
                       const { label, items } = categoryMap[cat];
                       const isOpen = expandedCategories.has(cat);
                       return (
-                        <View key={cat}>
+                        <Animated.View key={cat} layout={LinearTransition.duration(180)}>
                           <TouchableOpacity
                             style={[
                               styles.categoryRow,
                               { borderBottomWidth: 1, borderBottomColor: colors.border + '30' },
                             ]}
                             onPress={() => {
+                              const opening = !expandedCategories.has(cat);
+                              if (opening) haptics.selection();
                               setExpandedCategories((prev) => {
                                 const next = new Set(prev);
                                 if (next.has(cat)) next.delete(cat);
@@ -775,13 +839,15 @@ export default function DrinksScreen() {
                             />
                           </TouchableOpacity>
                           {isOpen && (
-                            <View
+                            <Animated.View
+                              entering={FadeIn.duration(150)}
+                              exiting={FadeOut.duration(100)}
                               style={{ borderLeftWidth: 3, borderLeftColor: colors.primary + '50' }}
                             >
                               {items.map(renderCatalogItem)}
-                            </View>
+                            </Animated.View>
                           )}
-                        </View>
+                        </Animated.View>
                       );
                     });
                   })()}
@@ -929,7 +995,12 @@ export default function DrinksScreen() {
               <View style={[styles.myDrinksSection, { borderTopColor: colors.border + '30' }]}>
                 <Pressable
                   style={styles.myDrinksHeader}
-                  onPress={() => setMyStatsExpanded((v) => !v)}
+                  onPress={() =>
+                    setMyStatsExpanded((v) => {
+                      if (!v) haptics.selection();
+                      return !v;
+                    })
+                  }
                 >
                   <ThemedText style={[styles.myDrinksTitle, { color: colors.cardText }]}>
                     {t('drinks.myDrinks')}
@@ -941,44 +1012,48 @@ export default function DrinksScreen() {
                   />
                 </Pressable>
 
-                {myStatsExpanded &&
-                  (stats.my_stats.length === 0 ? (
-                    <ThemedText
-                      style={[
-                        styles.emptyText,
-                        { color: theme.colors.muted, marginTop: theme.spacing.sm },
-                      ]}
-                    >
-                      {t('drinks.noData')}
-                    </ThemedText>
-                  ) : (
-                    stats.my_stats.map((item) => (
-                      <View key={item.drink_id} style={styles.myStatRow}>
-                        <ThemedText
-                          style={[styles.myStatName, { color: colors.cardText }]}
-                          numberOfLines={1}
-                        >
-                          {item.display_name}
-                        </ThemedText>
-                        <ThemedText style={[styles.myStatCount, { color: theme.colors.muted }]}>
-                          {item.count}×
-                        </ThemedText>
-                        <ThemedText
-                          style={[
-                            styles.myStatPoints,
-                            {
-                              color: item.points_total >= 0 ? colors.cardText : theme.colors.muted,
-                            },
-                          ]}
-                        >
-                          {item.points_total >= 0
-                            ? `+${item.points_total}`
-                            : `${item.points_total}`}{' '}
-                          Pts
-                        </ThemedText>
-                      </View>
-                    ))
-                  ))}
+                {myStatsExpanded && (
+                  <Animated.View entering={FadeIn.duration(150)} exiting={FadeOut.duration(100)}>
+                    {stats.my_stats.length === 0 ? (
+                      <ThemedText
+                        style={[
+                          styles.emptyText,
+                          { color: theme.colors.muted, marginTop: theme.spacing.sm },
+                        ]}
+                      >
+                        {t('drinks.noData')}
+                      </ThemedText>
+                    ) : (
+                      stats.my_stats.map((item) => (
+                        <View key={item.drink_id} style={styles.myStatRow}>
+                          <ThemedText
+                            style={[styles.myStatName, { color: colors.cardText }]}
+                            numberOfLines={1}
+                          >
+                            {item.display_name}
+                          </ThemedText>
+                          <ThemedText style={[styles.myStatCount, { color: theme.colors.muted }]}>
+                            {item.count}×
+                          </ThemedText>
+                          <ThemedText
+                            style={[
+                              styles.myStatPoints,
+                              {
+                                color:
+                                  item.points_total >= 0 ? colors.cardText : theme.colors.muted,
+                              },
+                            ]}
+                          >
+                            {item.points_total >= 0
+                              ? `+${item.points_total}`
+                              : `${item.points_total}`}{' '}
+                            Pts
+                          </ThemedText>
+                        </View>
+                      ))
+                    )}
+                  </Animated.View>
+                )}
               </View>
             )}
           </View>
@@ -995,15 +1070,6 @@ const styles = StyleSheet.create({
   flex: { flex: 1 },
 
   // Toast
-  toast: {
-    position: 'absolute',
-    left: theme.spacing.lg,
-    right: theme.spacing.lg,
-    zIndex: 99,
-    paddingHorizontal: theme.spacing.lg,
-    paddingVertical: theme.spacing.md,
-    alignItems: 'center',
-  },
   toastPoints: {
     fontWeight: '700',
     fontSize: 16,
