@@ -45,12 +45,7 @@ export function CardSkeleton({
       }}
     >
       {Array.from({ length: lines }).map((_, i) => (
-        <Skeleton
-          key={i}
-          height={14}
-          width={i === lines - 1 ? '60%' : '100%'}
-          borderRadius={4}
-        />
+        <Skeleton key={i} height={14} width={i === lines - 1 ? '60%' : '100%'} borderRadius={4} />
       ))}
       {showButton && (
         <Skeleton
