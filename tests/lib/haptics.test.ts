@@ -23,9 +23,7 @@ describe('lib/haptics', () => {
 
   it('fires an error notification', () => {
     haptics.error();
-    expect(Haptics.notificationAsync).toHaveBeenCalledWith(
-      Haptics.NotificationFeedbackType.Error
-    );
+    expect(Haptics.notificationAsync).toHaveBeenCalledWith(Haptics.NotificationFeedbackType.Error);
   });
 
   it('fires a light impact', () => {

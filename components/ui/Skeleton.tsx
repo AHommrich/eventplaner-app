@@ -52,7 +52,13 @@ export function Skeleton({ width = '100%', height = 16, borderRadius = 4, style 
     <View
       onLayout={(e) => setLayoutWidth(e.nativeEvent.layout.width)}
       style={[
-        { width, height, borderRadius, overflow: 'hidden', backgroundColor: colors.cardText + '14' },
+        {
+          width,
+          height,
+          borderRadius,
+          overflow: 'hidden',
+          backgroundColor: colors.cardText + '14',
+        },
         style,
       ]}
     >

@@ -3,7 +3,11 @@ import { render } from '@testing-library/react-native';
 import { LanguageProvider } from '../../../lib/LanguageContext';
 import { EventThemeProvider } from '../../../lib/EventThemeContext';
 import { Skeleton } from '../../../components/ui/Skeleton';
-import { PhotoGridSkeleton, CardSkeleton, ListSkeleton } from '../../../components/ui/ScreenSkeletons';
+import {
+  PhotoGridSkeleton,
+  CardSkeleton,
+  ListSkeleton,
+} from '../../../components/ui/ScreenSkeletons';
 
 jest.mock('../../../lib/guest', () => ({
   __esModule: true,
