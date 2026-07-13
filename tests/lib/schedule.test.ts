@@ -1,5 +1,11 @@
 import { ScheduleStation } from '../../lib/guest';
-import { focusStation, scheduleStatus, stationState, timedStations } from '../../lib/schedule';
+import {
+  focusStation,
+  scheduleStatus,
+  stationMoment,
+  stationState,
+  timedStations,
+} from '../../lib/schedule';
 
 const DATE = '2027-06-05T00:00:00.000Z';
 
@@ -79,6 +85,20 @@ describe('lib/schedule', () => {
     // After the last timed station with an end, focus stays on it.
     expect(focusStation(DATE, [registry, lunch], at(16, 0))?.title).toBe('Lunch');
     expect(focusStation(DATE, [], at(12, 0))).toBeNull();
+  });
+
+  it('stationMoment guards against missing, malformed and invalid inputs', () => {
+    expect(stationMoment(DATE, null)).toBeNull();
+    expect(stationMoment(DATE, '1100')).toBeNull();
+    expect(stationMoment('not-a-date', '11:00')).toBeNull();
+    expect(stationMoment(DATE, '11:00')?.getHours()).toBe(11);
+  });
+
+  it('uses the current time when no `now` is passed', () => {
+    // Deterministic on empty input regardless of the wall clock.
+    expect(scheduleStatus(DATE, [])).toBeNull();
+    expect(focusStation(DATE, [])).toBeNull();
+    expect(['now', 'past', 'upcoming']).toContain(stationState(DATE, registry));
   });
 
   it('marks per-station state as upcoming / now / past', () => {

@@ -114,6 +114,13 @@ jest.mock('expo-file-system/legacy', () => ({
   readAsStringAsync: jest.fn(async () => 'AAA='),
 }));
 
+// --- expo-calendar ---
+// The schedule tab opens the OS "new event" dialog to add stations to the
+// guest's calendar. Stubbed so screen tests never present the native UI.
+jest.mock('expo-calendar', () => ({
+  createEventInCalendarAsync: jest.fn(async () => ({ action: 'saved' })),
+}));
+
 // --- nativewind ---
 // Nativewind's Babel transform runs at build time; in tests we stub the
 // runtime hook so components importing `useColorScheme` (transitively) don't

@@ -1,9 +1,11 @@
 /**
  * Schedule tab — the event timeline as the guest may see it. Stations arrive
  * pre-filtered by the backend (per-group visibility), so this screen just
- * renders them, marks the one running right now, and hands each location off to
- * the maps dispatcher. Shown in the tab bar only when the guest can see at
- * least two stations (see `_layout.tsx`); a single stop stays on the home card.
+ * renders them, marks the one running right now, and offers two hand-offs per
+ * stop: open the location in a maps app, or add it to the guest's calendar via
+ * the OS's native event dialog (expo-calendar). Shown in the tab bar only when
+ * the guest can see at least two stations (see `_layout.tsx`); a single stop
+ * stays on the home card.
  */
 import { useEffect, useState } from 'react';
 import { View, ScrollView, RefreshControl, StyleSheet, TouchableOpacity } from 'react-native';
@@ -11,11 +13,18 @@ import { useIsFocused } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
+import * as Calendar from 'expo-calendar';
 import { ThemedText } from '../../components/ThemedText';
 import { useLanguage } from '../../lib/LanguageContext';
 import { useEventTheme } from '../../lib/EventThemeContext';
 import { ScheduleStation } from '../../lib/guest';
 import { stationState } from '../../lib/schedule';
+import {
+  CalendarEvent,
+  scheduleCalendarEvents,
+  stationCalendarEvent,
+  stationHasTime,
+} from '../../lib/calendar';
 import { openLocationInMaps } from '../../lib/maps';
 import { useRefreshToast } from '../../lib/useRefreshToast';
 import { RefreshToast } from '../../components/RefreshToast';
@@ -24,6 +33,25 @@ import { theme } from '../../constants/theme';
 function timeRange(s: ScheduleStation): string {
   if (!s.starts_at) return '';
   return s.ends_at ? `${s.starts_at}–${s.ends_at}` : s.starts_at;
+}
+
+// Opens the OS's native "new event" dialog pre-filled. The user picks which
+// calendar to save into (iCloud, Google, …) — that, not a direct write, is what
+// reaches third-party calendar apps like Family Wallet, and it needs no
+// up-front permission prompt. Resolves to false when the user cancels.
+async function presentCalendarDialog(ev: CalendarEvent): Promise<boolean> {
+  try {
+    const res = await Calendar.createEventInCalendarAsync({
+      title: ev.title,
+      startDate: ev.start,
+      endDate: ev.end,
+      location: ev.location ?? undefined,
+    });
+    return res.action !== 'canceled';
+  } catch (e) {
+    console.warn('[Schedule] calendar dialog failed:', e);
+    return false;
+  }
 }
 
 export default function ScheduleScreen() {
@@ -45,6 +73,23 @@ export default function ScheduleScreen() {
 
   const stations = eventInfo?.schedule_stations ?? [];
   const dateIso = eventInfo?.date ?? null;
+  const anyTimed = !!dateIso && stations.some((s) => stationHasTime(dateIso, s));
+
+  function addStationToCalendar(s: ScheduleStation) {
+    if (!dateIso) return;
+    const ev = stationCalendarEvent(dateIso, stations, s.id);
+    if (ev) presentCalendarDialog(ev);
+  }
+
+  // Presents one native dialog per station, in order; stops if the guest
+  // cancels one so they aren't trapped clicking through the rest.
+  async function addAllToCalendar() {
+    if (!dateIso) return;
+    for (const ev of scheduleCalendarEvents(dateIso, stations)) {
+      const kept = await presentCalendarDialog(ev);
+      if (!kept) break;
+    }
+  }
 
   return (
     <View style={[styles.container, { backgroundColor: colors.screenBg, paddingTop: insets.top }]}>
@@ -63,9 +108,23 @@ export default function ScheduleScreen() {
           />
         }
       >
-        <ThemedText style={[styles.title, { color: colors.cardText }]}>
-          {t('schedule.title')}
-        </ThemedText>
+        <View style={styles.header}>
+          <ThemedText style={[styles.title, { color: colors.cardText }]}>
+            {t('schedule.title')}
+          </ThemedText>
+          {anyTimed && (
+            <TouchableOpacity
+              onPress={addAllToCalendar}
+              activeOpacity={0.7}
+              style={[styles.addAll, { borderColor: colors.border + '66' }]}
+            >
+              <Ionicons name="calendar-outline" size={15} color={colors.cardText} />
+              <ThemedText style={[styles.addAllText, { color: colors.cardText }]}>
+                {t('schedule.addAll')}
+              </ThemedText>
+            </TouchableOpacity>
+          )}
+        </View>
 
         {stations.length === 0 ? (
           <ThemedText style={{ color: colors.cardText + 'aa' }}>{t('schedule.empty')}</ThemedText>
@@ -74,6 +133,7 @@ export default function ScheduleScreen() {
             const state = dateIso ? stationState(dateIso, s, new Date(now)) : 'upcoming';
             const isNow = state === 'now';
             const hasNav = !!(s.address || (s.lat != null && s.lng != null));
+            const canCalendar = !!dateIso && stationHasTime(dateIso, s);
             const range = timeRange(s);
 
             return (
@@ -85,11 +145,11 @@ export default function ScheduleScreen() {
                     backgroundColor: colors.card,
                     borderColor: isNow ? colors.primary : colors.border + '33',
                     borderWidth: isNow ? 2 : 1,
-                    opacity: state === 'past' ? 0.55 : 1,
+                    opacity: state === 'past' ? 0.6 : 1,
                   },
                 ]}
               >
-                <View style={styles.headerRow}>
+                <View style={styles.cardHead}>
                   {!!range && (
                     <ThemedText style={[styles.time, { color: colors.cardText }]}>
                       {range}
@@ -112,23 +172,47 @@ export default function ScheduleScreen() {
                     {s.location_name}
                   </ThemedText>
                 )}
-
-                {hasNav && (
-                  <TouchableOpacity
-                    onPress={() =>
-                      openLocationInMaps(
-                        { name: s.location_name, address: s.address, lat: s.lat, lng: s.lng },
-                        t
-                      )
-                    }
-                    activeOpacity={0.7}
-                    style={styles.addressRow}
-                  >
-                    <Ionicons name="location-outline" size={15} color={colors.cardText + 'aa'} />
-                    <ThemedText style={{ color: colors.cardText + 'aa', flexShrink: 1 }}>
-                      {s.address ?? `${s.lat?.toFixed(4)}, ${s.lng?.toFixed(4)}`}
+                {!!s.address && (
+                  <View style={styles.addressRow}>
+                    <Ionicons name="location-outline" size={14} color={colors.cardText + '99'} />
+                    <ThemedText style={{ color: colors.cardText + '99', flexShrink: 1 }}>
+                      {s.address}
                     </ThemedText>
-                  </TouchableOpacity>
+                  </View>
+                )}
+
+                {(hasNav || canCalendar) && (
+                  <View style={styles.actions}>
+                    {hasNav && (
+                      <TouchableOpacity
+                        onPress={() =>
+                          openLocationInMaps(
+                            { name: s.location_name, address: s.address, lat: s.lat, lng: s.lng },
+                            t
+                          )
+                        }
+                        activeOpacity={0.7}
+                        style={[styles.actionBtn, { borderColor: colors.border + '55' }]}
+                      >
+                        <Ionicons name="navigate-outline" size={16} color={colors.cardButton} />
+                        <ThemedText style={[styles.actionText, { color: colors.cardText }]}>
+                          {t('schedule.route')}
+                        </ThemedText>
+                      </TouchableOpacity>
+                    )}
+                    {canCalendar && (
+                      <TouchableOpacity
+                        onPress={() => addStationToCalendar(s)}
+                        activeOpacity={0.7}
+                        style={[styles.actionBtn, { borderColor: colors.border + '55' }]}
+                      >
+                        <Ionicons name="calendar-outline" size={16} color={colors.cardButton} />
+                        <ThemedText style={[styles.actionText, { color: colors.cardText }]}>
+                          {t('schedule.calendar')}
+                        </ThemedText>
+                      </TouchableOpacity>
+                    )}
+                  </View>
                 )}
               </View>
             );
@@ -141,13 +225,29 @@ export default function ScheduleScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  title: { fontSize: 24, fontWeight: '700', marginBottom: theme.spacing.md },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: theme.spacing.md,
+  },
+  title: { fontSize: 24, fontWeight: '700' },
+  addAll: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    borderWidth: 1,
+    borderRadius: theme.borderRadius.full,
+    paddingHorizontal: theme.spacing.md,
+    paddingVertical: 6,
+  },
+  addAllText: { fontSize: 13, fontWeight: '600' },
   card: {
     borderRadius: theme.borderRadius.lg,
     padding: theme.spacing.md,
-    marginBottom: theme.spacing.sm,
+    marginBottom: theme.spacing.md,
   },
-  headerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  cardHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   time: { fontSize: 15, fontWeight: '700', fontVariant: ['tabular-nums'] },
   nowBadge: {
     borderRadius: theme.borderRadius.full,
@@ -155,6 +255,18 @@ const styles = StyleSheet.create({
     paddingVertical: 2,
   },
   nowBadgeText: { fontSize: 11, fontWeight: '700' },
-  stationTitle: { fontSize: 18, fontWeight: '600', marginTop: 4 },
-  addressRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: theme.spacing.sm },
+  stationTitle: { fontSize: 19, fontWeight: '600', marginTop: 4 },
+  addressRow: { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: theme.spacing.sm },
+  actions: { flexDirection: 'row', gap: theme.spacing.sm, marginTop: theme.spacing.md },
+  actionBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    borderWidth: 1,
+    borderRadius: theme.borderRadius.md,
+    paddingVertical: theme.spacing.sm,
+  },
+  actionText: { fontSize: 14, fontWeight: '600' },
 });
