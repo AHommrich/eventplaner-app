@@ -21,7 +21,6 @@ import { ScheduleStation } from '../../lib/guest';
 import { stationState } from '../../lib/schedule';
 import {
   CalendarEvent,
-  scheduleCalendarEvents,
   stationCalendarEvent,
   stationHasTime,
 } from '../../lib/calendar';
@@ -73,22 +72,11 @@ export default function ScheduleScreen() {
 
   const stations = eventInfo?.schedule_stations ?? [];
   const dateIso = eventInfo?.date ?? null;
-  const anyTimed = !!dateIso && stations.some((s) => stationHasTime(dateIso, s));
 
   function addStationToCalendar(s: ScheduleStation) {
     if (!dateIso) return;
     const ev = stationCalendarEvent(dateIso, stations, s.id);
     if (ev) presentCalendarDialog(ev);
-  }
-
-  // Presents one native dialog per station, in order; stops if the guest
-  // cancels one so they aren't trapped clicking through the rest.
-  async function addAllToCalendar() {
-    if (!dateIso) return;
-    for (const ev of scheduleCalendarEvents(dateIso, stations)) {
-      const kept = await presentCalendarDialog(ev);
-      if (!kept) break;
-    }
   }
 
   return (
@@ -112,18 +100,6 @@ export default function ScheduleScreen() {
           <ThemedText style={[styles.title, { color: colors.cardText }]}>
             {t('schedule.title')}
           </ThemedText>
-          {anyTimed && (
-            <TouchableOpacity
-              onPress={addAllToCalendar}
-              activeOpacity={0.7}
-              style={[styles.addAll, { borderColor: colors.border + '66' }]}
-            >
-              <Ionicons name="calendar-outline" size={15} color={colors.cardText} />
-              <ThemedText style={[styles.addAllText, { color: colors.cardText }]}>
-                {t('schedule.addAll')}
-              </ThemedText>
-            </TouchableOpacity>
-          )}
         </View>
 
         {stations.length === 0 ? (
@@ -232,16 +208,6 @@ const styles = StyleSheet.create({
     marginBottom: theme.spacing.md,
   },
   title: { fontSize: 24, fontWeight: '700' },
-  addAll: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    borderWidth: 1,
-    borderRadius: theme.borderRadius.full,
-    paddingHorizontal: theme.spacing.md,
-    paddingVertical: 6,
-  },
-  addAllText: { fontSize: 13, fontWeight: '600' },
   card: {
     borderRadius: theme.borderRadius.lg,
     padding: theme.spacing.md,

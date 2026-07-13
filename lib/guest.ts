@@ -76,8 +76,10 @@ export type ScheduleStation = {
 
 export type EventInfo = {
   name: string;
-  date: string;
-  rsvp_deadline: string;
+  // Both null when the couple has not set a date/deadline yet — the API sends
+  // `null` (not "") for empty values, so every consumer must be null-safe.
+  date: string | null;
+  rsvp_deadline: string | null;
   cover_image_url: string | null;
   venue_name: string | null;
   venue_address: string | null;

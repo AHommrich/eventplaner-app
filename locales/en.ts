@@ -28,7 +28,6 @@ const en = {
     empty: 'The schedule is still being prepared.',
     route: 'Directions',
     calendar: 'Calendar',
-    addAll: 'Add all to calendar',
   },
   rsvp: {
     title: 'Will you join us?',
