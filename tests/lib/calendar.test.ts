@@ -1,5 +1,5 @@
 import { ScheduleStation } from '../../lib/guest';
-import { scheduleCalendarEvents, stationCalendarEvent, stationHasTime } from '../../lib/calendar';
+import { stationCalendarEvent, stationHasTime } from '../../lib/calendar';
 
 const DATE = '2027-06-05T00:00:00.000Z';
 
@@ -57,15 +57,9 @@ describe('lib/calendar', () => {
     expect(stationCalendarEvent(DATE, [s], 5)!.location).toBe('Grillhütte');
   });
 
-  it('maps every timed station in order', () => {
-    const events = scheduleCalendarEvents(DATE, [registry, lunch, party]);
-    expect(events.map((e) => e.title)).toEqual(['Standesamt', 'Mittagessen', 'Feier']);
-  });
-
-  it('returns null / empty when there is nothing timed', () => {
+  it('returns null when there is nothing timed', () => {
     expect(stationCalendarEvent(DATE, [station({ id: 9, starts_at: null })], 9)).toBeNull();
     expect(stationCalendarEvent(DATE, [registry], 999)).toBeNull();
-    expect(scheduleCalendarEvents(DATE, [])).toEqual([]);
   });
 
   it('reports whether a station can produce a calendar entry', () => {

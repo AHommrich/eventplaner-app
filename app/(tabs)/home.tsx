@@ -142,11 +142,14 @@ export default function HomeScreen() {
   // CPU) while the guest is on another tab — it reseeds correctly on refocus.
   useEffect(() => {
     if (!eventInfo?.date || !isFocused) return;
+    // Captured once so the interval closure stays null-safe (and re-seeds via
+    // the dep array when the date actually changes).
+    const eventDate = eventInfo.date;
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    setCountdown(calcCountdown(eventInfo.date));
+    setCountdown(calcCountdown(eventDate));
     setNow(Date.now());
     intervalRef.current = setInterval(() => {
-      setCountdown(calcCountdown(eventInfo!.date));
+      setCountdown(calcCountdown(eventDate));
       setNow(Date.now());
     }, 1000);
     return () => {
@@ -155,7 +158,6 @@ export default function HomeScreen() {
     // We only need to reset the ticker when the actual date changes or focus
     // flips. The full `eventInfo` object would trigger on every unrelated
     // theme/schedule tweak the backend returns.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [eventInfo?.date, isFocused]);
 
   const { refreshing, refreshed, onRefresh } = useRefreshToast(loadData);

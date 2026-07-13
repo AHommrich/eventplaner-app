@@ -133,7 +133,11 @@ export default function RsvpTabScreen() {
       }
       setGuest(g);
       setDeadline(info.rsvp_deadline);
-      setDeadlinePassed(new Date(info.rsvp_deadline) < new Date());
+      // No deadline set → it can never have "passed"; otherwise `new Date(null)`
+      // would resolve to the epoch and lock every RSVP button.
+      setDeadlinePassed(
+        info.rsvp_deadline ? new Date(info.rsvp_deadline) < new Date() : false,
+      );
       setLoadError(false);
     } catch {
       setLoadError(true);

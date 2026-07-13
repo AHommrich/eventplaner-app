@@ -43,14 +43,6 @@ export function stationCalendarEvent(
   return station ? toEvent(station) : null;
 }
 
-/** Calendar events for every timed station, in order. */
-export function scheduleCalendarEvents(
-  dateIso: string,
-  stations: ScheduleStation[]
-): CalendarEvent[] {
-  return timedStations(dateIso, stations).map(toEvent);
-}
-
 /** True when a station can produce a calendar entry (i.e. it has a start time). */
 export function stationHasTime(dateIso: string, station: ScheduleStation): boolean {
   return stationMoment(dateIso, station.starts_at) !== null;
