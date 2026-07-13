@@ -52,6 +52,12 @@
             }
           }
         }
+      ],
+      [
+        "expo-calendar",
+        {
+          "calendarPermission": "Die App fügt auf deinen Wunsch Termine des Events zu deinem Kalender hinzu."
+        }
       ]
     ],
     "extra": {

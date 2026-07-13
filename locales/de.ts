@@ -131,6 +131,9 @@ const de = {
     title: 'Zeitplan',
     now: 'Jetzt',
     empty: 'Der Zeitplan wird noch vorbereitet.',
+    route: 'Route',
+    calendar: 'Kalender',
+    addAll: 'Alle in den Kalender',
   },
   rsvp: {
     title: 'Bist du dabei?',
