@@ -55,6 +55,7 @@ import { RefreshToast } from '../../components/RefreshToast';
 import { theme } from '../../constants/theme';
 import { withSurfaceAlpha } from '../../lib/variantStyles';
 import { ScreenGradient } from '../../components/ScreenGradient';
+import { GradientFill } from '../../components/GradientFill';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -417,13 +418,19 @@ export default function DrinksScreen() {
                       backgroundColor: colors.cardButton,
                       borderWidth: 1.5,
                       borderColor: colors.cardButton,
-                      borderRadius: theme.borderRadius.lg - theme.spacing.xs,
+                      borderRadius: isSoft
+                        ? variant.radius.button
+                        : theme.borderRadius.lg - theme.spacing.xs,
+                      overflow: 'hidden',
                     },
                   ]}
                   onPress={() => handleLog(size)}
                   disabled={logging}
                   activeOpacity={0.8}
                 >
+                  {isSoft && (
+                    <GradientFill color={colors.cardButton} radius={variant.radius.button} />
+                  )}
                   {logging ? (
                     <ActivityIndicator color={colors.cardButtonText} size="small" />
                   ) : (
@@ -506,13 +513,17 @@ export default function DrinksScreen() {
                   backgroundColor: colors.cardButton,
                   borderWidth: 1.5,
                   borderColor: colors.cardButton,
-                  borderRadius: theme.borderRadius.lg - theme.spacing.xs,
+                  borderRadius: isSoft
+                    ? variant.radius.button
+                    : theme.borderRadius.lg - theme.spacing.xs,
+                  overflow: 'hidden',
                 },
               ]}
               onPress={() => handleLog(size)}
               disabled={logging}
               activeOpacity={0.8}
             >
+              {isSoft && <GradientFill color={colors.cardButton} radius={variant.radius.button} />}
               {logging ? (
                 <ActivityIndicator color={colors.cardButtonText} size="small" />
               ) : (
@@ -618,7 +629,7 @@ export default function DrinksScreen() {
           style={{
             flexDirection: 'row',
             margin: theme.spacing.xs,
-            borderRadius: theme.borderRadius.lg - theme.spacing.xs,
+            borderRadius: isSoft ? variant.radius.button : theme.borderRadius.lg - theme.spacing.xs,
             overflow: 'hidden',
             borderWidth: 1.5,
             borderColor: colors.border + '55',

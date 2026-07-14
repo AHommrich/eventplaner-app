@@ -12,21 +12,23 @@
  *   - `drinks` ........ only when `drink_game_enabled` AND not drinks-blocked.
  *   - `settings` ...... always shown.
  *
- * Conditional tabs are hidden with `href: null` (Expo Router's blessed pattern).
+ * Conditional tabs are hidden with `href: null` (classic) and filtered out of
+ * the custom bar via `hiddenTabs` (soft-luxury).
  *
  * Presets:
- *   - classic ....... the default docked hairline bar, untouched.
- *   - soft-luxury ... a floating, frosted (dosed BlurView) rounded bar via
- *                     `tabBarStyle: { position:'absolute' }`, so content bleeds
- *                     full-height behind it. A single filled "pill" indicator
- *                     lives in `tabBarBackground` and SLIDES between tabs on
- *                     every change (the movement); the active icon + label ride
- *                     on top of it in white.
+ *   - classic ....... the default docked hairline bar (`tabBarIcon` per screen).
+ *   - soft-luxury ... a fully custom floating, frosted rounded bar (`SoftTabBar`
+ *                     via the `tabBar` prop). A single highlight circle SLIDES
+ *                     horizontally to the active tab (spring) and stays perfectly
+ *                     concentric with the icon because the bar owns both layouts.
+ *                     Over the Home cover the circle is a white ring on a
+ *                     see-through frost; elsewhere a maroon gradient disc.
  */
 import { ComponentProps, useEffect, useState } from 'react';
-import { Alert, Animated, StyleSheet, View } from 'react-native';
+import { Alert, Animated, Pressable, StyleSheet, Text, View } from 'react-native';
 import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
+import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { sheenGradient } from '../../lib/variantStyles';
 import { Tabs, useRouter, useSegments } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -35,11 +37,25 @@ import { useLanguage } from '../../lib/LanguageContext';
 import { useEventTheme } from '../../lib/EventThemeContext';
 import { useBlockedFeatures } from '../../lib/BlockedFeaturesContext';
 import { fetchGuestMe, RsvpStatus } from '../../lib/guest';
+import { haptics } from '../../lib/haptics';
 
-const BAR_HEIGHT = 72;
+const BAR_HEIGHT = 66;
 const BAR_MARGIN = 14;
+const BAR_PAD_H = 6;
+const BAR_PAD_TOP = 8;
+const CIRCLE = 34;
 
-/** Plain tab-bar icon; colour comes from the navigator tint (active vs muted). */
+const TAB_ICONS: Record<string, ComponentProps<typeof Ionicons>['name']> = {
+  home: 'home-outline',
+  schedule: 'time-outline',
+  rsvp: 'checkmark-circle-outline',
+  photos: 'images-outline',
+  'photo-game': 'camera-outline',
+  drinks: 'beer-outline',
+  settings: 'settings-outline',
+};
+
+/** Plain icon for the classic preset (soft-luxury renders via SoftTabBar). */
 function TabBarIcon({
   name,
   color,
@@ -53,71 +69,182 @@ function TabBarIcon({
 }
 
 /**
- * Frosted background for the soft-luxury bar PLUS the sliding pill indicator.
- * The pill springs horizontally to sit under whichever tab is active, which is
- * the "movement" — the icons/labels stay put and just recolour. Driven by the
- * active index (from the router) rather than per-icon focus state, so it can't
- * be reset by react-navigation recreating the icon components.
+ * Soft-luxury custom tab bar. Owns the full layout, so the highlight circle can
+ * both slide (spring on translateX driven by the active index) AND sit exactly
+ * concentric with the icon (icon slot and circle share the same top). The photo
+ * shows through when Home is active (`overCover`).
  */
-function FrostedTabBackground({
-  activeIndex,
-  count,
-  card,
-  tabTint,
+function SoftTabBar({
+  state,
+  navigation,
+  descriptors,
+  hiddenTabs,
+  colors,
   radius,
-}: {
-  activeIndex: number;
-  count: number;
-  card: string;
-  tabTint: string;
+  floatBottom,
+  overCover,
+  fontFamily,
+}: BottomTabBarProps & {
+  hiddenTabs: Set<string>;
+  colors: ReturnType<typeof useEventTheme>['colors'];
   radius: number;
+  floatBottom: number;
+  overCover: boolean;
+  fontFamily?: string;
 }) {
-  // Measure the bar's actual inner width instead of estimating from the window
-  // — react-navigation's exact tab layout is what the pill must line up with,
-  // otherwise a per-tab rounding error accumulates and drifts sideways.
-  const [barW, setBarW] = useState(0);
-  const tabWidth = barW / Math.max(count, 1);
+  const routes = state.routes.filter((r) => !hiddenTabs.has(r.name));
+  const activeName = state.routes[state.index]?.name;
+  const activeIndex = Math.max(
+    0,
+    routes.findIndex((r) => r.name === activeName)
+  );
+
+  const [rowW, setRowW] = useState(0);
+  // Items are flex:1 INSIDE the row's horizontal padding, so the per-tab stride
+  // is the padded content width / count — using the full rowW would make the
+  // stride a touch too wide and the circle would drift right with each tab.
+  const itemW = rowW > 0 ? (rowW - BAR_PAD_H * 2) / routes.length : 0;
   const [x] = useState(() => new Animated.Value(0));
   useEffect(() => {
-    Animated.spring(x, {
-      toValue: activeIndex * tabWidth,
-      useNativeDriver: true,
-      friction: 9,
-      tension: 90,
-    }).start();
-  }, [activeIndex, tabWidth, x]);
+    if (itemW > 0) {
+      Animated.spring(x, {
+        toValue: activeIndex * itemW,
+        useNativeDriver: true,
+        friction: 9,
+        tension: 90,
+      }).start();
+    }
+  }, [activeIndex, itemW, x]);
 
-  const PILL_INSET = 6;
+  const label = (name: string) => {
+    const title = descriptors[routes.find((r) => r.name === name)!.key]?.options.title;
+    return typeof title === 'string' ? title : name;
+  };
+  const iconColor = (focused: boolean) => {
+    if (overCover) return focused ? '#ffffff' : 'rgba(255,255,255,0.6)';
+    return focused ? colors.card : colors.tabTint + '99';
+  };
+  const labelColor = (focused: boolean) => {
+    if (overCover) return focused ? '#ffffff' : 'rgba(255,255,255,0.6)';
+    return focused ? colors.tabTint : colors.tabTint + '99';
+  };
+
   return (
     <View
-      onLayout={(e) => setBarW(e.nativeEvent.layout.width)}
-      style={{ ...StyleSheet.absoluteFillObject, borderRadius: radius, overflow: 'hidden' }}
+      style={{
+        position: 'absolute',
+        left: BAR_MARGIN,
+        right: BAR_MARGIN,
+        bottom: floatBottom,
+        height: BAR_HEIGHT,
+        borderRadius: radius,
+        borderWidth: 1,
+        borderColor: overCover ? 'rgba(255,255,255,0.7)' : 'rgba(255,255,255,0.45)',
+        backgroundColor: overCover ? 'transparent' : colors.card,
+        shadowColor: '#5a3238',
+        shadowOpacity: overCover ? 0 : 0.18,
+        shadowRadius: 18,
+        shadowOffset: { width: 0, height: 8 },
+        elevation: overCover ? 0 : 12,
+      }}
     >
-      <BlurView tint="light" intensity={40} style={StyleSheet.absoluteFill}>
-        {/* ~62% milky veil over the blur — the frosted look from the proof. */}
-        <View style={[StyleSheet.absoluteFill, { backgroundColor: card + '9e' }]} />
-      </BlurView>
-      {tabWidth > 0 && (
-        <Animated.View
-          style={{
-            position: 'absolute',
-            top: 10,
-            height: BAR_HEIGHT - 20,
-            width: tabWidth - PILL_INSET * 2,
-            left: PILL_INSET,
-            borderRadius: 18,
-            overflow: 'hidden',
-            transform: [{ translateX: x }],
-          }}
-        >
-          <LinearGradient
-            colors={sheenGradient(tabTint)}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 0, y: 1 }}
-            style={StyleSheet.absoluteFill}
+      {/* Frosted glass fill, clipped to the rounded shape. */}
+      <View style={{ ...StyleSheet.absoluteFillObject, borderRadius: radius, overflow: 'hidden' }}>
+        <BlurView tint="light" intensity={overCover ? 22 : 40} style={StyleSheet.absoluteFill}>
+          <View
+            style={[
+              StyleSheet.absoluteFill,
+              { backgroundColor: colors.card + (overCover ? '33' : '9e') },
+            ]}
           />
-        </Animated.View>
-      )}
+        </BlurView>
+      </View>
+
+      {/* Tab row + the single sliding highlight circle. */}
+      <View
+        onLayout={(e) => setRowW(e.nativeEvent.layout.width)}
+        style={{
+          flex: 1,
+          flexDirection: 'row',
+          paddingHorizontal: BAR_PAD_H,
+          paddingTop: BAR_PAD_TOP,
+        }}
+      >
+        {itemW > 0 && (
+          <Animated.View
+            pointerEvents="none"
+            style={{
+              position: 'absolute',
+              top: BAR_PAD_TOP,
+              left: BAR_PAD_H + (itemW - CIRCLE) / 2,
+              width: CIRCLE,
+              height: CIRCLE,
+              borderRadius: CIRCLE / 2,
+              overflow: 'hidden',
+              transform: [{ translateX: x }],
+              ...(overCover
+                ? {
+                    borderWidth: 1.5,
+                    borderColor: 'rgba(255,255,255,0.9)',
+                    backgroundColor: 'rgba(255,255,255,0.18)',
+                  }
+                : {
+                    shadowColor: colors.tabTint,
+                    shadowOpacity: 0.45,
+                    shadowRadius: 7,
+                    shadowOffset: { width: 0, height: 3 },
+                    elevation: 6,
+                  }),
+            }}
+          >
+            {!overCover && (
+              <LinearGradient
+                colors={sheenGradient(colors.tabTint)}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 0, y: 1 }}
+                style={StyleSheet.absoluteFill}
+              />
+            )}
+          </Animated.View>
+        )}
+
+        {routes.map((route) => {
+          const focused = route.name === activeName;
+          const onPress = () => {
+            haptics.selection();
+            const event = navigation.emit({
+              type: 'tabPress',
+              target: route.key,
+              canPreventDefault: true,
+            });
+            if (!focused && !event.defaultPrevented) navigation.navigate(route.name);
+          };
+          return (
+            <Pressable
+              key={route.key}
+              onPress={onPress}
+              accessibilityRole="button"
+              accessibilityState={focused ? { selected: true } : {}}
+              style={{ flex: 1, alignItems: 'center' }}
+            >
+              {/* Icon slot: same top + height as the circle → always concentric. */}
+              <View style={{ height: CIRCLE, alignItems: 'center', justifyContent: 'center' }}>
+                <Ionicons
+                  name={TAB_ICONS[route.name] ?? 'ellipse-outline'}
+                  size={20}
+                  color={iconColor(focused)}
+                />
+              </View>
+              <Text
+                numberOfLines={1}
+                style={{ fontSize: 10, marginTop: 2, color: labelColor(focused), fontFamily }}
+              >
+                {label(route.name)}
+              </Text>
+            </Pressable>
+          );
+        })}
+      </View>
     </View>
   );
 }
@@ -162,77 +289,49 @@ export default function TabLayout() {
   const isSheet = variant.tabBar === 'sheet';
   const floatBottom = Math.max(insets.bottom, 10);
 
-  // Ordered list of the tabs actually visible right now — the sliding indicator
-  // needs the same order and count react-navigation lays out. Kept in sync with
-  // the <Tabs.Screen> order + the same show* flags used for `href`.
-  const visibleTabs = [
-    'home',
-    showScheduleTab && 'schedule',
-    showRsvpTab && 'rsvp',
-    'photos',
-    showPhotoGameTab && 'photo-game',
-    showDrinksTab && 'drinks',
-    'settings',
-  ].filter(Boolean) as string[];
   const currentTab = segments[segments.length - 1] ?? 'home';
-  const activeIndex = Math.max(0, visibleTabs.indexOf(currentTab));
+  const overCover = isSheet && hasCover && (currentTab === 'home' || currentTab === '(tabs)');
 
-  // Soft-luxury: a floating, rounded frosted bar. `position:absolute` makes the
-  // scene bleed full-height behind it (so the Home cover reaches the bottom) —
-  // react-navigation still insets scroll screens via `useBottomTabBarHeight`.
-  // An opaque backing colour lets iOS cast the float shadow; the frosted blur +
-  // sliding pill (tabBarBackground) are painted on top. Classic stays docked.
-  const tabBarStyle = isSheet
-    ? {
-        position: 'absolute' as const,
-        left: BAR_MARGIN,
-        right: BAR_MARGIN,
-        bottom: floatBottom,
-        height: BAR_HEIGHT,
-        paddingTop: 8,
-        paddingBottom: 10,
-        borderRadius: variant.tabBarRadius,
-        borderWidth: 1,
-        borderTopWidth: 1,
-        borderColor: 'rgba(255,255,255,0.45)',
-        backgroundColor: colors.card,
-        shadowColor: '#5a3238',
-        shadowOpacity: 0.18,
-        shadowRadius: 18,
-        shadowOffset: { width: 0, height: 8 },
-        elevation: 12,
-      }
-    : {
-        backgroundColor: colors.screenBg,
-        borderTopColor: colors.border + '33',
-        borderTopWidth: 1,
-      };
+  // Routes the soft-luxury bar must NOT render (mirror of the classic href flags).
+  const hiddenTabs = new Set<string>();
+  if (!showScheduleTab) hiddenTabs.add('schedule');
+  if (!showRsvpTab) hiddenTabs.add('rsvp');
+  if (!showPhotoGameTab) hiddenTabs.add('photo-game');
+  if (!showDrinksTab) hiddenTabs.add('drinks');
 
-  const tabBarBackground = isSheet
-    ? () => (
-        <FrostedTabBackground
-          activeIndex={activeIndex}
-          count={visibleTabs.length}
-          card={colors.card}
-          tabTint={colors.tabTint}
-          radius={variant.tabBarRadius}
-        />
-      )
-    : undefined;
-
-  // Soft-luxury: active icon + label ride on the maroon pill → white; inactive
-  // are muted maroon on the frosted bar.
-  const activeTint = isSheet ? colors.card : colors.tabTint;
-  const inactiveTint = isSheet ? colors.tabTint + '99' : colors.tabTint + '66';
+  // Classic docked bar style (soft-luxury renders its own bar in SoftTabBar).
+  const classicTabBarStyle = {
+    backgroundColor: colors.screenBg,
+    borderTopColor: colors.border + '33',
+    borderTopWidth: 1,
+  };
 
   return (
     <Tabs
+      // Soft-luxury swaps in a fully custom frosted bar with a sliding circle;
+      // classic keeps the default docked bar. Haptic tick handled inside
+      // SoftTabBar (soft) and via screenListeners (classic).
+      tabBar={
+        isSheet
+          ? (props) => (
+              <SoftTabBar
+                {...props}
+                hiddenTabs={hiddenTabs}
+                colors={colors}
+                radius={variant.tabBarRadius}
+                floatBottom={floatBottom}
+                overCover={overCover}
+                fontFamily={colors.fontFamily?.regular}
+              />
+            )
+          : undefined
+      }
+      screenListeners={isSheet ? undefined : { tabPress: () => haptics.selection() }}
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: activeTint,
-        tabBarInactiveTintColor: inactiveTint,
-        tabBarStyle,
-        tabBarBackground,
+        tabBarActiveTintColor: colors.tabTint,
+        tabBarInactiveTintColor: colors.tabTint + '66',
+        tabBarStyle: classicTabBarStyle,
         tabBarLabelStyle: colors.fontFamily ? { fontFamily: colors.fontFamily.regular } : undefined,
       }}
     >
@@ -241,11 +340,10 @@ export default function TabLayout() {
         options={{
           title: t('tabs.home'),
           // Classic over a cover: transparent full-bleed bar with light tints.
-          // Soft-luxury already floats, so it keeps the shared tints/style.
           tabBarActiveTintColor:
-            hasCover && !isSheet ? (colors.homeText ?? colors.tabTint) : activeTint,
+            hasCover && !isSheet ? (colors.homeText ?? colors.tabTint) : colors.tabTint,
           tabBarInactiveTintColor:
-            hasCover && !isSheet ? 'rgba(255,255,255,0.55)' : inactiveTint,
+            hasCover && !isSheet ? 'rgba(255,255,255,0.55)' : colors.tabTint + '66',
           tabBarStyle:
             hasCover && !isSheet
               ? {
@@ -255,8 +353,10 @@ export default function TabLayout() {
                   elevation: 0,
                   shadowOpacity: 0,
                 }
-              : tabBarStyle,
-          tabBarIcon: ({ color, size }) => <TabBarIcon name="home-outline" color={color} size={size} />,
+              : classicTabBarStyle,
+          tabBarIcon: ({ color, size }) => (
+            <TabBarIcon name="home-outline" color={color} size={size} />
+          ),
         }}
       />
       <Tabs.Screen
@@ -264,7 +364,9 @@ export default function TabLayout() {
         options={{
           title: t('tabs.schedule'),
           href: showScheduleTab ? undefined : null,
-          tabBarIcon: ({ color, size }) => <TabBarIcon name="time-outline" color={color} size={size} />,
+          tabBarIcon: ({ color, size }) => (
+            <TabBarIcon name="time-outline" color={color} size={size} />
+          ),
         }}
       />
       <Tabs.Screen
@@ -281,7 +383,9 @@ export default function TabLayout() {
         name="photos"
         options={{
           title: t('tabs.photos'),
-          tabBarIcon: ({ color, size }) => <TabBarIcon name="images-outline" color={color} size={size} />,
+          tabBarIcon: ({ color, size }) => (
+            <TabBarIcon name="images-outline" color={color} size={size} />
+          ),
         }}
       />
       <Tabs.Screen
@@ -289,7 +393,9 @@ export default function TabLayout() {
         options={{
           title: t('photoGame.tab'),
           href: showPhotoGameTab ? undefined : null,
-          tabBarIcon: ({ color, size }) => <TabBarIcon name="camera-outline" color={color} size={size} />,
+          tabBarIcon: ({ color, size }) => (
+            <TabBarIcon name="camera-outline" color={color} size={size} />
+          ),
         }}
       />
       <Tabs.Screen
@@ -297,14 +403,18 @@ export default function TabLayout() {
         options={{
           title: t('tabs.drinks'),
           href: showDrinksTab ? undefined : null,
-          tabBarIcon: ({ color, size }) => <TabBarIcon name="beer-outline" color={color} size={size} />,
+          tabBarIcon: ({ color, size }) => (
+            <TabBarIcon name="beer-outline" color={color} size={size} />
+          ),
         }}
       />
       <Tabs.Screen
         name="settings"
         options={{
           title: t('tabs.settings'),
-          tabBarIcon: ({ color, size }) => <TabBarIcon name="settings-outline" color={color} size={size} />,
+          tabBarIcon: ({ color, size }) => (
+            <TabBarIcon name="settings-outline" color={color} size={size} />
+          ),
         }}
       />
     </Tabs>

@@ -181,7 +181,11 @@ export default function HomeScreen() {
   // only in soft-luxury (classic stays exactly as it was).
   const coverTextShadow =
     isSoft && hasCover
-      ? { textShadowColor: 'rgba(0,0,0,0.6)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 10 }
+      ? {
+          textShadowColor: 'rgba(0,0,0,0.6)',
+          textShadowOffset: { width: 0, height: 1 },
+          textShadowRadius: 10,
+        }
       : null;
 
   function renderCountdown() {
@@ -331,7 +335,11 @@ export default function HomeScreen() {
             <>
               {!!focus.location_name && (
                 <ThemedText
-                  style={[styles.meta, { color: textColor, marginBottom: 0, fontSize: 18 }, coverTextShadow]}
+                  style={[
+                    styles.meta,
+                    { color: textColor, marginBottom: 0, fontSize: 18 },
+                    coverTextShadow,
+                  ]}
                 >
                   {focus.location_name}
                 </ThemedText>
@@ -339,7 +347,11 @@ export default function HomeScreen() {
               {focusHasNav && (
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                   <ThemedText
-                    style={[styles.meta, { color: textColor, marginBottom: 0, fontSize: 18 }, coverTextShadow]}
+                    style={[
+                      styles.meta,
+                      { color: textColor, marginBottom: 0, fontSize: 18 },
+                      coverTextShadow,
+                    ]}
                   >
                     {focusAddr}
                   </ThemedText>
@@ -399,13 +411,21 @@ export default function HomeScreen() {
               style={{ alignItems: 'center', marginVertical: 8 }}
             >
               <ThemedText
-                style={[styles.meta, { color: textColor, marginBottom: 0, fontSize: 18 }, coverTextShadow]}
+                style={[
+                  styles.meta,
+                  { color: textColor, marginBottom: 0, fontSize: 18 },
+                  coverTextShadow,
+                ]}
               >
                 {eventInfo!.venue_name}
               </ThemedText>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                 <ThemedText
-                  style={[styles.meta, { color: textColor, marginBottom: 0, fontSize: 18 }, coverTextShadow]}
+                  style={[
+                    styles.meta,
+                    { color: textColor, marginBottom: 0, fontSize: 18 },
+                    coverTextShadow,
+                  ]}
                 >
                   {addrText}
                 </ThemedText>
@@ -422,7 +442,13 @@ export default function HomeScreen() {
             activeOpacity={0.7}
             style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginVertical: 8 }}
           >
-            <ThemedText style={[styles.meta, { color: textColor, marginBottom: 0, fontSize: 18 }, coverTextShadow]}>
+            <ThemedText
+              style={[
+                styles.meta,
+                { color: textColor, marginBottom: 0, fontSize: 18 },
+                coverTextShadow,
+              ]}
+            >
               {showName ? eventInfo!.venue_name : addrText}
             </ThemedText>
             <Ionicons name="location-outline" size={15} color={textColor} />
@@ -436,12 +462,20 @@ export default function HomeScreen() {
       {eventInfo?.dresscode && (
         <View style={{ alignItems: 'center', marginBottom: 2 }}>
           <ThemedText
-            style={[styles.meta, { color: textColor, opacity: 0.7, marginBottom: 0 }, coverTextShadow]}
+            style={[
+              styles.meta,
+              { color: textColor, opacity: 0.7, marginBottom: 0 },
+              coverTextShadow,
+            ]}
           >
             {t('home.dresscode')}
           </ThemedText>
           <ThemedText
-            style={[styles.meta, { color: textColor, opacity: 0.7, marginBottom: 0 }, coverTextShadow]}
+            style={[
+              styles.meta,
+              { color: textColor, opacity: 0.7, marginBottom: 0 },
+              coverTextShadow,
+            ]}
           >
             {eventInfo.dresscode}
           </ThemedText>

@@ -126,7 +126,9 @@ export const DESIGN_VARIANTS: Record<DesignVariantKey, DesignVariant> = {
   'soft-luxury': {
     key: 'soft-luxury',
     radius: { card: 26, tile: 16, button: 9999 },
-    card: { surfaceAlpha: 0.82, borderWidth: 0, padding: 20, shadow: SHADOW_SOFT },
+    // surfaceAlpha 0.88: cleaner, whiter glass (closer to the Image-1 luxury
+    // reference) while still reading as translucent over a photo.
+    card: { surfaceAlpha: 0.88, borderWidth: 0, padding: 20, shadow: SHADOW_SOFT },
     gap: 18,
     tabBar: 'sheet',
     tabBarRadius: 24,

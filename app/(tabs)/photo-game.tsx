@@ -248,7 +248,10 @@ export default function PhotoGameScreen() {
     if (isEnded) {
       return (
         <View
-          style={[styles.card, isSoft ? softCard : { backgroundColor: colors.card, borderColor: colors.border + '33' }]}
+          style={[
+            styles.card,
+            isSoft ? softCard : { backgroundColor: colors.card, borderColor: colors.border + '33' },
+          ]}
         >
           <Ionicons
             name={isDraft ? 'hourglass-outline' : 'time-outline'}
@@ -266,7 +269,10 @@ export default function PhotoGameScreen() {
     if (isSubmitted && assignment) {
       return (
         <View
-          style={[styles.card, isSoft ? softCard : { backgroundColor: colors.card, borderColor: colors.border + '33' }]}
+          style={[
+            styles.card,
+            isSoft ? softCard : { backgroundColor: colors.card, borderColor: colors.border + '33' },
+          ]}
         >
           <ThemedText style={[styles.cardTitle, { color: colors.cardText }]}>
             {t('photoGame.submittedTitle')}
@@ -319,7 +325,10 @@ export default function PhotoGameScreen() {
     if (assignment) {
       return (
         <View
-          style={[styles.card, isSoft ? softCard : { backgroundColor: colors.card, borderColor: colors.border + '33' }]}
+          style={[
+            styles.card,
+            isSoft ? softCard : { backgroundColor: colors.card, borderColor: colors.border + '33' },
+          ]}
         >
           <ThemedText style={[styles.taskLabel, { color: colors.cardText + 'aa' }]}>
             {t('photoGame.yourTask')}
@@ -367,7 +376,10 @@ export default function PhotoGameScreen() {
     // Default: no assignment yet → invite the guest to request one.
     return (
       <View
-        style={[styles.card, isSoft ? softCard : { backgroundColor: colors.card, borderColor: colors.border + '33' }]}
+        style={[
+          styles.card,
+          isSoft ? softCard : { backgroundColor: colors.card, borderColor: colors.border + '33' },
+        ]}
       >
         <Ionicons
           name="camera-outline"

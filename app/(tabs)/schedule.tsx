@@ -21,16 +21,13 @@ import { useLanguage } from '../../lib/LanguageContext';
 import { useEventTheme } from '../../lib/EventThemeContext';
 import { ScheduleStation } from '../../lib/guest';
 import { stationState } from '../../lib/schedule';
-import {
-  CalendarEvent,
-  stationCalendarEvent,
-  stationHasTime,
-} from '../../lib/calendar';
+import { CalendarEvent, stationCalendarEvent, stationHasTime } from '../../lib/calendar';
 import { openLocationInMaps } from '../../lib/maps';
 import { useRefreshToast } from '../../lib/useRefreshToast';
 import { RefreshToast } from '../../components/RefreshToast';
 import { theme } from '../../constants/theme';
 import { cardSurfaceStyle } from '../../lib/variantStyles';
+import { GradientFill } from '../../components/GradientFill';
 
 function timeRange(s: ScheduleStation): string {
   if (!s.starts_at) return '';
@@ -102,7 +99,13 @@ export default function ScheduleScreen() {
         }
       >
         <View style={styles.header}>
-          <ThemedText style={[styles.title, { color: colors.cardText }, isSoft && { fontSize: 28 }]}>
+          <ThemedText
+            style={[
+              styles.title,
+              { color: colors.cardText },
+              isSoft && { fontSize: 32, letterSpacing: 0.5 },
+            ]}
+          >
             {t('schedule.title')}
           </ThemedText>
         </View>
@@ -152,7 +155,13 @@ export default function ScheduleScreen() {
                   )}
                 </View>
 
-                <ThemedText style={[styles.stationTitle, { color: colors.cardText }]}>
+                <ThemedText
+                  style={[
+                    styles.stationTitle,
+                    { color: colors.cardText },
+                    isSoft && { fontSize: 22 },
+                  ]}
+                >
                   {s.title}
                 </ThemedText>
                 {!!s.location_name && (
@@ -182,12 +191,15 @@ export default function ScheduleScreen() {
                         activeOpacity={0.7}
                         style={[
                           styles.actionBtn,
-                          { borderColor: colors.border + '55' },
+                          { backgroundColor: colors.cardButton },
                           isSoft && { borderRadius: variant.radius.button },
                         ]}
                       >
-                        <Ionicons name="navigate-outline" size={16} color={colors.cardButton} />
-                        <ThemedText style={[styles.actionText, { color: colors.cardText }]}>
+                        {isSoft && (
+                          <GradientFill color={colors.cardButton} radius={variant.radius.button} />
+                        )}
+                        <Ionicons name="navigate-outline" size={16} color={colors.cardButtonText} />
+                        <ThemedText style={[styles.actionText, { color: colors.cardButtonText }]}>
                           {t('schedule.route')}
                         </ThemedText>
                       </TouchableOpacity>
@@ -198,12 +210,15 @@ export default function ScheduleScreen() {
                         activeOpacity={0.7}
                         style={[
                           styles.actionBtn,
-                          { borderColor: colors.border + '55' },
+                          { backgroundColor: colors.cardButton },
                           isSoft && { borderRadius: variant.radius.button },
                         ]}
                       >
-                        <Ionicons name="calendar-outline" size={16} color={colors.cardButton} />
-                        <ThemedText style={[styles.actionText, { color: colors.cardText }]}>
+                        {isSoft && (
+                          <GradientFill color={colors.cardButton} radius={variant.radius.button} />
+                        )}
+                        <Ionicons name="calendar-outline" size={16} color={colors.cardButtonText} />
+                        <ThemedText style={[styles.actionText, { color: colors.cardButtonText }]}>
                           {t('schedule.calendar')}
                         </ThemedText>
                       </TouchableOpacity>
@@ -250,9 +265,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
-    borderWidth: 1,
     borderRadius: theme.borderRadius.md,
     paddingVertical: theme.spacing.sm,
+    overflow: 'hidden',
   },
   actionText: { fontSize: 14, fontWeight: '600' },
 });
