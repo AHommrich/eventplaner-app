@@ -53,6 +53,8 @@ import { useEventTheme } from '../../lib/EventThemeContext';
 import { useRefreshToast } from '../../lib/useRefreshToast';
 import { RefreshToast } from '../../components/RefreshToast';
 import { theme } from '../../constants/theme';
+import { withSurfaceAlpha } from '../../lib/variantStyles';
+import { ScreenGradient } from '../../components/ScreenGradient';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -132,7 +134,17 @@ const MEDAL_COLORS = ['#C9A84C', '#A8A9AD', '#CD7F32'];
 
 export default function DrinksScreen() {
   const { t, language } = useLanguage();
-  const { colors, eventInfo, loadTheme } = useEventTheme();
+  const { colors, eventInfo, variant, loadTheme } = useEventTheme();
+  const isSoft = variant.key === 'soft-luxury';
+  const softListCard = isSoft
+    ? {
+        borderRadius: variant.radius.card,
+        borderWidth: 0,
+        backgroundColor: withSurfaceAlpha(colors.card, variant),
+        overflow: 'visible' as const,
+        ...variant.card.shadow,
+      }
+    : null;
   const insets = useSafeAreaInsets();
   const tabBarHeight = useBottomTabBarHeight();
 
@@ -565,6 +577,7 @@ export default function DrinksScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.screenBg, paddingTop: insets.top }]}>
+      {isSoft && <ScreenGradient screenBg={colors.screenBg} primary={colors.primary} />}
       {/* Log-result toast — replaces the refresh toast while active. */}
       <Toast visible={toastVisible}>
         {toast && (
@@ -587,15 +600,18 @@ export default function DrinksScreen() {
 
       {/* Card 1: view toggle + streak/game-end banner. */}
       <View
-        style={{
-          backgroundColor: colors.card,
-          borderRadius: theme.borderRadius.lg,
-          borderWidth: 2,
-          borderColor: colors.border + '33',
-          marginHorizontal: theme.spacing.lg,
-          marginTop: theme.spacing.md,
-          overflow: 'hidden',
-        }}
+        style={[
+          {
+            backgroundColor: colors.card,
+            borderRadius: theme.borderRadius.lg,
+            borderWidth: 2,
+            borderColor: colors.border + '33',
+            marginHorizontal: theme.spacing.lg,
+            marginTop: theme.spacing.md,
+            overflow: 'hidden' as const,
+          },
+          softListCard,
+        ]}
       >
         {/* Log / Leaderboard toggle. */}
         <View
@@ -730,13 +746,16 @@ export default function DrinksScreen() {
 
             {/* Card 2: search + drink list. */}
             <View
-              style={{
-                backgroundColor: colors.card,
-                borderRadius: theme.borderRadius.lg,
-                borderWidth: 2,
-                borderColor: colors.border + '33',
-                overflow: 'hidden',
-              }}
+              style={[
+                {
+                  backgroundColor: colors.card,
+                  borderRadius: theme.borderRadius.lg,
+                  borderWidth: 2,
+                  borderColor: colors.border + '33',
+                  overflow: 'hidden' as const,
+                },
+                softListCard,
+              ]}
             >
               {/* Search input — filters across name and category label. */}
               <View
@@ -896,13 +915,16 @@ export default function DrinksScreen() {
         >
           {/* Ranking table. Podium rows carry a left accent strip. */}
           <View
-            style={{
-              backgroundColor: colors.card,
-              borderRadius: theme.borderRadius.lg,
-              borderWidth: 2,
-              borderColor: colors.border + '33',
-              padding: theme.spacing.md,
-            }}
+            style={[
+              {
+                backgroundColor: colors.card,
+                borderRadius: theme.borderRadius.lg,
+                borderWidth: 2,
+                borderColor: colors.border + '33',
+                padding: theme.spacing.md,
+              },
+              softListCard,
+            ]}
           >
             {stats?.guest_totals && stats.guest_totals.length > 0 ? (
               <>

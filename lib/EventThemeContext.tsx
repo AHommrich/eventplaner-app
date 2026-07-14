@@ -20,6 +20,21 @@ import { createContext, useContext, useState, useEffect, ReactNode } from 'react
 import * as SecureStore from 'expo-secure-store';
 import { fetchEventInfo, EventInfo } from './guest';
 import { FONT_MAP, FontDefinition, FontKey } from '../constants/fonts';
+import {
+  DESIGN_VARIANTS,
+  DesignVariant,
+  DEFAULT_DESIGN_VARIANT,
+  DEV_FORCE_DESIGN_VARIANT,
+} from '../constants/theme';
+
+/**
+ * Resolve the active design preset: DEV override → backend `design_preset` →
+ * default. Never throws on an unknown key (legacy/typo) — falls back cleanly.
+ */
+function resolveVariant(eventInfo: EventInfo | null): DesignVariant {
+  const key = DEV_FORCE_DESIGN_VARIANT ?? eventInfo?.design_preset ?? DEFAULT_DESIGN_VARIANT;
+  return DESIGN_VARIANTS[key] ?? DESIGN_VARIANTS[DEFAULT_DESIGN_VARIANT];
+}
 
 // --- Fallback palette (used until the first backend fetch resolves) ---
 const FALLBACK_PRIMARY = '#7c2d3e';
@@ -54,11 +69,14 @@ export type EventThemeColors = {
 type EventThemeContextValue = {
   eventInfo: EventInfo | null;
   colors: EventThemeColors;
+  /** Active design preset — the form-language layer (see DESIGN_VARIANTS). */
+  variant: DesignVariant;
   loadTheme: () => Promise<void>;
 };
 
 const EventThemeContext = createContext<EventThemeContextValue>({
   eventInfo: null,
+  variant: DESIGN_VARIANTS[DEFAULT_DESIGN_VARIANT],
   colors: {
     primary: FALLBACK_PRIMARY,
     secondary: FALLBACK_SECONDARY,
@@ -131,8 +149,10 @@ export function EventThemeProvider({ children }: { children: ReactNode }) {
     fontFamily,
   };
 
+  const variant = resolveVariant(eventInfo);
+
   return (
-    <EventThemeContext.Provider value={{ eventInfo, colors, loadTheme }}>
+    <EventThemeContext.Provider value={{ eventInfo, colors, variant, loadTheme }}>
       {children}
     </EventThemeContext.Provider>
   );

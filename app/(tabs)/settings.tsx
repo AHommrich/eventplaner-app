@@ -17,6 +17,9 @@ import { getSession, clearSession, GuestSession } from '../../lib/auth';
 import { useLanguage, Language } from '../../lib/LanguageContext';
 import { useEventTheme } from '../../lib/EventThemeContext';
 import { theme } from '../../constants/theme';
+import { withSurfaceAlpha } from '../../lib/variantStyles';
+import { GradientFill } from '../../components/GradientFill';
+import { ScreenGradient } from '../../components/ScreenGradient';
 import { requestErasure } from '../../lib/guest';
 import { saveErasureState } from '../../lib/erasure';
 import { captureSentryTestError } from '../../lib/monitoring';
@@ -24,7 +27,17 @@ import { captureSentryTestError } from '../../lib/monitoring';
 export default function SettingsScreen() {
   const router = useRouter();
   const { t, language, setLanguage } = useLanguage();
-  const { colors } = useEventTheme();
+  const { colors, variant } = useEventTheme();
+  const isSoft = variant.key === 'soft-luxury';
+  const softListCard = isSoft
+    ? {
+        borderRadius: variant.radius.card,
+        borderWidth: 0,
+        backgroundColor: withSurfaceAlpha(colors.card, variant),
+        overflow: 'visible' as const,
+        ...variant.card.shadow,
+      }
+    : null;
   const insets = useSafeAreaInsets();
   const [session, setSession] = useState<GuestSession | null>(null);
   const showSentryTestButton = process.env.EXPO_PUBLIC_ENABLE_SENTRY_TEST_BUTTON === '1';
@@ -104,16 +117,20 @@ export default function SettingsScreen() {
         paddingTop: insets.top + theme.spacing.md,
       }}
     >
+      {isSoft && <ScreenGradient screenBg={colors.screenBg} primary={colors.primary} />}
       {/* Single card: user identity + language + logout, one section each. */}
       <View
-        style={{
-          backgroundColor: colors.card,
-          borderRadius: theme.borderRadius.lg,
-          borderWidth: 2,
-          borderColor: colors.border + '33',
-          overflow: 'hidden',
-          marginBottom: theme.spacing.xl,
-        }}
+        style={[
+          {
+            backgroundColor: colors.card,
+            borderRadius: theme.borderRadius.lg,
+            borderWidth: 2,
+            borderColor: colors.border + '33',
+            overflow: 'hidden',
+            marginBottom: theme.spacing.xl,
+          },
+          softListCard,
+        ]}
       >
         {session && (
           <View
@@ -153,7 +170,7 @@ export default function SettingsScreen() {
           <View
             style={{
               flexDirection: 'row',
-              borderRadius: theme.borderRadius.md,
+              borderRadius: isSoft ? variant.radius.button : theme.borderRadius.md,
               overflow: 'hidden',
               borderWidth: 1,
               borderColor: colors.border + '55',
@@ -191,11 +208,13 @@ export default function SettingsScreen() {
           style={{
             margin: theme.spacing.md,
             paddingVertical: theme.spacing.sm,
-            borderRadius: theme.borderRadius.md,
+            borderRadius: isSoft ? variant.radius.button : theme.borderRadius.md,
             alignItems: 'center',
             backgroundColor: colors.cardButton,
+            overflow: 'hidden',
           }}
         >
+          {isSoft && <GradientFill color={colors.cardButton} radius={999} />}
           <ThemedText style={{ color: colors.cardButtonText, fontWeight: '600', fontSize: 14 }}>
             {t('settings.logout')}
           </ThemedText>
