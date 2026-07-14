@@ -58,6 +58,8 @@ export type EventThemeColors = {
   border: string;
   fab: string;
   fabIcon: string;
+  /** Bottom tab bar background (classic = solid, soft-luxury = frosted). */
+  navBg: string;
   /** `null` when the home cover has no legible text overlay for this palette. */
   homeText: string | null;
   homeShadow: string;
@@ -89,6 +91,7 @@ const EventThemeContext = createContext<EventThemeContextValue>({
     border: FALLBACK_PRIMARY,
     fab: FALLBACK_PRIMARY,
     fabIcon: FALLBACK_TERTIARY,
+    navBg: FALLBACK_SECONDARY,
     homeText: null,
     homeShadow: '#000000',
     tabTint: FALLBACK_PRIMARY,
@@ -143,6 +146,7 @@ export function EventThemeProvider({ children }: { children: ReactNode }) {
     border: eventInfo?.color_border ?? FALLBACK_PRIMARY,
     fab: eventInfo?.color_fab ?? FALLBACK_PRIMARY,
     fabIcon: eventInfo?.color_fab_icon ?? FALLBACK_TERTIARY,
+    navBg: eventInfo?.color_nav_bg ?? FALLBACK_SECONDARY,
     homeText: eventInfo?.color_home_text ?? null,
     homeShadow: eventInfo?.color_home_shadow ?? '#000000',
     tabTint: eventInfo?.color_tab_tint ?? FALLBACK_PRIMARY,

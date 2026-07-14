@@ -106,6 +106,7 @@ export type EventInfo = {
   color_border: string | null;
   color_fab: string | null;
   color_fab_icon: string | null;
+  color_nav_bg: string | null;
   color_home_text: string | null;
   color_home_shadow: string;
   home_shadow_opacity: number;

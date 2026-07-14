@@ -122,7 +122,9 @@ function SoftTabBar({
   };
   const iconColor = (focused: boolean) => {
     if (overCover) return focused ? '#ffffff' : 'rgba(255,255,255,0.6)';
-    return focused ? colors.card : colors.tabTint + '99';
+    // Active icon sits on the tab-tint disc and reads as a knockout revealing the
+    // bar behind it, so it takes the nav_bg colour (not the card colour).
+    return focused ? colors.navBg : colors.tabTint + '99';
   };
   const labelColor = (focused: boolean) => {
     if (overCover) return focused ? '#ffffff' : 'rgba(255,255,255,0.6)';
@@ -140,7 +142,7 @@ function SoftTabBar({
         borderRadius: radius,
         borderWidth: 1,
         borderColor: overCover ? 'rgba(255,255,255,0.7)' : 'rgba(255,255,255,0.45)',
-        backgroundColor: overCover ? 'transparent' : colors.card,
+        backgroundColor: overCover ? 'transparent' : colors.navBg,
         shadowColor: '#5a3238',
         shadowOpacity: overCover ? 0 : 0.18,
         shadowRadius: 18,
@@ -148,16 +150,17 @@ function SoftTabBar({
         elevation: overCover ? 0 : 12,
       }}
     >
-      {/* Frosted glass fill, clipped to the rounded shape. */}
+      {/* Fill clipped to the rounded shape. Over the Home cover the bar stays a
+          see-through frosted pane; everywhere else it is a solid opaque nav_bg
+          (the translucency is intentional ONLY on top of the cover photo). */}
       <View style={{ ...StyleSheet.absoluteFillObject, borderRadius: radius, overflow: 'hidden' }}>
-        <BlurView tint="light" intensity={overCover ? 22 : 40} style={StyleSheet.absoluteFill}>
-          <View
-            style={[
-              StyleSheet.absoluteFill,
-              { backgroundColor: colors.card + (overCover ? '33' : '9e') },
-            ]}
-          />
-        </BlurView>
+        {overCover ? (
+          <BlurView tint="light" intensity={22} style={StyleSheet.absoluteFill}>
+            <View style={[StyleSheet.absoluteFill, { backgroundColor: colors.navBg + '33' }]} />
+          </BlurView>
+        ) : (
+          <View style={[StyleSheet.absoluteFill, { backgroundColor: colors.navBg }]} />
+        )}
       </View>
 
       {/* Tab row + the single sliding highlight circle. */}
@@ -301,7 +304,7 @@ export default function TabLayout() {
 
   // Classic docked bar style (soft-luxury renders its own bar in SoftTabBar).
   const classicTabBarStyle = {
-    backgroundColor: colors.screenBg,
+    backgroundColor: colors.navBg,
     borderTopColor: colors.border + '33',
     borderTopWidth: 1,
   };
