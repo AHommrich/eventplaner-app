@@ -9,6 +9,8 @@
  */
 import { useEffect, useState } from 'react';
 import { View, ScrollView, RefreshControl, StyleSheet, TouchableOpacity } from 'react-native';
+import { FadeInView } from '../../components/FadeInView';
+import { ScreenGradient } from '../../components/ScreenGradient';
 import { useIsFocused } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
@@ -28,6 +30,7 @@ import { openLocationInMaps } from '../../lib/maps';
 import { useRefreshToast } from '../../lib/useRefreshToast';
 import { RefreshToast } from '../../components/RefreshToast';
 import { theme } from '../../constants/theme';
+import { cardSurfaceStyle } from '../../lib/variantStyles';
 
 function timeRange(s: ScheduleStation): string {
   if (!s.starts_at) return '';
@@ -55,7 +58,8 @@ async function presentCalendarDialog(ev: CalendarEvent): Promise<boolean> {
 
 export default function ScheduleScreen() {
   const { t } = useLanguage();
-  const { colors, eventInfo, loadTheme } = useEventTheme();
+  const { colors, eventInfo, variant, loadTheme } = useEventTheme();
+  const isSoft = variant.key === 'soft-luxury';
   const insets = useSafeAreaInsets();
   const tabBarHeight = useBottomTabBarHeight();
   const isFocused = useIsFocused();
@@ -81,6 +85,7 @@ export default function ScheduleScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.screenBg, paddingTop: insets.top }]}>
+      {isSoft && <ScreenGradient screenBg={colors.screenBg} primary={colors.primary} />}
       <RefreshToast visible={refreshed} refreshing={refreshing} />
       <ScrollView
         contentContainerStyle={{
@@ -97,7 +102,7 @@ export default function ScheduleScreen() {
         }
       >
         <View style={styles.header}>
-          <ThemedText style={[styles.title, { color: colors.cardText }]}>
+          <ThemedText style={[styles.title, { color: colors.cardText }, isSoft && { fontSize: 28 }]}>
             {t('schedule.title')}
           </ThemedText>
         </View>
@@ -105,7 +110,7 @@ export default function ScheduleScreen() {
         {stations.length === 0 ? (
           <ThemedText style={{ color: colors.cardText + 'aa' }}>{t('schedule.empty')}</ThemedText>
         ) : (
-          stations.map((s) => {
+          stations.map((s, index) => {
             const state = dateIso ? stationState(dateIso, s, new Date(now)) : 'upcoming';
             const isNow = state === 'now';
             const hasNav = !!(s.address || (s.lat != null && s.lng != null));
@@ -113,16 +118,23 @@ export default function ScheduleScreen() {
             const range = timeRange(s);
 
             return (
-              <View
+              <FadeInView
                 key={s.id}
+                enabled={isSoft}
+                delay={index * 70}
                 style={[
                   styles.card,
-                  {
-                    backgroundColor: colors.card,
-                    borderColor: isNow ? colors.primary : colors.border + '33',
-                    borderWidth: isNow ? 2 : 1,
-                    opacity: state === 'past' ? 0.6 : 1,
-                  },
+                  isSoft
+                    ? [
+                        cardSurfaceStyle(variant, colors.card, colors.border),
+                        isNow && { borderWidth: 2, borderColor: colors.primary },
+                      ]
+                    : {
+                        backgroundColor: colors.card,
+                        borderColor: isNow ? colors.primary : colors.border + '33',
+                        borderWidth: isNow ? 2 : 1,
+                      },
+                  { opacity: state === 'past' ? 0.6 : 1 },
                 ]}
               >
                 <View style={styles.cardHead}>
@@ -168,7 +180,11 @@ export default function ScheduleScreen() {
                           )
                         }
                         activeOpacity={0.7}
-                        style={[styles.actionBtn, { borderColor: colors.border + '55' }]}
+                        style={[
+                          styles.actionBtn,
+                          { borderColor: colors.border + '55' },
+                          isSoft && { borderRadius: variant.radius.button },
+                        ]}
                       >
                         <Ionicons name="navigate-outline" size={16} color={colors.cardButton} />
                         <ThemedText style={[styles.actionText, { color: colors.cardText }]}>
@@ -180,7 +196,11 @@ export default function ScheduleScreen() {
                       <TouchableOpacity
                         onPress={() => addStationToCalendar(s)}
                         activeOpacity={0.7}
-                        style={[styles.actionBtn, { borderColor: colors.border + '55' }]}
+                        style={[
+                          styles.actionBtn,
+                          { borderColor: colors.border + '55' },
+                          isSoft && { borderRadius: variant.radius.button },
+                        ]}
                       >
                         <Ionicons name="calendar-outline" size={16} color={colors.cardButton} />
                         <ThemedText style={[styles.actionText, { color: colors.cardText }]}>
@@ -190,7 +210,7 @@ export default function ScheduleScreen() {
                     )}
                   </View>
                 )}
-              </View>
+              </FadeInView>
             );
           })
         )}

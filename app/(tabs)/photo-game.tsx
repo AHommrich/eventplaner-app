@@ -27,6 +27,7 @@ import {
   TouchableOpacity,
   StyleSheet,
 } from 'react-native';
+import { FadeInView } from '../../components/FadeInView';
 import { ThemedText } from '../../components/ThemedText';
 import { CardSkeleton } from '../../components/ui/ScreenSkeletons';
 import { ErrorBanner } from '../../components/ui/ErrorBanner';
@@ -49,10 +50,15 @@ import {
   PhotoGameStatusResponse,
 } from '../../lib/guest';
 import { theme } from '../../constants/theme';
+import { cardSurfaceStyle } from '../../lib/variantStyles';
+import { GradientFill } from '../../components/GradientFill';
+import { ScreenGradient } from '../../components/ScreenGradient';
 
 export default function PhotoGameScreen() {
   const { t } = useLanguage();
-  const { colors } = useEventTheme();
+  const { colors, variant } = useEventTheme();
+  const isSoft = variant.key === 'soft-luxury';
+  const softCard = cardSurfaceStyle(variant, colors.card, colors.border);
   const { ensureConsent } = useConsentGate();
   const insets = useSafeAreaInsets();
   const [statusData, setStatusData] = useState<PhotoGameStatusResponse | null>(null);
@@ -242,7 +248,7 @@ export default function PhotoGameScreen() {
     if (isEnded) {
       return (
         <View
-          style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border + '33' }]}
+          style={[styles.card, isSoft ? softCard : { backgroundColor: colors.card, borderColor: colors.border + '33' }]}
         >
           <Ionicons
             name={isDraft ? 'hourglass-outline' : 'time-outline'}
@@ -260,7 +266,7 @@ export default function PhotoGameScreen() {
     if (isSubmitted && assignment) {
       return (
         <View
-          style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border + '33' }]}
+          style={[styles.card, isSoft ? softCard : { backgroundColor: colors.card, borderColor: colors.border + '33' }]}
         >
           <ThemedText style={[styles.cardTitle, { color: colors.cardText }]}>
             {t('photoGame.submittedTitle')}
@@ -271,7 +277,7 @@ export default function PhotoGameScreen() {
           {assignment.photo_url && (
             <Image
               source={{ uri: assignment.photo_url }}
-              style={styles.thumbnail}
+              style={[styles.thumbnail, isSoft && { borderRadius: variant.radius.tile }]}
               contentFit="cover"
               cachePolicy="disk"
             />
@@ -294,9 +300,14 @@ export default function PhotoGameScreen() {
             disabled={uploading}
             style={[
               styles.button,
-              { backgroundColor: colors.cardButton, opacity: uploading ? 0.6 : 1 },
+              {
+                backgroundColor: colors.cardButton,
+                opacity: uploading ? 0.6 : 1,
+                borderRadius: isSoft ? variant.radius.button : theme.borderRadius.md,
+              },
             ]}
           >
+            {isSoft && <GradientFill color={colors.cardButton} radius={999} />}
             <ThemedText style={[styles.buttonText, { color: colors.cardButtonText }]}>
               {uploading ? uploadingLabel() : t('photoGame.replaceButton')}
             </ThemedText>
@@ -308,7 +319,7 @@ export default function PhotoGameScreen() {
     if (assignment) {
       return (
         <View
-          style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border + '33' }]}
+          style={[styles.card, isSoft ? softCard : { backgroundColor: colors.card, borderColor: colors.border + '33' }]}
         >
           <ThemedText style={[styles.taskLabel, { color: colors.cardText + 'aa' }]}>
             {t('photoGame.yourTask')}
@@ -328,9 +339,14 @@ export default function PhotoGameScreen() {
             disabled={uploading}
             style={[
               styles.button,
-              { backgroundColor: colors.cardButton, opacity: uploading ? 0.6 : 1 },
+              {
+                backgroundColor: colors.cardButton,
+                opacity: uploading ? 0.6 : 1,
+                borderRadius: isSoft ? variant.radius.button : theme.borderRadius.md,
+              },
             ]}
           >
+            {isSoft && <GradientFill color={colors.cardButton} radius={999} />}
             {uploading ? (
               <ThemedText style={[styles.buttonText, { color: colors.cardButtonText }]}>
                 {uploadingLabel()}
@@ -351,7 +367,7 @@ export default function PhotoGameScreen() {
     // Default: no assignment yet → invite the guest to request one.
     return (
       <View
-        style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border + '33' }]}
+        style={[styles.card, isSoft ? softCard : { backgroundColor: colors.card, borderColor: colors.border + '33' }]}
       >
         <Ionicons
           name="camera-outline"
@@ -377,9 +393,14 @@ export default function PhotoGameScreen() {
           disabled={assigning}
           style={[
             styles.button,
-            { backgroundColor: colors.cardButton, opacity: assigning ? 0.6 : 1 },
+            {
+              backgroundColor: colors.cardButton,
+              opacity: assigning ? 0.6 : 1,
+              borderRadius: isSoft ? variant.radius.button : theme.borderRadius.md,
+            },
           ]}
         >
+          {isSoft && <GradientFill color={colors.cardButton} radius={999} />}
           <ThemedText style={[styles.buttonText, { color: colors.cardButtonText }]}>
             {assigning ? t('photoGame.assigning') : t('photoGame.getTaskButton')}
           </ThemedText>
@@ -390,6 +411,7 @@ export default function PhotoGameScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.screenBg }]}>
+      {isSoft && <ScreenGradient screenBg={colors.screenBg} primary={colors.primary} />}
       <ScrollView
         contentContainerStyle={[
           styles.content,
@@ -407,7 +429,7 @@ export default function PhotoGameScreen() {
           />
         }
       >
-        {renderContent()}
+        <FadeInView enabled={isSoft}>{renderContent()}</FadeInView>
       </ScrollView>
       <RefreshToast visible={refreshed} refreshing={refreshing} />
     </View>

@@ -42,7 +42,9 @@ import { openLocationInMaps } from '../../lib/maps';
 import { useRefreshToast } from '../../lib/useRefreshToast';
 import { RefreshToast } from '../../components/RefreshToast';
 import { Ionicons } from '@expo/vector-icons';
+import { BlurView } from 'expo-blur';
 import { theme } from '../../constants/theme';
+import { ScreenGradient } from '../../components/ScreenGradient';
 
 /** Venue tap-to-navigate — delegates to the shared maps dispatcher. */
 function openInMaps(event: EventInfo, t: (k: string) => string) {
@@ -88,7 +90,7 @@ function calcCountdown(iso: string): CountdownParts {
 
 export default function HomeScreen() {
   const { t, language } = useLanguage();
-  const { colors, loadTheme } = useEventTheme();
+  const { colors, variant, loadTheme } = useEventTheme();
   const insets = useSafeAreaInsets();
   const tabBarHeight = useBottomTabBarHeight();
   const [session, setSession] = useState<GuestSession | null>(null);
@@ -170,6 +172,18 @@ export default function HomeScreen() {
   const pillText = hasCover && colors.homeText ? colors.homeText : colors.cardButtonText;
   const eventDate = eventInfo?.date ? formatEventDate(eventInfo.date, language) : null;
 
+  // Soft-luxury: the countdown is a real frosted-glass chip (dosed BlurView).
+  // Over a cover we use a dark frost so the white label stays readable on any
+  // photo; on a plain background a light frost with dark text.
+  const isSoft = variant.key === 'soft-luxury';
+  const pillTextColor = isSoft ? (hasCover ? '#ffffff' : colors.cardText) : pillText;
+  // Text over the cover needs a shadow to stay legible on busy photos. Applied
+  // only in soft-luxury (classic stays exactly as it was).
+  const coverTextShadow =
+    isSoft && hasCover
+      ? { textShadowColor: 'rgba(0,0,0,0.6)', textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 10 }
+      : null;
+
   function renderCountdown() {
     // When the event has timed stations, the pill walks through them: counts
     // down to the next stop, then flips to "Now: <station>" while it runs, then
@@ -212,9 +226,23 @@ export default function HomeScreen() {
     }
     return (
       <View style={styles.pillRow}>
-        <View style={[styles.pill, { backgroundColor: pillBg }]}>
-          <ThemedText style={[styles.pillText, { color: pillText }]}>{label}</ThemedText>
-        </View>
+        {isSoft ? (
+          <BlurView
+            tint={hasCover ? 'dark' : 'light'}
+            intensity={hasCover ? 26 : 42}
+            style={[
+              styles.pill,
+              styles.pillGlass,
+              { borderColor: hasCover ? 'rgba(255,255,255,0.4)' : colors.border + '33' },
+            ]}
+          >
+            <ThemedText style={[styles.pillText, { color: pillTextColor }]}>{label}</ThemedText>
+          </BlurView>
+        ) : (
+          <View style={[styles.pill, { backgroundColor: pillBg }]}>
+            <ThemedText style={[styles.pillText, { color: pillTextColor }]}>{label}</ThemedText>
+          </View>
+        )}
       </View>
     );
   }
@@ -258,15 +286,33 @@ export default function HomeScreen() {
         />
       )}
       {session && (
-        <ThemedText style={[styles.welcome, { color: textColor }]}>
+        <ThemedText
+          style={[
+            styles.welcome,
+            { color: textColor },
+            isSoft && { textTransform: 'uppercase', letterSpacing: 2, fontSize: 12, opacity: 0.9 },
+            coverTextShadow,
+          ]}
+        >
           {t('home.welcome', { name: session.firstname })}
         </ThemedText>
       )}
       {eventInfo?.name && (
-        <ThemedText style={[styles.title, { color: textColor }]}>{eventInfo.name}</ThemedText>
+        <ThemedText
+          style={[
+            styles.title,
+            { color: textColor },
+            isSoft && { fontSize: 38, lineHeight: 44, letterSpacing: 0.5 },
+            coverTextShadow,
+          ]}
+        >
+          {eventInfo.name}
+        </ThemedText>
       )}
       {eventDate && (
-        <ThemedText style={[styles.meta, { color: textColor }]}>{eventDate}</ThemedText>
+        <ThemedText style={[styles.meta, { color: textColor }, coverTextShadow]}>
+          {eventDate}
+        </ThemedText>
       )}
       {(() => {
         // When the event has schedule stations, the location block follows the
@@ -285,7 +331,7 @@ export default function HomeScreen() {
             <>
               {!!focus.location_name && (
                 <ThemedText
-                  style={[styles.meta, { color: textColor, marginBottom: 0, fontSize: 18 }]}
+                  style={[styles.meta, { color: textColor, marginBottom: 0, fontSize: 18 }, coverTextShadow]}
                 >
                   {focus.location_name}
                 </ThemedText>
@@ -293,7 +339,7 @@ export default function HomeScreen() {
               {focusHasNav && (
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                   <ThemedText
-                    style={[styles.meta, { color: textColor, marginBottom: 0, fontSize: 18 }]}
+                    style={[styles.meta, { color: textColor, marginBottom: 0, fontSize: 18 }, coverTextShadow]}
                   >
                     {focusAddr}
                   </ThemedText>
@@ -353,13 +399,13 @@ export default function HomeScreen() {
               style={{ alignItems: 'center', marginVertical: 8 }}
             >
               <ThemedText
-                style={[styles.meta, { color: textColor, marginBottom: 0, fontSize: 18 }]}
+                style={[styles.meta, { color: textColor, marginBottom: 0, fontSize: 18 }, coverTextShadow]}
               >
                 {eventInfo!.venue_name}
               </ThemedText>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                 <ThemedText
-                  style={[styles.meta, { color: textColor, marginBottom: 0, fontSize: 18 }]}
+                  style={[styles.meta, { color: textColor, marginBottom: 0, fontSize: 18 }, coverTextShadow]}
                 >
                   {addrText}
                 </ThemedText>
@@ -376,23 +422,27 @@ export default function HomeScreen() {
             activeOpacity={0.7}
             style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginVertical: 8 }}
           >
-            <ThemedText style={[styles.meta, { color: textColor, marginBottom: 0, fontSize: 18 }]}>
+            <ThemedText style={[styles.meta, { color: textColor, marginBottom: 0, fontSize: 18 }, coverTextShadow]}>
               {showName ? eventInfo!.venue_name : addrText}
             </ThemedText>
             <Ionicons name="location-outline" size={15} color={textColor} />
           </TouchableOpacity>
         ) : (
-          <ThemedText style={[styles.meta, { color: textColor, fontSize: 18 }]}>
+          <ThemedText style={[styles.meta, { color: textColor, fontSize: 18 }, coverTextShadow]}>
             {eventInfo!.venue_name}
           </ThemedText>
         );
       })()}
       {eventInfo?.dresscode && (
         <View style={{ alignItems: 'center', marginBottom: 2 }}>
-          <ThemedText style={[styles.meta, { color: textColor, opacity: 0.7, marginBottom: 0 }]}>
+          <ThemedText
+            style={[styles.meta, { color: textColor, opacity: 0.7, marginBottom: 0 }, coverTextShadow]}
+          >
             {t('home.dresscode')}
           </ThemedText>
-          <ThemedText style={[styles.meta, { color: textColor, opacity: 0.7, marginBottom: 0 }]}>
+          <ThemedText
+            style={[styles.meta, { color: textColor, opacity: 0.7, marginBottom: 0 }, coverTextShadow]}
+          >
             {eventInfo.dresscode}
           </ThemedText>
         </View>
@@ -427,6 +477,7 @@ export default function HomeScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.screenBg }]}>
+      {isSoft && <ScreenGradient screenBg={colors.screenBg} primary={colors.primary} />}
       {content}
       <RefreshToast visible={refreshed} refreshing={refreshing} />
     </View>
@@ -473,6 +524,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: theme.spacing.md,
     paddingVertical: theme.spacing.sm,
     borderRadius: theme.borderRadius.full,
+  },
+  // Frosted glass chip (soft-luxury): clip the blur to the pill shape and add a
+  // hairline edge so it reads as a pane, not a flat fill.
+  pillGlass: {
+    overflow: 'hidden',
+    borderWidth: 1,
   },
   pillText: {
     fontSize: 14,

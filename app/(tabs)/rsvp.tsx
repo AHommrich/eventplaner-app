@@ -52,6 +52,9 @@ import {
 } from '../../lib/guest';
 import { Ionicons } from '@expo/vector-icons';
 import { theme } from '../../constants/theme';
+import { withSurfaceAlpha } from '../../lib/variantStyles';
+import { GradientFill } from '../../components/GradientFill';
+import { ScreenGradient } from '../../components/ScreenGradient';
 
 function formatDeadline(iso: string, locale: string): string {
   return new Date(iso).toLocaleDateString(locale === 'de' ? 'de-DE' : 'en-GB', {
@@ -93,7 +96,20 @@ function StatusBadge({ status, t }: { status: RsvpStatus; t: (k: string) => stri
 export default function RsvpTabScreen() {
   const router = useRouter();
   const { t, language } = useLanguage();
-  const { colors, loadTheme } = useEventTheme();
+  const { colors, variant, loadTheme } = useEventTheme();
+  const isSoft = variant.key === 'soft-luxury';
+  // Soft-luxury overlay for the list cards: bigger radius, glass-lite fill, no
+  // hard border, soft shadow. `overflow: visible` so iOS renders the shadow
+  // (these cards can't use overflow:hidden then). Classic keeps its own style.
+  const softListCard = isSoft
+    ? {
+        borderRadius: variant.radius.card,
+        borderWidth: 0,
+        backgroundColor: withSurfaceAlpha(colors.card, variant),
+        overflow: 'visible' as const,
+        ...variant.card.shadow,
+      }
+    : null;
   const insets = useSafeAreaInsets();
 
   const [guest, setGuest] = useState<GuestMe | null>(null);
@@ -262,6 +278,7 @@ export default function RsvpTabScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.screenBg, paddingTop: insets.top }}>
+      {isSoft && <ScreenGradient screenBg={colors.screenBg} primary={colors.primary} />}
       <ScrollView
         style={{ flex: 1 }}
         contentContainerStyle={{
@@ -280,14 +297,17 @@ export default function RsvpTabScreen() {
       >
         {/* Own RSVP card. */}
         <View
-          style={{
-            backgroundColor: colors.card,
-            borderRadius: theme.borderRadius.lg,
-            borderWidth: 2,
-            borderColor: colors.border + '33',
-            overflow: 'hidden',
-            marginBottom: theme.spacing.md,
-          }}
+          style={[
+            {
+              backgroundColor: colors.card,
+              borderRadius: theme.borderRadius.lg,
+              borderWidth: 2,
+              borderColor: colors.border + '33',
+              overflow: 'hidden',
+              marginBottom: theme.spacing.md,
+            },
+            softListCard,
+          ]}
         >
           {deadlineFormatted && (
             <ThemedText
@@ -336,12 +356,14 @@ export default function RsvpTabScreen() {
                 style={{
                   flex: 1,
                   paddingVertical: theme.spacing.sm,
-                  borderRadius: theme.borderRadius.md,
+                  borderRadius: isSoft ? variant.radius.button : theme.borderRadius.md,
                   alignItems: 'center',
                   backgroundColor: theme.colors.sage,
                   opacity: ownAccepted ? 0.4 : 1,
+                  overflow: 'hidden',
                 }}
               >
+                {isSoft && <GradientFill color={theme.colors.sage} radius={999} />}
                 <ThemedText style={{ fontWeight: '600', color: '#fff', fontSize: 14 }}>
                   {t('rsvp.accept')}
                 </ThemedText>
@@ -352,12 +374,14 @@ export default function RsvpTabScreen() {
                 style={{
                   flex: 1,
                   paddingVertical: theme.spacing.sm,
-                  borderRadius: theme.borderRadius.md,
+                  borderRadius: isSoft ? variant.radius.button : theme.borderRadius.md,
                   alignItems: 'center',
                   backgroundColor: theme.colors.error,
                   opacity: ownDeclined ? 0.4 : 1,
+                  overflow: 'hidden',
                 }}
               >
+                {isSoft && <GradientFill color={theme.colors.error} radius={999} />}
                 <ThemedText style={{ fontWeight: '600', color: '#fff', fontSize: 14 }}>
                   {t('rsvp.decline')}
                 </ThemedText>
@@ -370,13 +394,16 @@ export default function RsvpTabScreen() {
           guest has themselves accepted and the deadline has not passed. */}
         {guest.type === 'family' && guest.group_members.length > 0 && (
           <View
-            style={{
-              backgroundColor: colors.card,
-              borderRadius: theme.borderRadius.lg,
-              borderWidth: 2,
-              borderColor: colors.border + '33',
-              overflow: 'hidden',
-            }}
+            style={[
+              {
+                backgroundColor: colors.card,
+                borderRadius: theme.borderRadius.lg,
+                borderWidth: 2,
+                borderColor: colors.border + '33',
+                overflow: 'hidden',
+              },
+              softListCard,
+            ]}
           >
             <View
               style={{
@@ -478,12 +505,14 @@ export default function RsvpTabScreen() {
                               style={{
                                 flex: 1,
                                 paddingVertical: theme.spacing.sm,
-                                borderRadius: theme.borderRadius.md,
+                                borderRadius: isSoft ? variant.radius.button : theme.borderRadius.md,
                                 alignItems: 'center',
                                 backgroundColor: theme.colors.sage,
                                 opacity: mAccepted ? 0.4 : 1,
+                                overflow: 'hidden',
                               }}
                             >
+                              {isSoft && <GradientFill color={theme.colors.sage} radius={999} />}
                               <ThemedText
                                 style={{ fontWeight: '600', color: '#fff', fontSize: 14 }}
                               >
@@ -501,12 +530,14 @@ export default function RsvpTabScreen() {
                               style={{
                                 flex: 1,
                                 paddingVertical: theme.spacing.sm,
-                                borderRadius: theme.borderRadius.md,
+                                borderRadius: isSoft ? variant.radius.button : theme.borderRadius.md,
                                 alignItems: 'center',
                                 backgroundColor: theme.colors.error,
                                 opacity: mDeclined ? 0.4 : 1,
+                                overflow: 'hidden',
                               }}
                             >
+                              {isSoft && <GradientFill color={theme.colors.error} radius={999} />}
                               <ThemedText
                                 style={{ fontWeight: '600', color: '#fff', fontSize: 14 }}
                               >

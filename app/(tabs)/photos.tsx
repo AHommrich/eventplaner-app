@@ -23,7 +23,6 @@ import {
   Dimensions,
   FlatList,
   Modal,
-  Platform,
   Pressable,
   RefreshControl,
   StyleSheet,
@@ -50,6 +49,9 @@ import { ThemedText } from '../../components/ThemedText';
 import { PhotoGridSkeleton } from '../../components/ui/ScreenSkeletons';
 import { ErrorBanner } from '../../components/ui/ErrorBanner';
 import { Image } from 'expo-image';
+import { LinearGradient } from 'expo-linear-gradient';
+import { sheenGradient } from '../../lib/variantStyles';
+import { ScreenGradient } from '../../components/ScreenGradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
 import * as ImageManipulator from 'expo-image-manipulator';
@@ -113,7 +115,6 @@ const REPORT_REASONS: PhotoReportReason[] = ['inappropriate_content', 'privacy',
 // --- Grid layout constants ---
 const COLUMNS = 3;
 const GAP = 2;
-const TILE_SIZE = (Dimensions.get('window').width - GAP * (COLUMNS + 1)) / COLUMNS;
 const POLL_INTERVAL = 30_000;
 
 const DETAIL_ITEM_W = SCREEN_W;
@@ -122,7 +123,12 @@ const DETAIL_PEEK = 0;
 
 export default function PhotosScreen() {
   const { t } = useLanguage();
-  const { colors, loadTheme } = useEventTheme();
+  const { colors, variant, loadTheme } = useEventTheme();
+  const isSoft = variant.key === 'soft-luxury';
+  // Soft-luxury: rounder tiles with a bit more breathing room between them.
+  const gap = isSoft ? 8 : GAP;
+  const tileSize = (SCREEN_W - gap * (COLUMNS + 1)) / COLUMNS;
+  const tileRadius = isSoft ? variant.radius.tile : 2;
   const { ensureConsent } = useConsentGate();
   const [photos, setPhotos] = useState<Photo[]>([]);
   const [loading, setLoading] = useState(true);
@@ -480,12 +486,13 @@ export default function PhotosScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.screenBg, paddingTop: insets.top }}>
+      {isSoft && <ScreenGradient screenBg={colors.screenBg} primary={colors.primary} />}
       <FlatList
         data={photos}
         keyExtractor={(item) => String(item.id)}
         numColumns={COLUMNS}
-        contentContainerStyle={{ padding: GAP }}
-        columnWrapperStyle={{ gap: GAP }}
+        contentContainerStyle={{ padding: gap }}
+        columnWrapperStyle={{ gap }}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
@@ -494,7 +501,7 @@ export default function PhotosScreen() {
             colors={[colors.tabTint]}
           />
         }
-        ItemSeparatorComponent={() => <View style={{ height: GAP }} />}
+        ItemSeparatorComponent={() => <View style={{ height: gap }} />}
         ListHeaderComponent={
           loadError ? (
             <ErrorBanner
@@ -523,7 +530,7 @@ export default function PhotosScreen() {
           >
             <Image
               source={item.url}
-              style={{ width: TILE_SIZE, height: TILE_SIZE, borderRadius: 2 }}
+              style={{ width: tileSize, height: tileSize, borderRadius: tileRadius }}
               contentFit="cover"
               cachePolicy="disk"
               recyclingKey={String(item.id)}
@@ -814,7 +821,10 @@ export default function PhotosScreen() {
         accessibilityLabel={t('a11y.uploadPhoto')}
         style={{
           position: 'absolute',
-          bottom: 24,
+          // Soft-luxury: the tab bar floats over the content, so lift the FAB
+          // clear of it (bar sits at max(insets.bottom,10) + BAR_HEIGHT 72).
+          // Classic keeps the docked-bar offset.
+          bottom: isSoft ? Math.max(insets.bottom, 10) + 84 : 24,
           right: 24,
           width: 56,
           height: 56,
@@ -822,13 +832,23 @@ export default function PhotosScreen() {
           backgroundColor: uploading ? theme.colors.muted : colors.fab,
           alignItems: 'center',
           justifyContent: 'center',
-          shadowColor: '#000',
-          shadowOffset: { width: 0, height: 2 },
-          shadowOpacity: 0.2,
-          shadowRadius: 4,
-          elevation: 4,
+          // Soft-luxury: a coloured glow (derived from the FAB colour) instead
+          // of a flat drop shadow.
+          shadowColor: isSoft && !uploading ? colors.fab : '#000',
+          shadowOffset: { width: 0, height: isSoft ? 6 : 2 },
+          shadowOpacity: isSoft ? 0.45 : 0.2,
+          shadowRadius: isSoft ? 12 : 4,
+          elevation: isSoft ? 10 : 4,
         }}
       >
+        {isSoft && !uploading && (
+          <LinearGradient
+            colors={sheenGradient(colors.fab)}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 0, y: 1 }}
+            style={[StyleSheet.absoluteFill, { borderRadius: 28 }]}
+          />
+        )}
         {uploading ? (
           uploadProgress != null ? (
             <ThemedText style={{ color: colors.cardText, fontSize: 13, fontWeight: '700' }}>

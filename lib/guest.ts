@@ -20,6 +20,7 @@
  * I show?" questions so tab-bar and redirect logic stays consistent.
  */
 import api from './api';
+import { DesignVariantKey } from '../constants/theme';
 
 // --- RSVP + guest identity types ---
 
@@ -114,6 +115,10 @@ export type EventInfo = {
   photo_game_enabled: boolean;
   // --- Backend-selected heading font (lookup key for constants/fonts.ts) ---
   font_heading: string | null;
+  // --- Backend-selected design preset (form language; see DESIGN_VARIANTS).
+  // Optional/nullable: legacy events and older backends omit it → the client
+  // falls back to DEFAULT_DESIGN_VARIANT. ---
+  design_preset?: DesignVariantKey | null;
 };
 
 /**
