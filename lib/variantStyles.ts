@@ -26,7 +26,11 @@ function toHex(r: number, g: number, b: number): string {
 export function lightenHex(hex: string, amt: number): string {
   const rgb = parseHex(hex);
   if (!rgb) return hex;
-  return toHex(rgb[0] + (255 - rgb[0]) * amt, rgb[1] + (255 - rgb[1]) * amt, rgb[2] + (255 - rgb[2]) * amt);
+  return toHex(
+    rgb[0] + (255 - rgb[0]) * amt,
+    rgb[1] + (255 - rgb[1]) * amt,
+    rgb[2] + (255 - rgb[2]) * amt
+  );
 }
 
 /** Blend a colour toward black by `amt` (0..1). Returns input unchanged if not 6-digit hex. */
@@ -64,7 +68,9 @@ export function mixHex(a: string, b: string, amt: number): string {
  * primary) — no hard-coded palette.
  */
 export function screenGradient(screenBg: string, primary: string): [string, string, string] {
-  return [lightenHex(screenBg, 0.05), screenBg, mixHex(screenBg, primary, 0.08)];
+  // Cleaner/airier than a warm wash (closer to the Image-1 luxury reference):
+  // a brighter top and only a whisper of the brand tone at the very bottom.
+  return [lightenHex(screenBg, 0.08), screenBg, mixHex(screenBg, primary, 0.04)];
 }
 
 /** Two-digit alpha hex (`0..1` → `'00'..'ff'`) to append to a 6-digit colour. */

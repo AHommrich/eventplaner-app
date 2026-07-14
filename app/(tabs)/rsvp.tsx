@@ -151,9 +151,7 @@ export default function RsvpTabScreen() {
       setDeadline(info.rsvp_deadline);
       // No deadline set → it can never have "passed"; otherwise `new Date(null)`
       // would resolve to the epoch and lock every RSVP button.
-      setDeadlinePassed(
-        info.rsvp_deadline ? new Date(info.rsvp_deadline) < new Date() : false,
-      );
+      setDeadlinePassed(info.rsvp_deadline ? new Date(info.rsvp_deadline) < new Date() : false);
       setLoadError(false);
     } catch {
       setLoadError(true);
@@ -505,7 +503,9 @@ export default function RsvpTabScreen() {
                               style={{
                                 flex: 1,
                                 paddingVertical: theme.spacing.sm,
-                                borderRadius: isSoft ? variant.radius.button : theme.borderRadius.md,
+                                borderRadius: isSoft
+                                  ? variant.radius.button
+                                  : theme.borderRadius.md,
                                 alignItems: 'center',
                                 backgroundColor: theme.colors.sage,
                                 opacity: mAccepted ? 0.4 : 1,
@@ -530,7 +530,9 @@ export default function RsvpTabScreen() {
                               style={{
                                 flex: 1,
                                 paddingVertical: theme.spacing.sm,
-                                borderRadius: isSoft ? variant.radius.button : theme.borderRadius.md,
+                                borderRadius: isSoft
+                                  ? variant.radius.button
+                                  : theme.borderRadius.md,
                                 alignItems: 'center',
                                 backgroundColor: theme.colors.error,
                                 opacity: mDeclined ? 0.4 : 1,
