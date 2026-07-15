@@ -53,7 +53,7 @@ import { useEventTheme } from '../../lib/EventThemeContext';
 import { useRefreshToast } from '../../lib/useRefreshToast';
 import { RefreshToast } from '../../components/RefreshToast';
 import { theme } from '../../constants/theme';
-import { withSurfaceAlpha } from '../../lib/variantStyles';
+import { cardSurfaceStyle } from '../../lib/variantStyles';
 import { ScreenGradient } from '../../components/ScreenGradient';
 import { GradientFill } from '../../components/GradientFill';
 
@@ -137,15 +137,7 @@ export default function DrinksScreen() {
   const { t, language } = useLanguage();
   const { colors, eventInfo, variant, loadTheme } = useEventTheme();
   const isSoft = variant.key === 'soft-luxury';
-  const softListCard = isSoft
-    ? {
-        borderRadius: variant.radius.card,
-        borderWidth: 0,
-        backgroundColor: withSurfaceAlpha(colors.card, variant),
-        overflow: 'visible' as const,
-        ...variant.card.shadow,
-      }
-    : null;
+  const softListCard = isSoft ? cardSurfaceStyle(variant, colors.card, colors.border, { padded: false }) : null;
   const insets = useSafeAreaInsets();
   const tabBarHeight = useBottomTabBarHeight();
 

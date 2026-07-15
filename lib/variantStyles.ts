@@ -96,14 +96,20 @@ export function withSurfaceAlpha(hex: string, variant: DesignVariant): string {
 export function cardSurfaceStyle(
   variant: DesignVariant,
   cardColor: string,
-  borderColor: string
+  borderColor: string,
+  // `padded: false` for composite cards that draw their own edge-to-edge rows /
+  // dividers and manage inner spacing themselves (RSVP, Settings, Drinks).
+  opts?: { padded?: boolean }
 ): ViewStyle {
   return {
     backgroundColor: withSurfaceAlpha(cardColor, variant),
     borderRadius: variant.radius.card,
     borderWidth: variant.card.borderWidth,
     borderColor: variant.card.borderWidth ? borderColor + '22' : 'transparent',
-    padding: variant.card.padding,
+    // `visible` so iOS actually renders the preset's drop shadow (a card that
+    // clips its content would otherwise swallow it).
+    overflow: 'visible',
+    ...(opts?.padded === false ? {} : { padding: variant.card.padding }),
     ...variant.card.shadow,
   };
 }
