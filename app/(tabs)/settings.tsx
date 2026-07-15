@@ -17,7 +17,7 @@ import { getSession, clearSession, GuestSession } from '../../lib/auth';
 import { useLanguage, Language } from '../../lib/LanguageContext';
 import { useEventTheme } from '../../lib/EventThemeContext';
 import { theme } from '../../constants/theme';
-import { withSurfaceAlpha } from '../../lib/variantStyles';
+import { cardSurfaceStyle } from '../../lib/variantStyles';
 import { GradientFill } from '../../components/GradientFill';
 import { ScreenGradient } from '../../components/ScreenGradient';
 import { requestErasure } from '../../lib/guest';
@@ -29,15 +29,7 @@ export default function SettingsScreen() {
   const { t, language, setLanguage } = useLanguage();
   const { colors, variant } = useEventTheme();
   const isSoft = variant.key === 'soft-luxury';
-  const softListCard = isSoft
-    ? {
-        borderRadius: variant.radius.card,
-        borderWidth: 0,
-        backgroundColor: withSurfaceAlpha(colors.card, variant),
-        overflow: 'visible' as const,
-        ...variant.card.shadow,
-      }
-    : null;
+  const softListCard = isSoft ? cardSurfaceStyle(variant, colors.card, colors.border, { padded: false }) : null;
   const insets = useSafeAreaInsets();
   const [session, setSession] = useState<GuestSession | null>(null);
   const showSentryTestButton = process.env.EXPO_PUBLIC_ENABLE_SENTRY_TEST_BUTTON === '1';
