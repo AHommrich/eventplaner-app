@@ -101,7 +101,9 @@ export default function RsvpTabScreen() {
   // Soft-luxury overlay for the list cards: bigger radius, glass-lite fill, no
   // hard border, soft shadow. `overflow: visible` so iOS renders the shadow
   // (these cards can't use overflow:hidden then). Classic keeps its own style.
-  const softListCard = isSoft ? cardSurfaceStyle(variant, colors.card, colors.border, { padded: false }) : null;
+  const softListCard = isSoft
+    ? cardSurfaceStyle(variant, colors.card, colors.border, { padded: false })
+    : null;
   const insets = useSafeAreaInsets();
 
   const [guest, setGuest] = useState<GuestMe | null>(null);

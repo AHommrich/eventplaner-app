@@ -29,7 +29,9 @@ export default function SettingsScreen() {
   const { t, language, setLanguage } = useLanguage();
   const { colors, variant } = useEventTheme();
   const isSoft = variant.key === 'soft-luxury';
-  const softListCard = isSoft ? cardSurfaceStyle(variant, colors.card, colors.border, { padded: false }) : null;
+  const softListCard = isSoft
+    ? cardSurfaceStyle(variant, colors.card, colors.border, { padded: false })
+    : null;
   const insets = useSafeAreaInsets();
   const [session, setSession] = useState<GuestSession | null>(null);
   const showSentryTestButton = process.env.EXPO_PUBLIC_ENABLE_SENTRY_TEST_BUTTON === '1';
