@@ -137,7 +137,9 @@ export default function DrinksScreen() {
   const { t, language } = useLanguage();
   const { colors, eventInfo, variant, loadTheme } = useEventTheme();
   const isSoft = variant.key === 'soft-luxury';
-  const softListCard = isSoft ? cardSurfaceStyle(variant, colors.card, colors.border, { padded: false }) : null;
+  const softListCard = isSoft
+    ? cardSurfaceStyle(variant, colors.card, colors.border, { padded: false })
+    : null;
   const insets = useSafeAreaInsets();
   const tabBarHeight = useBottomTabBarHeight();
 
