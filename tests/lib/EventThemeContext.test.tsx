@@ -7,15 +7,20 @@ import { act, render, waitFor } from '@testing-library/react-native';
 import * as SecureStore from 'expo-secure-store';
 
 const mockFetchEventInfo = jest.fn();
+const mockFetchManagementEvents = jest.fn();
 jest.mock('../../lib/guest', () => ({
   __esModule: true,
   fetchEventInfo: () => mockFetchEventInfo(),
+}));
+jest.mock('../../lib/management', () => ({
+  __esModule: true,
+  fetchManagementEvents: () => mockFetchManagementEvents(),
 }));
 
 import { EventThemeProvider, useEventTheme } from '../../lib/EventThemeContext';
 
 function Probe() {
-  const { colors, eventInfo, loadTheme } = useEventTheme();
+  const { colors, eventInfo, loadTheme, variant } = useEventTheme();
   return (
     <>
       <Text testID="primary">{colors.primary}</Text>
@@ -23,6 +28,7 @@ function Probe() {
       <Text testID="homeText">{colors.homeText ?? 'null'}</Text>
       <Text testID="font">{colors.fontFamily?.regular ?? 'system'}</Text>
       <Text testID="name">{eventInfo?.name ?? 'unset'}</Text>
+      <Text testID="variant">{variant.key}</Text>
       <Text testID="reload" onPress={() => loadTheme()}>
         reload
       </Text>
@@ -33,7 +39,9 @@ function Probe() {
 describe('lib/EventThemeContext', () => {
   beforeEach(async () => {
     mockFetchEventInfo.mockReset();
+    mockFetchManagementEvents.mockReset();
     await SecureStore.deleteItemAsync('guest_token');
+    await SecureStore.deleteItemAsync('management_token');
   });
 
   it('falls back to the hard-coded palette when no session is active', async () => {
@@ -132,5 +140,55 @@ describe('lib/EventThemeContext', () => {
     await waitFor(() => expect(warn).toHaveBeenCalled());
     expect(getByTestId('primary').props.children).toBe('#7c2d3e');
     warn.mockRestore();
+  });
+
+  it('uses the bound management event theme through the same root provider', async () => {
+    await SecureStore.setItemAsync('management_token', 'management-bearer');
+    mockFetchManagementEvents.mockResolvedValueOnce([
+      {
+        id: 9,
+        name: 'Bound event',
+        my_role: 'owner',
+        theme: {
+          color_primary: '#101010',
+          color_card_text: '#202020',
+          font_heading: 'playfair',
+          design_preset: 'soft-luxury',
+        },
+      },
+    ]);
+
+    const { getByTestId } = render(
+      <EventThemeProvider>
+        <Probe />
+      </EventThemeProvider>
+    );
+
+    await waitFor(() => expect(getByTestId('primary').props.children).toBe('#101010'));
+    expect(getByTestId('cardText').props.children).toBe('#202020');
+    expect(getByTestId('variant').props.children).toBe('soft-luxury');
+    expect(getByTestId('name').props.children).toBe('unset');
+    expect(mockFetchEventInfo).not.toHaveBeenCalled();
+  });
+
+  it('clears a previous event theme when the session disappears', async () => {
+    await SecureStore.setItemAsync('management_token', 'management-bearer');
+    mockFetchManagementEvents.mockResolvedValueOnce([
+      { id: 9, theme: { color_primary: '#303030' } },
+    ]);
+
+    const { getByTestId } = render(
+      <EventThemeProvider>
+        <Probe />
+      </EventThemeProvider>
+    );
+    await waitFor(() => expect(getByTestId('primary').props.children).toBe('#303030'));
+
+    await SecureStore.deleteItemAsync('management_token');
+    await act(async () => {
+      getByTestId('reload').props.onPress();
+    });
+
+    await waitFor(() => expect(getByTestId('primary').props.children).toBe('#7c2d3e'));
   });
 });

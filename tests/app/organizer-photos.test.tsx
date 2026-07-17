@@ -11,10 +11,12 @@ jest.mock('../../lib/management', () => ({
 
 const mockFetchManagementPhotos = jest.fn();
 const mockDeleteManagementPhoto = jest.fn();
+const mockUploadManagementPhoto = jest.fn();
 jest.mock('../../lib/managementPhotos', () => ({
   __esModule: true,
   fetchManagementPhotos: (...args: any[]) => mockFetchManagementPhotos(...args),
   deleteManagementPhoto: (...args: any[]) => mockDeleteManagementPhoto(...args),
+  uploadManagementPhoto: (...args: any[]) => mockUploadManagementPhoto(...args),
 }));
 
 jest.mock('react-native-safe-area-context', () => ({
@@ -41,6 +43,13 @@ describe('app/organizer/photos', () => {
     mockGetActiveManagementEventId.mockResolvedValue(4);
     mockFetchManagementPhotos.mockResolvedValue([
       {
+        id: 1,
+        slug: 'app_gallery',
+        name: 'App-Galerie',
+        sort_order: 1,
+        photos: [],
+      },
+      {
         id: 2,
         slug: 'presentation',
         name: 'Präsentation',
@@ -58,8 +67,16 @@ describe('app/organizer/photos', () => {
           },
         ],
       },
+      {
+        id: 3,
+        slug: 'photo_game',
+        name: 'Foto-Spiel',
+        sort_order: 3,
+        photos: [],
+      },
     ]);
     mockDeleteManagementPhoto.mockResolvedValue(undefined);
+    mockUploadManagementPhoto.mockResolvedValue(undefined);
   });
 
   it('renders every gallery and permanently deletes a confirmed photo', async () => {
@@ -67,14 +84,41 @@ describe('app/organizer/photos', () => {
       const destructive = buttons?.find((button) => button.style === 'destructive');
       void destructive?.onPress?.();
     });
-    const { findByText, findByLabelText, queryByText } = renderScreen();
+    const { findByText, findByLabelText, findByTestId, queryByText } = renderScreen();
 
     await findByText('Präsentation');
-    await findByText('Greta Gast');
+    await findByText('Foto-Spiel');
+    fireEvent.press(await findByText('Präsentation'));
+    fireEvent.press(await findByTestId('photo-9'));
+    await findByLabelText('Foto schließen');
     fireEvent.press(await findByLabelText('Foto löschen'));
 
     await waitFor(() => expect(mockDeleteManagementPhoto).toHaveBeenCalledWith(9));
     await waitFor(() => expect(queryByText('Greta Gast')).toBeNull());
+    alert.mockRestore();
+  });
+
+  it('uploads to valid albums and never offers a generic photo-game upload', async () => {
+    const alert = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+    const { findByText, findByLabelText, queryByLabelText } = renderScreen();
+
+    fireEvent.press(await findByText('Präsentation'));
+    fireEvent.press(await findByLabelText('Foto hochladen'));
+    const [, , buttons] = alert.mock.calls[0] as any;
+    const library = buttons.find((button: any) => button.text === 'Aus Bibliothek');
+    await library.onPress();
+
+    await waitFor(() =>
+      expect(mockUploadManagementPhoto).toHaveBeenCalledWith(
+        2,
+        'file:///tmp/fixture-library.jpg',
+        expect.any(Function)
+      )
+    );
+
+    fireEvent.press(await findByText('Foto-Spiel'));
+    expect(queryByLabelText('Foto hochladen')).toBeNull();
+    await findByText(/nur über eine Aufgabe hochgeladen/);
     alert.mockRestore();
   });
 

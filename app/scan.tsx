@@ -185,6 +185,7 @@ export default function ScanScreen() {
         await redeemManagementPairing(token);
         const events = await fetchManagementEvents();
         await ensureActiveManagementEvent(events);
+        await loadTheme();
         router.replace('/organizer');
       } else {
         await loginWithToken(token);

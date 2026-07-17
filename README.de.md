@@ -11,7 +11,7 @@ React-Native-/Expo-Companion-App fuer Hochzeitsgaeste und Veranstalter. Gaeste
 scannen einmal eine QR-Code-Einladung und bekommen einen kompakten Event-Hub:
 RSVP, Ablauf, Countdown und Venue-Navigation, Fotos, Partyspiele und
 Datenschutz-Self-Service. Freigegebene Veranstalter koppeln die App ueber einen
-kurzlebigen Einmal-Pairing-QR, wechseln Events, verwalten Notizen/ToDos und Fotos
+kurzlebigen Einmal-Pairing-QR fuer ein Event, verwalten Notizen/ToDos und Fotos
 und erhalten optional Aufgaben-Benachrichtigungen.
 
 Dieses Repository ist als Portfolio-/Showcase-Projekt oeffentlich. Das
@@ -22,8 +22,9 @@ echte Eventdaten sind nicht Teil dieses Repositories.
 
 - Ein Scanner erkennt automatisch Gast-Einladungen und Veranstalter-Pairing-QRs.
 - Passwortloses Gast-Login mit zweistufigem Familien-Picker.
-- Isoliertes Veranstalter-Geraetepairing per kurzlebigem Einmal-QR.
-- Active-Event-Management fuer Notizen/ToDos und galerieuebergreifendes Foto-Loeschen.
+- Isoliertes Veranstalter-Geraetepairing per kurzlebigem, eventgebundenem Einmal-QR.
+- Eine eventgestylte Veranstalter-Oberflaeche mit Uebersicht, Ablauf, Fotos, Aufgaben und Einstellungen.
+- Vollstaendiger Nur-Lese-Ablauf sowie administrative Foto-Details, Loeschen und Upload in gueltige Ordner.
 - Datenschutzminimierte Aufgaben-Pushes ohne Task- oder Gastinhalt auf dem Sperrbildschirm.
 - Backend-gesteuertes Theme, Event-Copy und Feature-Flags.
 - DSGVO-orientierte Datenschutz-Oberflaechen direkt in der App.
@@ -69,9 +70,12 @@ einem freigegebenen, verifizierten Web-Account. Echte Remote-Pushes brauchen
 einen EAS-Development-/Store-Build mit konfigurierten APNs-/FCM-Credentials;
 fuer die UI ohne Push reicht Expo Go weiterhin aus.
 
-Ein direkter nativer Account-Login wird bewusst noch nicht angeboten. Passwort
-und die OAuth-Anbieter der Web-App sollen gemeinsam landen, damit reine
-OAuth-Konten keinen zweitklassigen Veranstalter-Zugang erhalten.
+Der Veranstalter-Login ist bewusst QR-only. Das Backend behaelt keinen parallelen
+Passwort-Token-Endpunkt; Passwort- und OAuth-Konten nutzen denselben Pairing-Pfad.
+Alle Veranstalterrollen nutzen dieselbe Tab-Chrome und dasselbe Event-Styling wie
+die Gastoberflaeche. Rollenunterschiede bleiben Aktionen innerhalb der Screens und
+werden immer im Backend erzwungen. Generische Foto-Uploads gehen nur in App- oder
+Praesentationsgalerie; Foto-Spiel-Uploads bleiben an eine Aufgabe gebunden.
 
 `API_BASE` nutzt standardmaessig den Staging-Backend-Wert aus
 [`constants/env.ts`](constants/env.ts) und kann zur Build-Zeit ueberschrieben
@@ -135,7 +139,7 @@ langlebig. Der Token liegt in `expo-secure-store` und wird durch
 Backend-seitige Event-Cleanup-/Revocation-Prozesse begrenzt. Der Trade-off ist
 in [`docs/showcase/qr-auth.md`](docs/showcase/qr-auth.md) dokumentiert.
 
-Veranstalter-Sessions verwenden einen getrennten User-Bearer und schliessen
+Veranstalter-Sessions verwenden einen getrennten, eventgebundenen User-Bearer und schliessen
 Gast-Sessions gegenseitig aus. Das Backend autorisiert jede eventbezogene
 Management-Anfrage neu. Optionale Expo-Pushes enthalten nur generische Copy
 plus technische Event-/Notiz-IDs, niemals Notiztitel/-inhalt, Eventname,

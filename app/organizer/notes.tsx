@@ -16,6 +16,7 @@ import { ThemedText } from '../../components/ThemedText';
 import { theme } from '../../constants/theme';
 import { useLanguage } from '../../lib/LanguageContext';
 import { getActiveManagementEventId } from '../../lib/management';
+import { useOrganizerStyles } from '../../lib/organizerStyles';
 import {
   createManagementNote,
   deleteManagementNote,
@@ -39,6 +40,7 @@ export default function OrganizerNotesScreen() {
   const { noteId } = useLocalSearchParams<{ noteId?: string }>();
   const insets = useSafeAreaInsets();
   const { t } = useLanguage();
+  const eventStyles = useOrganizerStyles();
   const [notes, setNotes] = useState<ManagementNotesPayload>(EMPTY_NOTES);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -129,7 +131,7 @@ export default function OrganizerNotesScreen() {
 
   return (
     <ScrollView
-      style={styles.screen}
+      style={[styles.screen, eventStyles.screen]}
       contentContainerStyle={[
         styles.content,
         {
@@ -150,38 +152,52 @@ export default function OrganizerNotesScreen() {
     >
       <View style={styles.header}>
         <TouchableOpacity accessibilityLabel={t('a11y.back')} onPress={() => router.back()}>
-          <Ionicons name="arrow-back" size={26} color={theme.colors.primary} />
+          <Ionicons name="arrow-back" size={26} color={eventStyles.colors.cardText} />
         </TouchableOpacity>
-        <ThemedText style={styles.title}>{t('organizer.notes.title')}</ThemedText>
+        <ThemedText style={[styles.title, eventStyles.title]}>
+          {t('organizer.notes.title')}
+        </ThemedText>
         <View style={styles.headerSpacer} />
       </View>
 
       {openedNote && (
-        <View style={styles.notificationCard}>
-          <Ionicons name="notifications" size={22} color={theme.colors.secondary} />
+        <View style={[styles.notificationCard, eventStyles.button]}>
+          <Ionicons name="notifications" size={22} color={eventStyles.colors.cardButtonText} />
           <View style={styles.notificationText}>
-            <ThemedText style={styles.notificationLabel}>
+            <ThemedText style={[styles.notificationLabel, eventStyles.buttonText]}>
               {t('organizer.notes.openedFromPush')}
             </ThemedText>
-            <ThemedText style={styles.notificationTitle}>{openedNote.title}</ThemedText>
+            <ThemedText style={[styles.notificationTitle, eventStyles.buttonText]}>
+              {openedNote.title}
+            </ThemedText>
           </View>
         </View>
       )}
 
-      <View style={styles.card}>
-        <ThemedText style={styles.cardTitle}>{t('organizer.notes.create')}</ThemedText>
+      <View style={[styles.card, eventStyles.card]}>
+        <ThemedText style={[styles.cardTitle, eventStyles.title]}>
+          {t('organizer.notes.create')}
+        </ThemedText>
         <View style={styles.typeRow}>
           {(['todo', 'note'] as const).map((option) => (
             <TouchableOpacity
               key={option}
-              style={[styles.typeButton, type === option && styles.typeButtonActive]}
+              style={[
+                styles.typeButton,
+                eventStyles.outline,
+                type === option && eventStyles.button,
+              ]}
               onPress={() => {
                 setType(option);
                 if (option === 'note') setAssigneeId(null);
               }}
             >
               <ThemedText
-                style={[styles.typeButtonText, type === option && styles.typeButtonTextActive]}
+                style={[
+                  styles.typeButtonText,
+                  eventStyles.text,
+                  type === option && eventStyles.buttonText,
+                ]}
               >
                 {t(`organizer.notes.types.${option}`)}
               </ThemedText>
@@ -194,7 +210,7 @@ export default function OrganizerNotesScreen() {
           onChangeText={setTitle}
           placeholder={t('organizer.notes.noteTitle')}
           placeholderTextColor={theme.colors.muted}
-          style={styles.input}
+          style={[styles.input, eventStyles.input]}
           maxLength={255}
         />
         <TextInput
@@ -203,14 +219,16 @@ export default function OrganizerNotesScreen() {
           onChangeText={setBody}
           placeholder={t('organizer.notes.body')}
           placeholderTextColor={theme.colors.muted}
-          style={[styles.input, styles.bodyInput]}
+          style={[styles.input, eventStyles.input, styles.bodyInput]}
           multiline
           maxLength={5000}
         />
 
         {notes.can_assign && type === 'todo' && notes.managers.length > 0 && (
           <View style={styles.assigneeBlock}>
-            <ThemedText style={styles.fieldLabel}>{t('organizer.notes.assignTo')}</ThemedText>
+            <ThemedText style={[styles.fieldLabel, eventStyles.text]}>
+              {t('organizer.notes.assignTo')}
+            </ThemedText>
             <View style={styles.chipRow}>
               <AssigneeChip
                 label={t('organizer.notes.personal')}
@@ -229,19 +247,25 @@ export default function OrganizerNotesScreen() {
           </View>
         )}
 
-        <TouchableOpacity style={styles.saveButton} onPress={create} disabled={saving}>
+        <TouchableOpacity
+          style={[styles.saveButton, eventStyles.button]}
+          onPress={create}
+          disabled={saving}
+        >
           {saving ? (
-            <ActivityIndicator color={theme.colors.secondary} />
+            <ActivityIndicator color={eventStyles.colors.cardButtonText} />
           ) : (
-            <ThemedText style={styles.saveButtonText}>{t('organizer.notes.save')}</ThemedText>
+            <ThemedText style={[styles.saveButtonText, eventStyles.buttonText]}>
+              {t('organizer.notes.save')}
+            </ThemedText>
           )}
         </TouchableOpacity>
       </View>
 
       {loading ? (
-        <ActivityIndicator color={theme.colors.primary} />
+        <ActivityIndicator color={eventStyles.colors.cardText} />
       ) : failed ? (
-        <TouchableOpacity style={styles.card} onPress={() => void load()}>
+        <TouchableOpacity style={[styles.card, eventStyles.card]} onPress={() => void load()}>
           <ThemedText style={styles.error}>{t('common.loadFailed')}</ThemedText>
           <ThemedText style={styles.retry}>{t('common.retry')}</ThemedText>
         </TouchableOpacity>
@@ -284,9 +308,16 @@ function AssigneeChip({
   active: boolean;
   onPress: () => void;
 }) {
+  const eventStyles = useOrganizerStyles();
+
   return (
-    <TouchableOpacity style={[styles.chip, active && styles.chipActive]} onPress={onPress}>
-      <ThemedText style={[styles.chipText, active && styles.chipTextActive]}>{label}</ThemedText>
+    <TouchableOpacity
+      style={[styles.chip, eventStyles.outline, active && eventStyles.button]}
+      onPress={onPress}
+    >
+      <ThemedText style={[styles.chipText, eventStyles.text, active && eventStyles.buttonText]}>
+        {label}
+      </ThemedText>
     </TouchableOpacity>
   );
 }
@@ -305,10 +336,11 @@ function NoteSection({
   onDelete?: (note: ManagementNote) => void;
 }) {
   const { t } = useLanguage();
+  const eventStyles = useOrganizerStyles();
 
   return (
-    <View style={styles.card}>
-      <ThemedText style={styles.cardTitle}>{title}</ThemedText>
+    <View style={[styles.card, eventStyles.card]}>
+      <ThemedText style={[styles.cardTitle, eventStyles.title]}>{title}</ThemedText>
       {notes.length === 0 ? (
         <ThemedText style={styles.empty}>{emptyLabel}</ThemedText>
       ) : (
@@ -324,14 +356,16 @@ function NoteSection({
                 <Ionicons
                   name={note.is_done ? 'checkmark-circle' : 'ellipse-outline'}
                   size={24}
-                  color={note.is_done ? theme.colors.sage : theme.colors.primary}
+                  color={note.is_done ? theme.colors.sage : eventStyles.colors.cardText}
                 />
               </TouchableOpacity>
             ) : (
-              <Ionicons name="document-text-outline" size={23} color={theme.colors.accent} />
+              <Ionicons name="document-text-outline" size={23} color={eventStyles.colors.tabTint} />
             )}
             <View style={styles.noteText}>
-              <ThemedText style={[styles.noteTitle, note.is_done && styles.noteDone]}>
+              <ThemedText
+                style={[styles.noteTitle, eventStyles.text, note.is_done && styles.noteDone]}
+              >
                 {note.title}
               </ThemedText>
               {!!note.body && <ThemedText style={styles.noteBody}>{note.body}</ThemedText>}
@@ -357,7 +391,7 @@ function NoteSection({
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: theme.colors.background },
+  screen: { flex: 1 },
   content: { paddingHorizontal: theme.spacing.lg, gap: theme.spacing.md },
   header: {
     flexDirection: 'row',
@@ -366,14 +400,11 @@ const styles = StyleSheet.create({
     marginBottom: theme.spacing.xs,
   },
   headerSpacer: { width: 26 },
-  title: { color: theme.colors.primary, fontSize: 24, fontWeight: '700' },
+  title: { fontSize: 24, fontWeight: '700' },
   card: {
-    backgroundColor: theme.colors.surface,
-    borderRadius: theme.borderRadius.lg,
-    padding: theme.spacing.md,
+    padding: 0,
   },
   notificationCard: {
-    backgroundColor: theme.colors.primary,
     borderRadius: theme.borderRadius.lg,
     padding: theme.spacing.md,
     flexDirection: 'row',
@@ -381,10 +412,9 @@ const styles = StyleSheet.create({
     gap: theme.spacing.sm,
   },
   notificationText: { flex: 1 },
-  notificationLabel: { color: theme.colors.secondary, fontSize: 12, opacity: 0.8 },
-  notificationTitle: { color: theme.colors.secondary, fontWeight: '700', marginTop: 2 },
+  notificationLabel: { fontSize: 12, opacity: 0.8 },
+  notificationTitle: { fontWeight: '700', marginTop: 2 },
   cardTitle: {
-    color: theme.colors.primary,
     fontSize: 17,
     fontWeight: '700',
     marginBottom: theme.spacing.md,
@@ -393,47 +423,38 @@ const styles = StyleSheet.create({
   typeButton: {
     flex: 1,
     borderWidth: 1,
-    borderColor: theme.colors.primary,
     borderRadius: theme.borderRadius.md,
     paddingVertical: theme.spacing.sm,
     alignItems: 'center',
   },
-  typeButtonActive: { backgroundColor: theme.colors.primary },
-  typeButtonText: { color: theme.colors.primary, fontWeight: '600' },
-  typeButtonTextActive: { color: theme.colors.secondary },
+  typeButtonText: { fontWeight: '600' },
   input: {
     borderWidth: 1,
     borderColor: theme.colors.muted,
     borderRadius: theme.borderRadius.md,
-    backgroundColor: theme.colors.secondary,
-    color: theme.colors.primary,
     paddingHorizontal: theme.spacing.md,
     paddingVertical: 12,
     marginBottom: theme.spacing.sm,
   },
   bodyInput: { minHeight: 82, textAlignVertical: 'top' },
   assigneeBlock: { marginVertical: theme.spacing.sm },
-  fieldLabel: { color: theme.colors.primary, fontWeight: '600', marginBottom: theme.spacing.sm },
+  fieldLabel: { fontWeight: '600', marginBottom: theme.spacing.sm },
   chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: theme.spacing.sm },
   chip: {
     borderWidth: 1,
-    borderColor: theme.colors.muted,
     borderRadius: theme.borderRadius.full,
     paddingHorizontal: 12,
     paddingVertical: 7,
   },
-  chipActive: { backgroundColor: theme.colors.primary, borderColor: theme.colors.primary },
-  chipText: { color: theme.colors.primary, fontSize: 13 },
-  chipTextActive: { color: theme.colors.secondary },
+  chipText: { fontSize: 13 },
   saveButton: {
     minHeight: 44,
     borderRadius: theme.borderRadius.md,
-    backgroundColor: theme.colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: theme.spacing.sm,
   },
-  saveButtonText: { color: theme.colors.secondary, fontWeight: '700' },
+  saveButtonText: { fontWeight: '700' },
   noteRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
@@ -443,14 +464,14 @@ const styles = StyleSheet.create({
     borderBottomColor: theme.colors.muted,
   },
   noteText: { flex: 1 },
-  noteTitle: { color: theme.colors.primary, fontWeight: '600' },
+  noteTitle: { fontWeight: '600' },
   noteDone: { color: theme.colors.muted, textDecorationLine: 'line-through' },
   noteBody: { color: theme.colors.muted, fontSize: 13, marginTop: 2 },
-  meta: { color: theme.colors.accent, fontSize: 12, marginTop: theme.spacing.xs },
+  meta: { color: theme.colors.muted, fontSize: 12, marginTop: theme.spacing.xs },
   empty: { color: theme.colors.muted },
   error: { color: theme.colors.error },
   retry: {
-    color: theme.colors.primary,
+    color: theme.colors.muted,
     textDecorationLine: 'underline',
     marginTop: theme.spacing.xs,
   },

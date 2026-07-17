@@ -27,6 +27,7 @@ import {
 const response = {
   token: 'management-bearer',
   user: { id: 7, name: 'Ada Admin', email: 'ada@example.test' },
+  event: { id: 11, name: 'Bound event', date: null, my_role: 'owner' as const },
 };
 
 describe('lib/management', () => {
@@ -58,6 +59,7 @@ describe('lib/management', () => {
       email: 'ada@example.test',
     });
     expect(await SecureStore.getItemAsync('guest_token')).toBeNull();
+    expect(await SecureStore.getItemAsync('management_active_event_id')).toBe('11');
   });
 
   it('distinguishes 64-character pairing secrets from guest invitation tokens', () => {
@@ -77,10 +79,9 @@ describe('lib/management', () => {
     );
   });
 
-  it('loads accessible events and keeps or repairs the active event', async () => {
+  it('loads the one bound event and pins it as active', async () => {
     const events = [
-      { id: 11, name: 'First', date: null, my_role: 'owner' as const },
-      { id: 12, name: 'Second', date: null, my_role: 'event_manager' as const },
+      { id: 11, name: 'First', date: null, my_role: 'owner' as const, theme: {} as any },
     ];
     mockGet.mockResolvedValue({ data: { events } });
 
@@ -89,7 +90,8 @@ describe('lib/management', () => {
     expect(await SecureStore.getItemAsync('management_active_event_id')).toBe('11');
 
     await SecureStore.setItemAsync('management_active_event_id', '12');
-    expect(await ensureActiveManagementEvent(events)).toBe(12);
+    expect(await ensureActiveManagementEvent(events)).toBe(11);
+    expect(await SecureStore.getItemAsync('management_active_event_id')).toBe('11');
   });
 
   it('clears the interactive session but retains an offline revocation credential', async () => {
@@ -137,6 +139,18 @@ describe('lib/management', () => {
     await SecureStore.setItemAsync('management_active_event_id', '99');
 
     expect(await ensureActiveManagementEvent([])).toBeNull();
+    expect(await SecureStore.getItemAsync('management_active_event_id')).toBeNull();
+  });
+
+  it('fails closed when a management bootstrap returns multiple events', async () => {
+    await SecureStore.setItemAsync('management_active_event_id', '99');
+
+    await expect(
+      ensureActiveManagementEvent([
+        { id: 1, name: 'One', date: null, my_role: 'owner', theme: {} as any },
+        { id: 2, name: 'Two', date: null, my_role: 'owner', theme: {} as any },
+      ])
+    ).rejects.toThrow('exactly one event');
     expect(await SecureStore.getItemAsync('management_active_event_id')).toBeNull();
   });
 

@@ -82,6 +82,13 @@ const en = {
     pushTitle: 'Task notifications',
     pushHint: 'Optional push alerts for new assignments.',
     pushUpdateFailed: 'The push setting could not be saved.',
+    tabs: {
+      overview: 'Overview',
+      schedule: 'Schedule',
+      photos: 'Photos',
+      tasks: 'Tasks',
+      settings: 'Settings',
+    },
     notes: {
       title: 'Notes & ToDos',
       create: 'New entry',
@@ -119,6 +126,10 @@ const en = {
       deleteTitle: 'Delete photo permanently?',
       deleteMessage: 'The photo will be removed from the gallery and storage.',
       deleteFailed: 'The photo could not be deleted.',
+      uploadPhoto: 'Upload photo',
+      uploadFailed: 'The photo could not be uploaded.',
+      photoGameUploadHint:
+        'Photo-game images can be viewed and deleted here, but uploads must use an assignment.',
     },
     roles: {
       owner: 'Owner',

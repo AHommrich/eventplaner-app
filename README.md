@@ -10,8 +10,8 @@
 React Native / Expo companion app for wedding guests and organizers. Guests
 scan a QR-code invitation once and get a small event hub: RSVP, schedule,
 countdown and venue navigation, photos, party games and privacy self-service.
-Approved organizers pair the app through a short-lived, one-time QR to switch
-events, manage Notes/ToDos and photos, and receive optional task notifications.
+Approved organizers pair the app through a short-lived, one-time QR for one
+event, manage Notes/ToDos and photos, and receive optional task notifications.
 
 This repository is public as a portfolio/showcase project. The production
 backend is separate, guest access is controlled through QR/bearer tokens, and
@@ -21,8 +21,9 @@ real event data is not part of this repository.
 
 - One scanner automatically recognizes Guest invitations and Organizer pairing QRs.
 - Passwordless Guest login with a two-step family picker.
-- Isolated Organizer device pairing via short-lived, single-use QR.
-- Active-event management for Notes/ToDos and cross-gallery photo deletion.
+- Isolated Organizer device pairing via short-lived, single-use, event-bound QR.
+- One event-themed Organizer surface with Overview, Schedule, Photos, Tasks and Settings tabs.
+- Full read-only schedule plus administrative gallery detail, deletion and valid-folder upload.
 - Privacy-minimized assignment pushes without task or guest content on the lock screen.
 - Backend-driven theme, event copy and feature flags.
 - DSGVO-oriented privacy surfaces in the app, not only in external documents.
@@ -67,9 +68,12 @@ an approved, verified web account. Real remote-push delivery requires an EAS
 development/store build with configured APNs/FCM credentials; Expo Go is still
 sufficient for the non-push UI.
 
-Direct native account sign-in is intentionally not exposed yet. Password login
-and the web app's OAuth providers must ship together so OAuth-only accounts are
-never offered a second-class organizer path.
+Organizer login is deliberately QR-only. The backend does not retain a parallel
+password-token endpoint, so password and OAuth accounts use the same pairing path.
+Every organizer role uses the same shared tab chrome and event style as the Guest
+surface. Role differences remain actions inside screens and are always enforced by
+the backend. Generic photo uploads target only the app or presentation gallery;
+photo-game uploads stay tied to an assignment.
 
 `API_BASE` defaults to the staging backend in [`constants/env.ts`](constants/env.ts)
 and can be overridden at build time:
@@ -131,8 +135,8 @@ The token is stored in `expo-secure-store` and bounded by backend-side event
 cleanup/revocation. The trade-off is documented in
 [`docs/showcase/qr-auth.md`](docs/showcase/qr-auth.md).
 
-Organizer sessions use a different User bearer and are mutually exclusive with
-guest sessions. The backend re-authorizes every event-scoped management request.
+Organizer sessions use a different, one-event User bearer and are mutually exclusive
+with guest sessions. The backend re-authorizes every event-scoped management request.
 Optional Expo pushes contain generic copy plus technical event/note IDs, never
 the note title/body, event name, guest data or assigning user. Push is explicit
 opt-in; logout/device revocation removes the bearer-bound server destination,

@@ -2,6 +2,7 @@
 import { Platform } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
 import api, { resetUnauthorizedRedirect } from './api';
+import type { EventThemePayload } from './guest';
 import { deleteGuestSession, deleteManagementSession } from './sessionStorage';
 
 export type ManagementUser = {
@@ -21,11 +22,13 @@ export type ManagementEvent = {
   name: string;
   date: string | null;
   my_role: ManagementRole;
+  theme: EventThemePayload;
 };
 
 type AuthResponse = {
   token: string;
   user: ManagementUser;
+  event: Omit<ManagementEvent, 'theme'>;
 };
 
 const deviceName = `eveplan ${Platform.OS === 'ios' ? 'iPhone' : 'Android'}`;
@@ -70,6 +73,7 @@ export async function saveManagementSession(response: AuthResponse): Promise<Man
   await SecureStore.setItemAsync('management_user_id', String(response.user.id));
   await SecureStore.setItemAsync('management_user_name', response.user.name);
   await SecureStore.setItemAsync('management_user_email', response.user.email);
+  await SecureStore.setItemAsync('management_active_event_id', String(response.event.id));
 
   return { token: response.token, ...response.user };
 }
@@ -118,11 +122,13 @@ export async function setActiveManagementEvent(eventId: number): Promise<void> {
 export async function ensureActiveManagementEvent(
   events: ManagementEvent[]
 ): Promise<number | null> {
-  const activeId = await getActiveManagementEventId();
-  if (activeId && events.some((event) => event.id === activeId)) return activeId;
   if (events.length === 0) {
     await SecureStore.deleteItemAsync('management_active_event_id');
     return null;
+  }
+  if (events.length !== 1) {
+    await SecureStore.deleteItemAsync('management_active_event_id');
+    throw new Error('A management device session must resolve exactly one event.');
   }
 
   await setActiveManagementEvent(events[0].id);

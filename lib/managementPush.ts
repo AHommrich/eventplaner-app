@@ -4,7 +4,7 @@ import * as Notifications from 'expo-notifications';
 import { router } from 'expo-router';
 import * as SecureStore from 'expo-secure-store';
 import api from './api';
-import { retryPendingManagementLogout, setActiveManagementEvent } from './management';
+import { getActiveManagementEventId, retryPendingManagementLogout } from './management';
 
 const PUSH_TOKEN_KEY = 'management_expo_push_token';
 const PUSH_ENABLED_KEY = 'management_push_enabled';
@@ -114,8 +114,8 @@ export async function openManagementNotification(
 ): Promise<boolean> {
   const data = assignedNoteData(response.notification.request.content.data);
   if (!data || !(await SecureStore.getItemAsync('management_token'))) return false;
+  if ((await getActiveManagementEventId()) !== data.event_id) return false;
 
-  await setActiveManagementEvent(data.event_id);
   router.push({
     pathname: '/organizer/notes',
     params: { noteId: String(data.note_id) },
