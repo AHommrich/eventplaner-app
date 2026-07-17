@@ -20,7 +20,7 @@
  * developer paste a local or demo token without needing a QR image. Never
  * commit real guest tokens.
  */
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   View,
   TouchableOpacity,
@@ -74,6 +74,11 @@ export default function ScanScreen() {
   const [cameraConsentResolved, setCameraConsentResolved] = useState(false);
   const [scanned, setScanned] = useState(false);
   const [loading, setLoading] = useState(false);
+  // Synchronous re-entrancy guard: CameraView fires onBarcodeScanned several
+  // times per second, and the `scanned` state flips a render too late to block
+  // the burst — so two calls would both redeem the single-use pairing token and
+  // the second gets a 422 "already used". A ref updates immediately.
+  const handlingScanRef = useRef(false);
   const [guests, setGuests] = useState<ApiGuest[]>([]);
   const [familyName, setFamilyName] = useState<string | null>(null);
   const [responseType, setResponseType] = useState<'solo' | 'family'>('solo');
@@ -160,6 +165,7 @@ export default function ScanScreen() {
     setShowPicker(false);
     setLoading(false);
     setScanned(false);
+    handlingScanRef.current = false;
     try {
       const guest = await fetchGuestMe();
       navigateByStatus(guest.rsvp_status);
@@ -175,7 +181,8 @@ export default function ScanScreen() {
    * without another mode question. The flag resets on error for a retry.
    */
   async function handleQrCode(data: string) {
-    if (scanned || loading) return;
+    if (handlingScanRef.current || scanned || loading) return;
+    handlingScanRef.current = true;
     setScanned(true);
     setLoading(true);
     try {
@@ -191,8 +198,23 @@ export default function ScanScreen() {
         await loginWithToken(token);
       }
     } catch (e: any) {
-      Alert.alert(t('common.error'), e?.response?.data?.message ?? t('scan.invalidQrMessage'));
-      setScanned(false);
+      // Keep the scanner blocked (both guards stay armed) until the user
+      // acknowledges. Otherwise CameraView keeps re-scanning the same QR still
+      // in frame and floods a fresh redeem — and alert — every round-trip.
+      Alert.alert(
+        t('common.error'),
+        e?.response?.data?.message ?? t('scan.invalidQrMessage'),
+        [
+          {
+            text: 'OK',
+            onPress: () => {
+              setScanned(false);
+              handlingScanRef.current = false;
+            },
+          },
+        ],
+        { cancelable: false }
+      );
     } finally {
       setLoading(false);
     }
