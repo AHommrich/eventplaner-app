@@ -20,6 +20,15 @@ function projectId(): string | undefined {
   return Constants.expoConfig?.extra?.eas?.projectId ?? Constants.easConfig?.projectId;
 }
 
+/**
+ * Remote push is not supported in Expo Go (removed in SDK 53) and attempting it
+ * triggers a keychain-access loop. Disable every push path there — a real dev/
+ * preview build reports a different execution environment.
+ */
+function isExpoGo(): boolean {
+  return Constants.executionEnvironment === 'storeClient';
+}
+
 function assignedNoteData(value: unknown): AssignedNoteData | null {
   if (!value || typeof value !== 'object') return null;
   const data = value as Record<string, unknown>;
@@ -34,6 +43,7 @@ function assignedNoteData(value: unknown): AssignedNoteData | null {
 }
 
 export async function registerManagementPushToken(): Promise<string | null> {
+  if (isExpoGo()) return null;
   if (Platform.OS !== 'ios' && Platform.OS !== 'android') return null;
   if (!(await SecureStore.getItemAsync('management_token'))) return null;
 
@@ -149,6 +159,13 @@ async function registerRotatedPushToken(): Promise<void> {
 }
 
 export function initializeManagementPushNotifications(): () => void {
+  // Expo Go can't do remote push and looping on the token listener spams the
+  // keychain. Skip all push wiring there; still retry any pending logout.
+  if (isExpoGo()) {
+    void retryPendingManagementLogout().catch(() => {});
+    return () => {};
+  }
+
   Notifications.setNotificationHandler({
     handleNotification: async () => ({
       shouldShowBanner: true,

@@ -29,12 +29,15 @@ export function GalleryAlbumPicker({
     <View
       style={[
         styles.container,
-        { borderRadius: variant.radius.button, borderColor: colors.border + '55' },
+        {
+          borderRadius: variant.radius.button,
+          borderColor: colors.border + '55',
+          backgroundColor: colors.card,
+        },
       ]}
     >
-      {albums.map((album, index) => {
+      {albums.map((album) => {
         const selected = album.id === selectedId;
-        const last = index === albums.length - 1;
         return (
           <TouchableOpacity
             key={album.id}
@@ -44,9 +47,8 @@ export function GalleryAlbumPicker({
             style={[
               styles.segment,
               {
+                borderRadius: variant.radius.button - 3,
                 backgroundColor: selected ? colors.cardButton : 'transparent',
-                borderRightWidth: last ? 0 : 1,
-                borderRightColor: colors.border + '55',
               },
             ]}
           >
@@ -64,7 +66,7 @@ export function GalleryAlbumPicker({
 }
 
 const styles = StyleSheet.create({
-  container: { flexDirection: 'row', overflow: 'hidden', borderWidth: 1.5 },
+  container: { flexDirection: 'row', borderWidth: 1.5, padding: 3, gap: 3 },
   segment: { flex: 1, paddingVertical: theme.spacing.sm, alignItems: 'center' },
   text: { fontWeight: '600', fontSize: 14 },
 });
