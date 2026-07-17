@@ -28,10 +28,21 @@ import {
   initializeManagementPushNotifications,
   registerManagementPushToken,
   setManagementPushEnabled,
+  syncManagementPushPreference,
   unregisterManagementPushToken,
 } from '../../lib/managementPush';
+import { Platform } from 'react-native';
+import Constants from 'expo-constants';
 
 const mockedNotifications = Notifications as jest.Mocked<typeof Notifications>;
+
+function withPlatform(os: string, run: () => Promise<void>): Promise<void> {
+  const original = Platform.OS;
+  Object.defineProperty(Platform, 'OS', { get: () => os, configurable: true });
+  return run().finally(() => {
+    Object.defineProperty(Platform, 'OS', { get: () => original, configurable: true });
+  });
+}
 
 function notificationResponse(data: Record<string, unknown>): Notifications.NotificationResponse {
   return {
@@ -146,6 +157,124 @@ describe('management push notifications', () => {
       params: { noteId: '21' },
     });
     expect(mockedNotifications.clearLastNotificationResponseAsync).toHaveBeenCalled();
+  });
+
+  it('ignores a notification without valid assigned-note data', async () => {
+    await SecureStore.setItemAsync('management_token', 'manager-bearer');
+
+    await expect(openManagementNotification(notificationResponse({ type: 'other' }))).resolves.toBe(
+      false
+    );
+    await expect(
+      openManagementNotification(
+        notificationResponse({ type: 'assigned_note', event_id: 'x', note_id: 2 })
+      )
+    ).resolves.toBe(false);
+    expect(mockSetActiveManagementEvent).not.toHaveBeenCalled();
+  });
+
+  it('creates the Android notification channel when registering on Android', async () => {
+    await withPlatform('android', async () => {
+      await SecureStore.setItemAsync('management_token', 'manager-bearer');
+
+      await registerManagementPushToken();
+
+      expect(mockedNotifications.setNotificationChannelAsync).toHaveBeenCalledWith(
+        'organizer-tasks',
+        expect.objectContaining({ importance: expect.anything() })
+      );
+    });
+  });
+
+  it('stays opted out when enabling but registration cannot yield a token', async () => {
+    // No management_token in store → registerManagementPushToken() returns null.
+    await expect(setManagementPushEnabled(true)).resolves.toBe(false);
+    await expect(getManagementPushEnabled()).resolves.toBe(false);
+  });
+
+  it('syncs the push preference across the disabled/enabled/failed states', async () => {
+    // Disabled (no preference, no stored token) → false.
+    await expect(syncManagementPushPreference()).resolves.toBe(false);
+
+    // Enabled preference but no organizer session yet → treated as satisfied.
+    await SecureStore.setItemAsync('management_push_enabled', 'true');
+    await expect(syncManagementPushPreference()).resolves.toBe(true);
+
+    // Enabled + session + registration succeeds → true.
+    await SecureStore.setItemAsync('management_token', 'manager-bearer');
+    await expect(syncManagementPushPreference()).resolves.toBe(true);
+
+    // Enabled + session but permission revoked → clears the stale opt-in.
+    await SecureStore.setItemAsync('management_push_enabled', 'true');
+    mockedNotifications.getPermissionsAsync.mockResolvedValue({
+      granted: false,
+      status: 'denied',
+    } as Notifications.NotificationPermissionsStatus);
+    mockedNotifications.requestPermissionsAsync.mockResolvedValue({
+      granted: false,
+      status: 'denied',
+    } as Notifications.NotificationPermissionsStatus);
+
+    await expect(syncManagementPushPreference()).resolves.toBe(false);
+    expect(await SecureStore.getItemAsync('management_push_enabled')).toBe('false');
+  });
+
+  it('shows a banner and routes a tapped notification through the listeners', async () => {
+    await SecureStore.setItemAsync('management_token', 'manager-bearer');
+    const dispose = initializeManagementPushNotifications();
+
+    const handler = (mockedNotifications.setNotificationHandler as jest.Mock).mock.calls.at(-1)[0];
+    await expect(handler.handleNotification()).resolves.toEqual(
+      expect.objectContaining({ shouldShowBanner: true })
+    );
+
+    const respListener = (
+      mockedNotifications.addNotificationResponseReceivedListener as jest.Mock
+    ).mock.calls.at(-1)[0];
+    respListener(notificationResponse({ type: 'assigned_note', event_id: 3, note_id: 7 }));
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(mockSetActiveManagementEvent).toHaveBeenCalledWith(3);
+    dispose();
+  });
+
+  it('ignores a notification whose data payload is not an object', async () => {
+    await SecureStore.setItemAsync('management_token', 'manager-bearer');
+    await expect(openManagementNotification(notificationResponse(null as never))).resolves.toBe(
+      false
+    );
+  });
+
+  it('does not register or opt out on an unsupported platform', async () => {
+    await withPlatform('web', async () => {
+      await SecureStore.setItemAsync('management_token', 'manager-bearer');
+      await expect(registerManagementPushToken()).resolves.toBeNull();
+      await unregisterManagementPushToken();
+      expect(mockPost).not.toHaveBeenCalled();
+    });
+  });
+
+  it('skips the opt-out call when no organizer session is stored', async () => {
+    await unregisterManagementPushToken();
+    expect(mockPost).not.toHaveBeenCalled();
+  });
+
+  it('returns false when there is no initial notification to open', async () => {
+    mockedNotifications.getLastNotificationResponseAsync.mockResolvedValueOnce(null);
+    await expect(openInitialManagementNotification()).resolves.toBe(false);
+  });
+
+  it('does not register without an EAS project id', async () => {
+    const eas = (Constants as unknown as { expoConfig: { extra: { eas: { projectId?: string } } } })
+      .expoConfig.extra.eas;
+    const original = eas.projectId;
+    eas.projectId = undefined;
+    await SecureStore.setItemAsync('management_token', 'manager-bearer');
+
+    await expect(registerManagementPushToken()).resolves.toBeNull();
+    expect(mockPost).not.toHaveBeenCalled();
+
+    eas.projectId = original;
   });
 
   it('rebinds a rotated Expo token while push remains opted in', async () => {
