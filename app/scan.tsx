@@ -7,10 +7,13 @@
  *      dialog is a normal iOS/Android alert, not a route).
  *   3. `CameraView` streams the back camera, `onBarcodeScanned` fires exactly
  *      once per unique QR (guarded by the `scanned` flag).
- *   4. Extract the trailing token from the URL, call `/api/auth/qr/{token}`.
- *   5. Solo → save session, route by RSVP status. Family → open picker with
- *      the returned guest list; the guest taps their name to trigger step 5.
- *   6. `/api/auth/qr/{token}/select` returns a per-guest bearer token; 409
+ *   4. Extract the trailing token and recognize its fixed contract: a
+ *      64-character pairing secret opens Organizer auth; everything else
+ *      follows the existing Guest invitation flow.
+ *   5. Organizer → redeem once, bootstrap accessible events, open Organizer.
+ *   6. Guest solo → save session, route by RSVP status. Family → open picker with
+ *      the returned guest list; the guest taps their name to trigger step 7.
+ *   7. `/api/auth/qr/{token}/select` returns a per-guest bearer token; 409
  *      means someone already claimed this slot (grey out the row).
  *
  * The DEV token input at the bottom is guarded by `__DEV__` and lets the
@@ -38,6 +41,13 @@ import { useLanguage, Language } from '../lib/LanguageContext';
 import { useEventTheme } from '../lib/EventThemeContext';
 import { useConsentGate } from '../components/ConsentGate';
 import { fetchGuestMe, isDeclinedFlow, isFullAccess, RsvpStatus } from '../lib/guest';
+import {
+  ensureActiveManagementEvent,
+  fetchManagementEvents,
+  getManagementSession,
+  isManagementPairingToken,
+  redeemManagementPairing,
+} from '../lib/management';
 
 // --- Types (kept local to this file since only scan + welcome consume them) ---
 
@@ -76,6 +86,11 @@ export default function ScanScreen() {
     useCallback(() => {
       let active = true;
       async function guardExistingSession() {
+        const managementSession = await getManagementSession();
+        if (active && managementSession) {
+          router.replace('/organizer');
+          return;
+        }
         const existingSession = await getSession();
         if (active && existingSession) {
           await redirectExistingSession();
@@ -118,6 +133,11 @@ export default function ScanScreen() {
   }, []);
 
   async function ensureNoExistingSession() {
+    const managementSession = await getManagementSession();
+    if (managementSession) {
+      router.replace('/organizer');
+      return false;
+    }
     const existingSession = await getSession();
     if (!existingSession) return true;
     await redirectExistingSession();
@@ -150,8 +170,9 @@ export default function ScanScreen() {
 
   /**
    * Barcode-scanned handler — guarded by `scanned` so the same QR only fires
-   * once, even though `CameraView` emits multiple detections per second.
-   * The `scanned` flag is reset on error so the guest can retry.
+   * once, even though `CameraView` emits multiple detections per second. The
+   * fixed token contract selects Organizer pairing or Guest invitation auth
+   * without another mode question. The flag resets on error for a retry.
    */
   async function handleQrCode(data: string) {
     if (scanned || loading) return;
@@ -160,7 +181,14 @@ export default function ScanScreen() {
     try {
       const token = data.split('/').filter(Boolean).pop();
       if (!token) throw new Error(t('scan.invalidQr'));
-      await loginWithToken(token);
+      if (isManagementPairingToken(token)) {
+        await redeemManagementPairing(token);
+        const events = await fetchManagementEvents();
+        await ensureActiveManagementEvent(events);
+        router.replace('/organizer');
+      } else {
+        await loginWithToken(token);
+      }
     } catch (e: any) {
       Alert.alert(t('common.error'), e?.response?.data?.message ?? t('scan.invalidQrMessage'));
       setScanned(false);
@@ -313,18 +341,7 @@ export default function ScanScreen() {
                 style={styles.devButton}
                 onPress={async () => {
                   setShowDevInput(false);
-                  setLoading(true);
-                  try {
-                    await loginWithToken(devToken.trim());
-                  } catch (e: any) {
-                    Alert.alert(
-                      t('common.error'),
-                      e?.response?.data?.message ?? t('scan.invalidTokenMessage')
-                    );
-                    setScanned(false);
-                  } finally {
-                    setLoading(false);
-                  }
+                  await handleQrCode(devToken.trim());
                 }}
               >
                 <ThemedText style={styles.devButtonText}>{t('scan.devLogin')}</ThemedText>

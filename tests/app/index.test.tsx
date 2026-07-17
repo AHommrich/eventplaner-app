@@ -25,6 +25,26 @@ jest.mock('../../lib/auth', () => ({
   saveSession: jest.fn(),
 }));
 
+const mockGetManagementSession = jest.fn();
+const mockRedeemManagementPairing = jest.fn();
+const mockFetchManagementEvents = jest.fn();
+const mockEnsureActiveManagementEvent = jest.fn();
+jest.mock('../../lib/management', () => ({
+  __esModule: true,
+  getManagementSession: (...args: any[]) => mockGetManagementSession(...args),
+  isManagementPairingToken: (token: string) => /^[A-Za-z0-9]{64}$/.test(token),
+  redeemManagementPairing: (...args: any[]) => mockRedeemManagementPairing(...args),
+  fetchManagementEvents: (...args: any[]) => mockFetchManagementEvents(...args),
+  ensureActiveManagementEvent: (...args: any[]) => mockEnsureActiveManagementEvent(...args),
+}));
+
+const mockOpenInitialManagementNotification = jest.fn();
+jest.mock('../../lib/managementPush', () => ({
+  __esModule: true,
+  openInitialManagementNotification: (...args: any[]) =>
+    mockOpenInitialManagementNotification(...args),
+}));
+
 const mockFetchGuestMe = jest.fn();
 jest.mock('../../lib/guest', () => {
   const actual = jest.requireActual('../../lib/guest');
@@ -71,6 +91,12 @@ function renderScreen() {
 describe('app/index — redirect matrix', () => {
   beforeEach(() => {
     mockGetSession.mockReset();
+    mockGetManagementSession.mockReset();
+    mockGetManagementSession.mockResolvedValue(null);
+    mockRedeemManagementPairing.mockReset();
+    mockFetchManagementEvents.mockReset();
+    mockEnsureActiveManagementEvent.mockReset();
+    mockOpenInitialManagementNotification.mockReset().mockResolvedValue(false);
     mockFetchGuestMe.mockReset();
     mockGetErasureState.mockReset();
     (router.replace as jest.Mock).mockClear();
@@ -80,11 +106,30 @@ describe('app/index — redirect matrix', () => {
     mockGetSession.mockResolvedValue(null);
     mockGetErasureState.mockResolvedValue(null);
 
-    const { findByText } = renderScreen();
+    const { findByText, queryByText } = renderScreen();
 
     // `welcome.scanButton` in DE.
     await findByText(/QR-Code scannen|Scan QR/i);
+    expect(queryByText(/Veranstalter|Organizer/i)).toBeNull();
     expect(router.replace).not.toHaveBeenCalled();
+  });
+
+  it('organizer session routes directly to the organizer area', async () => {
+    mockGetManagementSession.mockResolvedValue({ token: 'manager', id: 7 });
+
+    renderScreen();
+    await waitFor(() => expect(router.replace).toHaveBeenCalledWith('/organizer'));
+    expect(mockGetSession).not.toHaveBeenCalled();
+  });
+
+  it('does not overwrite an organizer cold-start notification route', async () => {
+    mockGetManagementSession.mockResolvedValue({ token: 'manager', id: 7 });
+    mockOpenInitialManagementNotification.mockResolvedValue(true);
+
+    renderScreen();
+
+    await waitFor(() => expect(mockOpenInitialManagementNotification).toHaveBeenCalled());
+    expect(router.replace).not.toHaveBeenCalledWith('/organizer');
   });
 
   it('no session + pending erasure → routes to `/erasure-pending`', async () => {

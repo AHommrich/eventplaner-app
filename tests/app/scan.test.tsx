@@ -4,7 +4,8 @@
  * The camera view is stubbed to a plain `<View>` in `tests/setup.ts`; we grab
  * the mocked component from its props and invoke `onBarcodeScanned` directly
  * to simulate a scan without spinning up a real camera. The suite covers the
- * three login branches:
+ * four login branches:
+ *   - pairing token: management session, event bootstrap, Organizer area
  *   - solo token: session saved, router replaces by RSVP status
  *   - family token: picker opens with every group member
  *   - 409 on family select: alert + row greyed out
@@ -40,6 +41,19 @@ jest.mock('../../lib/guest', () => {
     fetchGuestMe: (...a: any[]) => mockFetchGuestMe(...a),
   };
 });
+
+const mockGetManagementSession = jest.fn();
+const mockRedeemManagementPairing = jest.fn();
+const mockFetchManagementEvents = jest.fn();
+const mockEnsureActiveManagementEvent = jest.fn();
+jest.mock('../../lib/management', () => ({
+  __esModule: true,
+  getManagementSession: (...args: any[]) => mockGetManagementSession(...args),
+  isManagementPairingToken: (token: string) => /^[A-Za-z0-9]{64}$/.test(token),
+  redeemManagementPairing: (...args: any[]) => mockRedeemManagementPairing(...args),
+  fetchManagementEvents: (...args: any[]) => mockFetchManagementEvents(...args),
+  ensureActiveManagementEvent: (...args: any[]) => mockEnsureActiveManagementEvent(...args),
+}));
 
 // Expose the scan handler prop from the mocked `CameraView` for the tests.
 let barcodeHandler: ((ev: { data: string }) => void) | null = null;
@@ -81,10 +95,16 @@ describe('app/scan', () => {
     mockGetSession.mockReset();
     mockSaveSession.mockReset();
     mockFetchGuestMe.mockReset();
+    mockGetManagementSession.mockReset();
+    mockRedeemManagementPairing.mockReset();
+    mockFetchManagementEvents.mockReset();
+    mockEnsureActiveManagementEvent.mockReset();
     mockRequestPermission.mockReset();
     (router.replace as jest.Mock).mockClear();
     (router.back as jest.Mock).mockClear();
     mockGetSession.mockResolvedValue(null);
+    mockGetManagementSession.mockResolvedValue(null);
+    mockFetchManagementEvents.mockResolvedValue([{ id: 9, name: 'Event' }]);
     await SecureStore.deleteItemAsync('consent_camera_scan');
   });
 
@@ -143,6 +163,26 @@ describe('app/scan', () => {
       );
       expect(router.replace).toHaveBeenCalledWith('/(tabs)/home');
     });
+  });
+
+  it('automatically recognizes a pairing QR and bootstraps the organizer area', async () => {
+    await grantConsent('camera_scan');
+    mockRedeemManagementPairing.mockResolvedValue({ token: 'MANAGEMENT' });
+    const pairingToken = 'A'.repeat(64);
+
+    const { findByTestId } = renderScreen();
+    await findByTestId('camera-view');
+    await act(async () => {
+      barcodeHandler?.({ data: pairingToken });
+    });
+
+    await waitFor(() => {
+      expect(mockRedeemManagementPairing).toHaveBeenCalledWith(pairingToken);
+      expect(mockFetchManagementEvents).toHaveBeenCalled();
+      expect(mockEnsureActiveManagementEvent).toHaveBeenCalledWith([{ id: 9, name: 'Event' }]);
+      expect(router.replace).toHaveBeenCalledWith('/organizer');
+    });
+    expect(mockApiGet).not.toHaveBeenCalled();
   });
 
   it('family token: opens the picker with every group member', async () => {

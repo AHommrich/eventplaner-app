@@ -15,6 +15,18 @@ export const GUEST_SESSION_KEYS = [
   'guest_family_name',
 ] as const;
 
+export const MANAGEMENT_SESSION_KEYS = [
+  'management_token',
+  'management_user_id',
+  'management_user_name',
+  'management_user_email',
+  'management_active_event_id',
+] as const;
+
 export async function deleteGuestSession(): Promise<void> {
   await Promise.all(GUEST_SESSION_KEYS.map((key) => SecureStore.deleteItemAsync(key)));
+}
+
+export async function deleteManagementSession(): Promise<void> {
+  await Promise.all(MANAGEMENT_SESSION_KEYS.map((key) => SecureStore.deleteItemAsync(key)));
 }

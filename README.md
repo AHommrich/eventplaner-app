@@ -7,10 +7,11 @@
 [![test](https://github.com/AHommrich/eventplaner-app/actions/workflows/test.yml/badge.svg?branch=main)](https://github.com/AHommrich/eventplaner-app/actions/workflows/test.yml)
 [![License](https://img.shields.io/badge/License-All%20Rights%20Reserved-red.svg)](LICENSE)
 
-React Native / Expo companion app for wedding guests. Guests scan a QR-code
-invitation once and get a small event hub: RSVP, countdown and venue navigation,
-photo gallery, photo game, drinks log, language settings, privacy notice,
-consent management, data export and erasure request.
+React Native / Expo companion app for wedding guests and organizers. Guests
+scan a QR-code invitation once and get a small event hub: RSVP, schedule,
+countdown and venue navigation, photos, party games and privacy self-service.
+Approved organizers pair the app through a short-lived, one-time QR to switch
+events, manage Notes/ToDos and photos, and receive optional task notifications.
 
 This repository is public as a portfolio/showcase project. The production
 backend is separate, guest access is controlled through QR/bearer tokens, and
@@ -18,27 +19,32 @@ real event data is not part of this repository.
 
 ## Highlights
 
-- Passwordless QR login with a two-step family picker.
+- One scanner automatically recognizes Guest invitations and Organizer pairing QRs.
+- Passwordless Guest login with a two-step family picker.
+- Isolated Organizer device pairing via short-lived, single-use QR.
+- Active-event management for Notes/ToDos and cross-gallery photo deletion.
+- Privacy-minimized assignment pushes without task or guest content on the lock screen.
 - Backend-driven theme, event copy and feature flags.
 - DSGVO-oriented privacy surfaces in the app, not only in external documents.
 - Local font bundling, no runtime font CDN dependency.
-- Shared API/auth layer with SecureStore-backed guest sessions.
+- Shared API/auth layer with mutually exclusive SecureStore-backed guest and organizer sessions.
 - Jest coverage for library and screen behavior plus a small Maestro smoke
   suite for login/logout.
 
 ## Tech Stack
 
-| Layer      | Choice                                           |
-| ---------- | ------------------------------------------------ |
-| App        | Expo SDK 54, Expo Router v6, React Native        |
-| Language   | TypeScript, strict mode                          |
-| Styling    | NativeWind v4, Tailwind v3, backend-driven theme |
-| Data       | Axios client with bearer interceptor             |
-| Storage    | `expo-secure-store` for guest/session state      |
-| i18n       | `i18n-js` with German and English dictionaries   |
-| Monitoring | Optional Sentry React Native integration         |
-| Tests      | Jest, `jest-expo`, React Native Testing Library  |
-| E2E        | Maestro local smoke flows                        |
+| Layer      | Choice                                                 |
+| ---------- | ------------------------------------------------------ |
+| App        | Expo SDK 54, Expo Router v6, React Native              |
+| Language   | TypeScript, strict mode                                |
+| Styling    | NativeWind v4, Tailwind v3, backend-driven theme       |
+| Data       | Axios client with actor-aware bearer and event scoping |
+| Storage    | `expo-secure-store` for guest and organizer sessions   |
+| Push       | Expo Notifications for optional organizer tasks        |
+| i18n       | `i18n-js` with German and English dictionaries         |
+| Monitoring | Optional Sentry React Native integration               |
+| Tests      | Jest, `jest-expo`, React Native Testing Library        |
+| E2E        | Maestro local smoke flows                              |
 
 The app expects a Laravel/Sanctum backend with the API shape documented in
 [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) and
@@ -55,6 +61,15 @@ npx expo start
 Expo Go can run the app UI, but authenticated flows need a backend and a valid
 local or demo QR token. Do not commit real guest tokens. For local smoke tests,
 export a token through `MAESTRO_SOLO_TOKEN`.
+
+Organizer mode additionally needs a fresh one-time pairing QR generated from
+an approved, verified web account. Real remote-push delivery requires an EAS
+development/store build with configured APNs/FCM credentials; Expo Go is still
+sufficient for the non-push UI.
+
+Direct native account sign-in is intentionally not exposed yet. Password login
+and the web app's OAuth providers must ship together so OAuth-only accounts are
+never offered a second-class organizer path.
 
 `API_BASE` defaults to the staging backend in [`constants/env.ts`](constants/env.ts)
 and can be overridden at build time:
@@ -93,7 +108,7 @@ Optional monitoring variables:
 app/          Expo Router screens
 components/   Shared UI wrappers and controls
 constants/    Theme, env and font maps
-lib/          API, auth, guest, consent, legal and erasure logic
+lib/          API, guest/organizer auth, management, push and privacy logic
 locales/      German and English translation dictionaries
 tests/        Jest setup and mirrored test tree
 .maestro/     Local E2E smoke flows
@@ -116,6 +131,13 @@ The token is stored in `expo-secure-store` and bounded by backend-side event
 cleanup/revocation. The trade-off is documented in
 [`docs/showcase/qr-auth.md`](docs/showcase/qr-auth.md).
 
+Organizer sessions use a different User bearer and are mutually exclusive with
+guest sessions. The backend re-authorizes every event-scoped management request.
+Optional Expo pushes contain generic copy plus technical event/note IDs, never
+the note title/body, event name, guest data or assigning user. Push is explicit
+opt-in; logout/device revocation removes the bearer-bound server destination,
+and offline logout is retried on a later app start.
+
 Persistent on-device keys are listed in
 [`docs/storage-keys.md`](docs/storage-keys.md). Runtime dependency data-flow is
 documented in [`docs/dependencies.md`](docs/dependencies.md). Vulnerability
@@ -133,6 +155,7 @@ reporting is covered by [`SECURITY.md`](SECURITY.md).
 
 - The backend is a separate project and is required for authenticated flows.
 - Public builds need real EAS/store credentials that are not included here.
+- Remote organizer pushes need configured APNs/FCM credentials and a native build.
 - E2E is smoke-only; deeper behavior is covered by Jest.
 - Demo data is backend-provided. The app does not ship an offline mock server.
 

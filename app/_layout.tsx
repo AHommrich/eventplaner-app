@@ -53,6 +53,7 @@ import { EventThemeProvider } from '../lib/EventThemeContext';
 import { BlockedFeaturesProvider } from '../lib/BlockedFeaturesContext';
 import { ConsentGateProvider } from '../components/ConsentGate';
 import { initMonitoring } from '../lib/monitoring';
+import { initializeManagementPushNotifications } from '../lib/managementPush';
 
 SplashScreen.preventAutoHideAsync();
 void initMonitoring();
@@ -89,6 +90,8 @@ export default function RootLayout() {
     JosefinSans_700Bold,
   });
 
+  useEffect(() => initializeManagementPushNotifications(), []);
+
   useEffect(() => {
     if (!fontsLoaded) return;
     SplashScreen.hideAsync();
@@ -114,6 +117,9 @@ export default function RootLayout() {
               <Stack screenOptions={{ headerShown: false }}>
                 <Stack.Screen name="index" options={{ gestureEnabled: false }} />
                 <Stack.Screen name="scan" options={{ gestureEnabled: false }} />
+                <Stack.Screen name="organizer/index" options={{ gestureEnabled: false }} />
+                <Stack.Screen name="organizer/notes" />
+                <Stack.Screen name="organizer/photos" />
                 <Stack.Screen name="rsvp" />
                 <Stack.Screen name="declined" />
                 <Stack.Screen name="blocked" />

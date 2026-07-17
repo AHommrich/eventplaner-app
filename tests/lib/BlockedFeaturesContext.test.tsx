@@ -8,6 +8,7 @@
 import React from 'react';
 import { Text } from 'react-native';
 import { render, act } from '@testing-library/react-native';
+import * as SecureStore from 'expo-secure-store';
 
 const mockApiGet = jest.fn();
 const mockRegisterHandler = jest.fn();
@@ -32,7 +33,7 @@ function Probe() {
 describe('lib/BlockedFeaturesContext', () => {
   let capturedHandler: (() => void) | null = null;
 
-  beforeEach(() => {
+  beforeEach(async () => {
     mockApiGet.mockReset();
     mockRegisterHandler.mockReset();
     mockClearHandler.mockReset();
@@ -41,19 +42,24 @@ describe('lib/BlockedFeaturesContext', () => {
     mockRegisterHandler.mockImplementation((fn: () => void) => {
       capturedHandler = fn;
     });
+    await SecureStore.deleteItemAsync('management_token');
+    await SecureStore.setItemAsync('guest_token', 'guest-bearer');
     jest.useFakeTimers();
   });
   afterEach(() => {
     jest.useRealTimers();
   });
 
-  it('registers a handler on mount and probes the drinks endpoint', () => {
+  it('registers a handler on mount and probes the drinks endpoint for a guest', async () => {
     mockApiGet.mockResolvedValue({ data: [] });
     render(
       <BlockedFeaturesProvider>
         <Probe />
       </BlockedFeaturesProvider>
     );
+    await act(async () => {
+      await Promise.resolve();
+    });
     expect(mockRegisterHandler).toHaveBeenCalledTimes(1);
     expect(mockApiGet).toHaveBeenCalledWith('/api/drinks');
   });
@@ -103,6 +109,10 @@ describe('lib/BlockedFeaturesContext', () => {
       </BlockedFeaturesProvider>
     );
 
+    await act(async () => {
+      await Promise.resolve();
+    });
+
     act(() => {
       capturedHandler?.();
     });
@@ -113,6 +123,22 @@ describe('lib/BlockedFeaturesContext', () => {
 
     expect(mockResetBlocked).not.toHaveBeenCalled();
     expect(getByTestId('blocked').props.children).toBe('BLOCKED');
+  });
+
+  it('does not probe guest features for an organizer-only session', async () => {
+    await SecureStore.deleteItemAsync('guest_token');
+    await SecureStore.setItemAsync('management_token', 'management-bearer');
+    render(
+      <BlockedFeaturesProvider>
+        <Probe />
+      </BlockedFeaturesProvider>
+    );
+
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    expect(mockApiGet).not.toHaveBeenCalled();
   });
 
   it('detaches the handler on unmount to prevent leaks', () => {

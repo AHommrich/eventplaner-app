@@ -16,7 +16,7 @@
  */
 import * as SecureStore from 'expo-secure-store';
 import api, { resetUnauthorizedRedirect } from './api';
-import { deleteGuestSession } from './sessionStorage';
+import { deleteGuestSession, deleteManagementSession } from './sessionStorage';
 
 /** Shape passed to `saveSession` and returned by `getSession`. */
 export type GuestSession = {
@@ -35,6 +35,7 @@ export type GuestSession = {
  */
 export async function saveSession(session: GuestSession): Promise<void> {
   resetUnauthorizedRedirect();
+  await deleteManagementSession();
   await SecureStore.setItemAsync('guest_token', session.token);
   await SecureStore.setItemAsync('guest_id', String(session.guestId));
   await SecureStore.setItemAsync('guest_firstname', session.firstname);

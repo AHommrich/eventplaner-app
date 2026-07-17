@@ -47,6 +47,14 @@ import api from '../lib/api';
 import { useEventTheme } from '../lib/EventThemeContext';
 import { theme } from '../constants/theme';
 import { getErasureState } from '../lib/erasure';
+import {
+  ensureActiveManagementEvent,
+  fetchManagementEvents,
+  getManagementSession,
+  isManagementPairingToken,
+  redeemManagementPairing,
+} from '../lib/management';
+import { openInitialManagementNotification } from '../lib/managementPush';
 
 // Same splash palette as `_layout.tsx` — visual continuity when the splash
 // fades out into this screen.
@@ -77,7 +85,14 @@ export default function WelcomeScreen() {
   const [qrToken, setQrToken] = useState<string | null>(null);
 
   useEffect(() => {
-    getSession().then(async (session) => {
+    getManagementSession().then(async (managementSession) => {
+      if (managementSession) {
+        if (await openInitialManagementNotification()) return;
+        router.replace('/organizer');
+        return;
+      }
+
+      const session = await getSession();
       if (!session) {
         // No session — before showing welcome, check whether a GDPR erasure
         // is still pending on this device. If so, drop the guest on the
@@ -150,6 +165,13 @@ export default function WelcomeScreen() {
       }
       const token = data.split('/').filter(Boolean).pop();
       if (!token) throw new Error(t('scan.invalidQr'));
+      if (isManagementPairingToken(token)) {
+        await redeemManagementPairing(token);
+        const events = await fetchManagementEvents();
+        await ensureActiveManagementEvent(events);
+        router.replace('/organizer');
+        return;
+      }
       const response = await api.get<ApiResponse>(`/api/auth/qr/${token}`);
       const { type, family_name, guests } = response.data;
       if (type === 'solo' && guests[0]?.token) {

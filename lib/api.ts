@@ -28,7 +28,7 @@ import axios from 'axios';
 import * as SecureStore from 'expo-secure-store';
 import { router } from 'expo-router';
 import { API_BASE } from '../constants/env';
-import { deleteGuestSession } from './sessionStorage';
+import { deleteGuestSession, deleteManagementSession } from './sessionStorage';
 
 // `axios.create` is the officially blessed factory for a custom instance.
 // The named `create` re-export exists too, but the `axios.<method>` shape
@@ -44,12 +44,30 @@ const api = axios.create({
 
 // --- Request interceptor: bearer token + language ---
 api.interceptors.request.use(async (config) => {
-  const [token, language] = await Promise.all([
+  const isManagement = config.url?.startsWith('/api/management/') ?? false;
+  const isLogout = config.url === '/api/auth/logout';
+  const [guestToken, managementToken, activeEventId, language] = await Promise.all([
     SecureStore.getItemAsync('guest_token'),
+    SecureStore.getItemAsync('management_token'),
+    SecureStore.getItemAsync('management_active_event_id'),
     SecureStore.getItemAsync('app_language'),
   ]);
-  if (token) {
+  const token = isManagement
+    ? managementToken
+    : isLogout
+      ? (managementToken ?? guestToken)
+      : guestToken;
+  if (token && !config.headers.Authorization) {
     config.headers.Authorization = `Bearer ${token}`;
+  }
+  const path = config.url?.split('?')[0];
+  const eventHeaderExempt = new Set([
+    '/api/management/me',
+    '/api/management/me/events',
+    '/api/management/push/register',
+  ]);
+  if (isManagement && activeEventId && !eventHeaderExempt.has(path ?? '')) {
+    config.headers['X-Event-ID'] = activeEventId;
   }
   config.headers['Accept-Language'] = language ?? 'de';
   return config;
@@ -98,7 +116,9 @@ api.interceptors.response.use(
     ) {
       if (!_unauthorized) {
         _unauthorized = true;
-        deleteGuestSession().finally(() => {
+        const managementRequest = error.config?.url?.startsWith('/api/management/') ?? false;
+        const cleanup = managementRequest ? deleteManagementSession() : deleteGuestSession();
+        cleanup.finally(() => {
           router.replace('/');
         });
       }

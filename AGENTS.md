@@ -7,6 +7,38 @@
 - After any completed cleanup task, always include a proposed English commit
   message in that format.
 
+## Organizer (management) feature — Expo deps fixed (2026-07-17)
+
+The organizer/management feature (P6) + hardening are implemented (`app/organizer/**`,
+`lib/management*.ts`). The **Checkpoint 4.1 dependency contamination is resolved:** all SDK-55
+runtime packages reconciled to SDK 54 (`npx expo install --fix`), `react-dom` added, native modules
+de-duplicated, `react-test-renderer` pinned to `19.1.0` (matches `react`), lockfile regenerated.
+`expo-doctor` is now **17/18**; the sole remaining check is the `app.json` vs `app.config.js`
+heuristic — **not a real conflict**: `app.config.js` already `require`s and spreads `app.json`. It is
+left as-is on purpose (renaming touches `.maestro/config.yaml` + EAS and can only be validated with a
+native build); resolve it during native-build work if desired.
+
+**Intentional dev-tool deviation:** `jest-expo` and `eslint-config-expo` stay on the `^57` line (in
+`expo.install.exclude`) because the test/lint infra requires it; downgrading them to the SDK-54
+"expected" versions breaks the Jest suites + lint. These are dev-only and do not affect the native
+build. Do not "fix" them to satisfy expo-doctor.
+
+Verification (Node 20): **308 Jest tests / 52 suites green**, TypeScript + Prettier green, ESLint 0
+errors (3 pre-existing warnings in `lib/monitoring.ts`).
+
+The authoritative fix plan is in the backend repo:
+`eventplaner/docs/EVENT_MANAGER_HARDENING_PLAN.md`. Open **[app]** work (verify current state first —
+some may already be done): **Checkpoint 3.1/3.2/3.5** — Android `organizer-tasks` channel + token
+rotation, stop guest `/api/drinks` polling in organizer mode, serialize the cold-start
+push-deep-link vs. welcome redirect.
+
+Already-implemented invariants to preserve (do not regress): explicit push opt-in/out (no
+focus-based unconditional registration), queued offline-logout revocation (never discard the pending
+revocation credential on logout).
+
+Verify green before handing back a commit message:
+`source ~/.nvm/nvm.sh && nvm use 20 && npx expo-doctor && npm run typecheck && npm test && npm run lint && npm run format:check`.
+
 ## Public Portfolio Cleanup Backlog
 
 Goal: prepare the repository for a public GitHub portfolio/showcase version.
