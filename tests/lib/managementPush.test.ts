@@ -8,11 +8,11 @@ jest.mock('../../lib/api', () => ({
   default: { post: (...args: any[]) => mockPost(...args) },
 }));
 
-const mockSetActiveManagementEvent = jest.fn();
+const mockGetActiveManagementEventId = jest.fn();
 const mockRetryPendingManagementLogout = jest.fn();
 jest.mock('../../lib/management', () => ({
   __esModule: true,
-  setActiveManagementEvent: (...args: any[]) => mockSetActiveManagementEvent(...args),
+  getActiveManagementEventId: (...args: any[]) => mockGetActiveManagementEventId(...args),
   retryPendingManagementLogout: (...args: any[]) => mockRetryPendingManagementLogout(...args),
 }));
 
@@ -66,7 +66,7 @@ describe('management push notifications', () => {
       data: 'ExponentPushToken[test-device]',
     });
     mockPost.mockResolvedValue({ data: { enabled: true } });
-    mockSetActiveManagementEvent.mockResolvedValue(undefined);
+    mockGetActiveManagementEventId.mockResolvedValue(4);
     mockRetryPendingManagementLogout.mockResolvedValue(undefined);
   });
 
@@ -105,7 +105,7 @@ describe('management push notifications', () => {
     expect(mockPost).not.toHaveBeenCalled();
   });
 
-  it('switches event and opens the matching note from a notification tap', async () => {
+  it('opens a matching bound-event note from a notification tap', async () => {
     await SecureStore.setItemAsync('management_token', 'manager-bearer');
 
     await expect(
@@ -114,7 +114,6 @@ describe('management push notifications', () => {
       )
     ).resolves.toBe(true);
 
-    expect(mockSetActiveManagementEvent).toHaveBeenCalledWith(4);
     expect(router.push).toHaveBeenCalledWith({
       pathname: '/organizer/notes',
       params: { noteId: '12' },
@@ -145,13 +144,13 @@ describe('management push notifications', () => {
 
   it('serializes a cold-start notification before the welcome redirect', async () => {
     await SecureStore.setItemAsync('management_token', 'manager-bearer');
+    mockGetActiveManagementEventId.mockResolvedValue(9);
     mockedNotifications.getLastNotificationResponseAsync.mockResolvedValueOnce(
       notificationResponse({ type: 'assigned_note', event_id: 9, note_id: 21 })
     );
 
     await expect(openInitialManagementNotification()).resolves.toBe(true);
 
-    expect(mockSetActiveManagementEvent).toHaveBeenCalledWith(9);
     expect(router.push).toHaveBeenCalledWith({
       pathname: '/organizer/notes',
       params: { noteId: '21' },
@@ -170,7 +169,20 @@ describe('management push notifications', () => {
         notificationResponse({ type: 'assigned_note', event_id: 'x', note_id: 2 })
       )
     ).resolves.toBe(false);
-    expect(mockSetActiveManagementEvent).not.toHaveBeenCalled();
+    expect(router.push).not.toHaveBeenCalled();
+  });
+
+  it('ignores a notification for a different event than the bound session', async () => {
+    await SecureStore.setItemAsync('management_token', 'manager-bearer');
+    mockGetActiveManagementEventId.mockResolvedValue(7);
+
+    await expect(
+      openManagementNotification(
+        notificationResponse({ type: 'assigned_note', event_id: 4, note_id: 12 })
+      )
+    ).resolves.toBe(false);
+
+    expect(router.push).not.toHaveBeenCalled();
   });
 
   it('creates the Android notification channel when registering on Android', async () => {
@@ -221,6 +233,7 @@ describe('management push notifications', () => {
 
   it('shows a banner and routes a tapped notification through the listeners', async () => {
     await SecureStore.setItemAsync('management_token', 'manager-bearer');
+    mockGetActiveManagementEventId.mockResolvedValue(3);
     const dispose = initializeManagementPushNotifications();
 
     const handler = (mockedNotifications.setNotificationHandler as jest.Mock).mock.calls.at(-1)[0];
@@ -234,7 +247,10 @@ describe('management push notifications', () => {
     respListener(notificationResponse({ type: 'assigned_note', event_id: 3, note_id: 7 }));
     await new Promise((resolve) => setTimeout(resolve, 0));
 
-    expect(mockSetActiveManagementEvent).toHaveBeenCalledWith(3);
+    expect(router.push).toHaveBeenCalledWith({
+      pathname: '/organizer/notes',
+      params: { noteId: '7' },
+    });
     dispose();
   });
 

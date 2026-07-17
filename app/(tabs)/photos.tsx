@@ -43,18 +43,14 @@ import {
   FlatList as GestureFlatList,
   Gesture,
   GestureDetector,
-  ScrollView as GestureScrollView,
 } from 'react-native-gesture-handler';
 import { ThemedText } from '../../components/ThemedText';
 import { PhotoGridSkeleton } from '../../components/ui/ScreenSkeletons';
 import { ErrorBanner } from '../../components/ui/ErrorBanner';
-import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { sheenGradient } from '../../lib/variantStyles';
 import { ScreenGradient } from '../../components/ScreenGradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import * as ImagePicker from 'expo-image-picker';
-import * as ImageManipulator from 'expo-image-manipulator';
 import { Ionicons } from '@expo/vector-icons';
 import api from '../../lib/api';
 import { getSession } from '../../lib/auth';
@@ -68,35 +64,15 @@ import { useConsentGate } from '../../components/ConsentGate';
 import { hideGuestContent, PhotoReportReason, reportPhoto } from '../../lib/guest';
 import { captureException } from '../../lib/monitoring';
 import { haptics } from '../../lib/haptics';
+import {
+  GalleryEmptyState,
+  GalleryThumbnail,
+  ZoomableGalleryImage,
+} from '../../components/gallery/GalleryPrimitives';
+import { pickPhotoFromLibrary, preparePhotoJpeg, takePhotoWithCamera } from '../../lib/photoPicker';
+import { buildGuestGalleryAlbums } from '../../lib/galleryAlbums';
 
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
-
-/**
- * Detail-modal image with pinch-to-zoom. `ScrollView` gives us that for free
- * on both iOS and Android without extra libraries.
- * `contentFit="contain"` prevents cropping when the image
- * aspect ratio doesn't match the viewport.
- */
-function ZoomableImage({ uri, width = SCREEN_W }: { uri: string; width?: number }) {
-  return (
-    <GestureScrollView
-      maximumZoomScale={4}
-      minimumZoomScale={1}
-      centerContent
-      bounces={false}
-      showsHorizontalScrollIndicator={false}
-      showsVerticalScrollIndicator={false}
-      style={{ width, height: SCREEN_H * 0.8 }}
-    >
-      <Image
-        source={uri}
-        style={{ width, height: SCREEN_H * 0.8 }}
-        contentFit="contain"
-        cachePolicy="disk"
-      />
-    </GestureScrollView>
-  );
-}
 
 type Photo = {
   id: number;
@@ -151,6 +127,10 @@ export default function PhotosScreen() {
     await fetchPhotos();
     loadTheme();
   });
+  // Guests stay on app_gallery in this checkpoint. The album collection keeps
+  // grid/detail state ready for a later selector without exposing more folders.
+  const guestAlbums = useMemo(() => buildGuestGalleryAlbums(photos), [photos]);
+  const visiblePhotos = guestAlbums[0]?.photos ?? [];
 
   const dragY = useSharedValue(0);
   const entryOpacity = useSharedValue(0);
@@ -211,13 +191,10 @@ export default function PhotosScreen() {
    * the new photo appears at the top before the backend even confirms.
    */
   async function uploadAsset(uri: string) {
-    const jpeg = await ImageManipulator.manipulateAsync(uri, [], {
-      compress: 0.8,
-      format: ImageManipulator.SaveFormat.JPEG,
-    });
+    const jpegUri = await preparePhotoJpeg(uri);
     const formData = new FormData();
     formData.append('photo', {
-      uri: jpeg.uri,
+      uri: jpegUri,
       name: 'photo.jpg',
       type: 'image/jpeg',
     } as any);
@@ -258,18 +235,13 @@ export default function PhotosScreen() {
    * multipart body construction.
    */
   async function handleUpload() {
-    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!permission.granted) {
+    const result = await pickPhotoFromLibrary();
+    if (result && 'permissionDenied' in result) {
       Alert.alert(t('common.accessDenied'), t('photos.libraryPermission'));
       return;
     }
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'],
-      quality: 1,
-      allowsEditing: false,
-    });
-    if (result.canceled) return;
-    await uploadAsset(result.assets[0].uri);
+    if (!result) return;
+    await uploadAsset(result.uri);
   }
 
   /**
@@ -279,17 +251,13 @@ export default function PhotosScreen() {
    * at the call site and the two permission strings stay distinct.
    */
   async function handleCamera() {
-    const permission = await ImagePicker.requestCameraPermissionsAsync();
-    if (!permission.granted) {
+    const result = await takePhotoWithCamera();
+    if (result && 'permissionDenied' in result) {
       Alert.alert(t('common.accessDenied'), t('photos.cameraPermission'));
       return;
     }
-    const result = await ImagePicker.launchCameraAsync({
-      quality: 1,
-      allowsEditing: false,
-    });
-    if (result.canceled) return;
-    await uploadAsset(result.assets[0].uri);
+    if (!result) return;
+    await uploadAsset(result.uri);
   }
 
   /**
@@ -471,7 +439,7 @@ export default function PhotosScreen() {
 
   const selectedIndex = selected
     ? Math.max(
-        photos.findIndex((p) => p.id === selected.id),
+        visiblePhotos.findIndex((photo) => photo.id === selected.id),
         0
       )
     : 0;
@@ -488,7 +456,7 @@ export default function PhotosScreen() {
     <View style={{ flex: 1, backgroundColor: colors.screenBg, paddingTop: insets.top }}>
       {isSoft && <ScreenGradient screenBg={colors.screenBg} primary={colors.primary} />}
       <FlatList
-        data={photos}
+        data={visiblePhotos}
         keyExtractor={(item) => String(item.id)}
         numColumns={COLUMNS}
         contentContainerStyle={{ padding: gap }}
@@ -513,29 +481,19 @@ export default function PhotosScreen() {
         }
         ListEmptyComponent={
           loadError ? null : (
-            <View testID="photos-empty-state" className="flex-1 items-center justify-center mt-32">
-              <Ionicons name="images-outline" size={48} color={theme.colors.muted} />
-              <ThemedText className="text-muted mt-3 text-base">{t('photos.empty')}</ThemedText>
-              <ThemedText className="text-muted text-sm">{t('photos.beFirst')}</ThemedText>
-            </View>
+            <GalleryEmptyState title={t('photos.empty')} subtitle={t('photos.beFirst')} />
           )
         }
         renderItem={({ item }) => (
-          <Pressable
-            testID={`photo-${item.id}`}
+          <GalleryThumbnail
+            photo={item}
+            size={tileSize}
+            radius={tileRadius}
             onPress={() => {
               setDetailMounted(true);
               setSelected(item);
             }}
-          >
-            <Image
-              source={item.url}
-              style={{ width: tileSize, height: tileSize, borderRadius: tileRadius }}
-              contentFit="cover"
-              cachePolicy="disk"
-              recyclingKey={String(item.id)}
-            />
-          </Pressable>
+          />
         )}
       />
       {!uploadToast && <RefreshToast visible={refreshed} refreshing={refreshing} />}
@@ -577,7 +535,7 @@ export default function PhotosScreen() {
                   <GestureDetector gesture={nativeListGesture}>
                     <GestureFlatList
                       testID="photo-detail-pager"
-                      data={photos}
+                      data={visiblePhotos}
                       horizontal
                       pagingEnabled
                       initialScrollIndex={selectedIndex}
@@ -592,9 +550,12 @@ export default function PhotosScreen() {
                         const raw = event.nativeEvent.contentOffset.x;
                         const nextIndex = Math.max(
                           0,
-                          Math.min(Math.round((raw + DETAIL_PEEK) / DETAIL_SNAP), photos.length - 1)
+                          Math.min(
+                            Math.round((raw + DETAIL_PEEK) / DETAIL_SNAP),
+                            visiblePhotos.length - 1
+                          )
                         );
-                        const nextPhoto = photos[nextIndex];
+                        const nextPhoto = visiblePhotos[nextIndex];
                         if (nextPhoto && selected && nextPhoto.id !== selected.id) {
                           setSelected(nextPhoto);
                           setReportingPhoto(null);
@@ -603,7 +564,7 @@ export default function PhotosScreen() {
                       }}
                       onScrollToIndexFailed={() => undefined}
                       renderItem={({ item }) => (
-                        <ZoomableImage uri={item.url} width={DETAIL_ITEM_W} />
+                        <ZoomableGalleryImage uri={item.url} width={DETAIL_ITEM_W} />
                       )}
                       style={{ width: SCREEN_W, height: SCREEN_H * 0.8, flexGrow: 0 }}
                     />

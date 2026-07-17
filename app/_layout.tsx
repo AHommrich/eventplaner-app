@@ -117,9 +117,7 @@ export default function RootLayout() {
               <Stack screenOptions={{ headerShown: false }}>
                 <Stack.Screen name="index" options={{ gestureEnabled: false }} />
                 <Stack.Screen name="scan" options={{ gestureEnabled: false }} />
-                <Stack.Screen name="organizer/index" options={{ gestureEnabled: false }} />
-                <Stack.Screen name="organizer/notes" />
-                <Stack.Screen name="organizer/photos" />
+                <Stack.Screen name="organizer" options={{ gestureEnabled: false }} />
                 <Stack.Screen name="rsvp" />
                 <Stack.Screen name="declined" />
                 <Stack.Screen name="blocked" />

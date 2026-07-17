@@ -5,15 +5,11 @@ import { router } from 'expo-router';
 const mockGetManagementSession = jest.fn();
 const mockFetchManagementEvents = jest.fn();
 const mockEnsureActiveManagementEvent = jest.fn();
-const mockSetActiveManagementEvent = jest.fn();
-const mockClearManagementSession = jest.fn();
 jest.mock('../../lib/management', () => ({
   __esModule: true,
   getManagementSession: (...args: any[]) => mockGetManagementSession(...args),
   fetchManagementEvents: (...args: any[]) => mockFetchManagementEvents(...args),
   ensureActiveManagementEvent: (...args: any[]) => mockEnsureActiveManagementEvent(...args),
-  setActiveManagementEvent: (...args: any[]) => mockSetActiveManagementEvent(...args),
-  clearManagementSession: (...args: any[]) => mockClearManagementSession(...args),
 }));
 
 const mockGetManagementPushEnabled = jest.fn();
@@ -49,8 +45,6 @@ describe('app/organizer/index', () => {
     mockGetManagementSession.mockReset();
     mockFetchManagementEvents.mockReset();
     mockEnsureActiveManagementEvent.mockReset();
-    mockSetActiveManagementEvent.mockReset();
-    mockClearManagementSession.mockReset();
     mockGetManagementPushEnabled.mockReset().mockResolvedValue(false);
     mockSetManagementPushEnabled.mockReset().mockResolvedValue(true);
     mockSyncManagementPushPreference.mockReset().mockResolvedValue(false);
@@ -62,20 +56,16 @@ describe('app/organizer/index', () => {
       email: 'ada@example.test',
     });
     mockFetchManagementEvents.mockResolvedValue([
-      { id: 4, name: 'Wedding', date: null, my_role: 'owner' },
-      { id: 5, name: 'Birthday', date: null, my_role: 'event_manager' },
+      { id: 4, name: 'Wedding', date: null, my_role: 'owner', theme: {} },
     ]);
     mockEnsureActiveManagementEvent.mockResolvedValue(4);
   });
 
-  it('renders accessible events with roles and switches the active event', async () => {
-    const { findByText } = renderScreen();
+  it('renders exactly the bound event as read-only', async () => {
+    const { findByText, queryByText } = renderScreen();
     await findByText('Ada Admin');
     await findByText('Wedding');
-    const second = await findByText('Birthday');
-
-    fireEvent.press(second);
-    await waitFor(() => expect(mockSetActiveManagementEvent).toHaveBeenCalledWith(5));
+    expect(queryByText('Birthday')).toBeNull();
   });
 
   it('redirects to the shared welcome scanner without a session', async () => {
@@ -84,13 +74,6 @@ describe('app/organizer/index', () => {
 
     await waitFor(() => expect(router.replace).toHaveBeenCalledWith('/'));
     expect(mockFetchManagementEvents).not.toHaveBeenCalled();
-  });
-
-  it('clears the organizer session on logout', async () => {
-    const { findByLabelText } = renderScreen();
-    fireEvent.press(await findByLabelText('Ausloggen'));
-
-    await waitFor(() => expect(mockClearManagementSession).toHaveBeenCalled());
   });
 
   it('offers an explicit push opt-in toggle', async () => {

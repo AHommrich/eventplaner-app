@@ -32,6 +32,13 @@ const de = {
     pushTitle: 'Aufgaben-Benachrichtigungen',
     pushHint: 'Optionale Push-Hinweise bei neuen Zuweisungen.',
     pushUpdateFailed: 'Die Push-Einstellung konnte nicht gespeichert werden.',
+    tabs: {
+      overview: 'Übersicht',
+      schedule: 'Ablauf',
+      photos: 'Fotos',
+      tasks: 'Aufgaben',
+      settings: 'Einstellungen',
+    },
     notes: {
       title: 'Notizen & ToDos',
       create: 'Neuer Eintrag',
@@ -69,6 +76,10 @@ const de = {
       deleteTitle: 'Foto endgültig löschen?',
       deleteMessage: 'Das Foto wird aus der Galerie und dem Speicher entfernt.',
       deleteFailed: 'Das Foto konnte nicht gelöscht werden.',
+      uploadPhoto: 'Foto hochladen',
+      uploadFailed: 'Das Foto konnte nicht hochgeladen werden.',
+      photoGameUploadHint:
+        'Foto-Spiel-Bilder können hier angesehen und gelöscht, aber nur über eine Aufgabe hochgeladen werden.',
     },
     roles: {
       owner: 'Owner',

@@ -16,10 +16,12 @@ For historical reasoning behind the refactor phases start with
 The app is a small Expo Router client that talks to a Laravel backend. A
 guest scans the invitation card's QR code and lands in a tab layout that
 mirrors the wedding weekend. An organizer instead redeems a one-time
-device-pairing QR code generated from an authenticated web account. Guest and
-organizer bearer sessions are deliberately mutually exclusive. Everything
-else (theme colours, event info, photos, drink logs) flows down from the
-backend at runtime.
+event-scoped device-pairing QR code generated from an authenticated web account.
+Guest and organizer bearer sessions are deliberately mutually exclusive; one
+Organizer device session is pinned to one event. Guest and Organizer route groups
+share the same event-themed tab shell; the Organizer manifest is always Overview,
+Schedule, Photos, Tasks and Settings for every organizer role. Everything else
+(theme colours, event info, photos, drink logs) flows down from the backend at runtime.
 
 ## 2. Runtime layers
 
@@ -68,8 +70,8 @@ graph TD
 1. **`LanguageProvider`** (`lib/LanguageContext.tsx`) — outermost so any error
    inside another provider can still render a translated fallback.
 2. **`EventThemeProvider`** (`lib/EventThemeContext.tsx`) — needs the language
-   layer for `Accept-Language` on its first fetch; needs a session but tolerates
-   its absence.
+   layer for `Accept-Language` on its first fetch; selects Guest event-info or
+   the bound Organizer event theme and clears stale theme state on logout.
 3. **`BlockedFeaturesProvider`** (`lib/BlockedFeaturesContext.tsx`) — polls
    for `drinks_blocked` state, registers a handler with `lib/api.ts`.
 4. **`ConsentGateProvider`** (`components/ConsentGate.tsx`) — hosts the
@@ -116,15 +118,15 @@ Organizer access is a separate session type reached through the same scanner.
 `app/scan.tsx` recognizes the token contract before making a request: Guest
 invitation tokens are 32 characters, while one-time Organizer pairing secrets
 are 64 alphanumeric characters. This prevents a management secret from being
-sent in a Guest-auth URL. `lib/management.ts` stores the organizer identity,
-loads `GET /api/management/me/events`, and persists one active event. Saving
+sent in a Guest-auth URL. `lib/management.ts` stores the organizer identity and
+the event id returned by pairing, then requires `GET /api/management/me/events`
+to return exactly that one bound event. Saving
 either session type deletes the other one, preventing a guest token from ever
-being sent to the management API (or vice versa). The backend password endpoint
-is intentionally not exposed by this client until native password and OAuth
-sign-in can ship together with equivalent account support.
+being sent to the management API (or vice versa). Organizer login is QR-only;
+there is no native or backend password-token path.
 
 Organizer push is explicit opt-in. The install-level preference survives logout, while every Expo
-token is server-bound to exactly one expiring management bearer. A successful logout therefore
+token is server-bound to exactly one expiring management bearer and event. A successful logout therefore
 cascade-revokes delivery. If logout is offline, the interactive session is cleared but a dedicated,
 non-interactive bearer copy retries server revocation on later starts. Expo token rotation updates
 the same server device context. Cold-start notification routing is consumed by the welcome-session
@@ -132,28 +134,31 @@ probe before its default organizer redirect, so the deep link cannot be overwrit
 
 ## 5. Screens and their non-obvious rules
 
-| Route                       | Purpose                                       | Non-obvious rule                                                                                                                                                           |
-| --------------------------- | --------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `app/index.tsx`             | Welcome + session probe + gallery-QR fallback | Also probes for a pending Art. 17 erasure — if one exists we route to `/erasure-pending` without showing the welcome screen.                                               |
-| `app/scan.tsx`              | Shared Guest/Organizer QR scanner             | Distinguishes the fixed 32-character invitation and 64-character pairing contracts locally, then opens the matching session flow.                                          |
-| `app/organizer/index.tsx`   | Organizer event switcher and tool entry       | Bootstraps authorized events, persists the active event, exposes explicit push opt-in/out, and returns missing or expired sessions to the shared welcome scanner.          |
-| `app/organizer/notes.tsx`   | Organizer notes and ToDos                     | Mirrors server-side visibility: assignees may check off assigned ToDos, while assignment and deletion remain limited to the authoritative role policy.                     |
-| `app/organizer/photos.tsx`  | Cross-gallery photo management                | Reads every album for the active event; deletion uses the management route so the server performs event authorization and object-storage cleanup.                          |
-| `app/rsvp.tsx`              | First-time RSVP after login                   | The tab bar is not yet mounted here — this is the one place where a full-screen route sits outside `(tabs)`.                                                               |
-| `app/declined.tsx`          | Declined guest surface                        | Offers revocation. Known issue: `useSafeAreaInsets` is called after an early return (see `docs/REFACTOR_PLAN.md` follow-ups).                                              |
-| `app/blocked.tsx`           | Global app-block screen                       | Polls the backend for re-enable and calls `clearBlocked()` from `lib/api.ts` before navigating home.                                                                       |
-| `app/(tabs)/home.tsx`       | Landing tab                                   | Cover image + countdown + tap-to-navigate venue. `openInMaps` prefers coordinates over addresses because `geo:lat,lng?q=<addr>` on Android silently drops the coordinates. |
-| `app/(tabs)/rsvp.tsx`       | Group RSVP tab                                | Only visible when `rsvp_status === 'accepted_pending'`. Tab visibility is a static prop in `_layout.tsx`.                                                                  |
-| `app/(tabs)/photos.tsx`     | Gallery + upload + UGC moderation             | Upload button wrapped in `<ConsentGate purpose="photo_upload">`; detail modal can anonymously report a photo or privately hide an uploader.                                |
-| `app/(tabs)/photo-game.tsx` | Foto-game with 4 states                       | Submit button wrapped in `<ConsentGate purpose="photo_game">`.                                                                                                             |
-| `app/(tabs)/drinks.tsx`     | Drink log + ranking                           | Hidden when the backend flips `drink_game_enabled: false`.                                                                                                                 |
-| `app/(tabs)/settings.tsx`   | Logout, language, legal/DSGVO surfaces        | Legal rows keep the conventional DE order: Impressum before Datenschutz, then consent/export/erasure.                                                                      |
-| `app/legal/imprint.tsx`     | § 5 DDG imprint                               | Reads through a 24 h SecureStore cache so legal contact info remains available offline.                                                                                    |
-| `app/legal/privacy.tsx`     | Art. 13 privacy notice                        | Reads through a 24 h SecureStore cache so airplane-mode still shows text.                                                                                                  |
-| `app/consents/index.tsx`    | Art. 7 (3) consent management                 | Lists granted consents with timestamps; revocation is one tap.                                                                                                             |
-| `app/data-export.tsx`       | Art. 15 export                                | Streams the JSON to `expo-sharing` — never lands on disk unencrypted.                                                                                                      |
-| `app/hidden-guests.tsx`     | Private content-hide management               | Lists guests whose photo content the current guest has hidden; unhide is local-to-this-guest and server-backed.                                                            |
-| `app/erasure-pending.tsx`   | Art. 17 in-window state                       | Reachable without a session so a guest can always revoke.                                                                                                                  |
+| Route                        | Purpose                                       | Non-obvious rule                                                                                                                                                           |
+| ---------------------------- | --------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `app/index.tsx`              | Welcome + session probe + gallery-QR fallback | Also probes for a pending Art. 17 erasure — if one exists we route to `/erasure-pending` without showing the welcome screen.                                               |
+| `app/scan.tsx`               | Shared Guest/Organizer QR scanner             | Distinguishes the fixed 32-character invitation and 64-character pairing contracts locally, then opens the matching session flow.                                          |
+| `app/organizer/_layout.tsx`  | Five-tab Organizer shell                      | Uses the same `EventTabShell` and event theme as Guest; role differences are actions inside screens, never separate navigation.                                            |
+| `app/organizer/index.tsx`    | Bound Organizer overview                      | Displays the single paired event read-only, exposes explicit push opt-in/out, and returns missing or expired sessions to the shared welcome scanner.                       |
+| `app/organizer/notes.tsx`    | Organizer notes and ToDos                     | Mirrors server-side visibility: assignees may check off assigned ToDos, while assignment and deletion remain limited to the authoritative role policy.                     |
+| `app/organizer/photos.tsx`   | Administrative gallery                        | Views all three albums with shared grid/detail primitives; generic upload is limited to `app_gallery`/`presentation`, while `photo_game` stays assignment-aware.           |
+| `app/organizer/schedule.tsx` | Complete read-only schedule                   | Uses the shared timeline presentation with the dedicated management adapter; no schedule mutation call exists in the native app.                                           |
+| `app/organizer/settings.tsx` | Generic app settings                          | Reuses Guest language/legal/logout rows but deliberately excludes Guest export, erasure, visibility and consent-management actions.                                        |
+| `app/rsvp.tsx`               | First-time RSVP after login                   | The tab bar is not yet mounted here — this is the one place where a full-screen route sits outside `(tabs)`.                                                               |
+| `app/declined.tsx`           | Declined guest surface                        | Offers revocation. Known issue: `useSafeAreaInsets` is called after an early return (see `docs/REFACTOR_PLAN.md` follow-ups).                                              |
+| `app/blocked.tsx`            | Global app-block screen                       | Polls the backend for re-enable and calls `clearBlocked()` from `lib/api.ts` before navigating home.                                                                       |
+| `app/(tabs)/home.tsx`        | Landing tab                                   | Cover image + countdown + tap-to-navigate venue. `openInMaps` prefers coordinates over addresses because `geo:lat,lng?q=<addr>` on Android silently drops the coordinates. |
+| `app/(tabs)/rsvp.tsx`        | Group RSVP tab                                | Only visible when `rsvp_status === 'accepted_pending'`. Tab visibility is a static prop in `_layout.tsx`.                                                                  |
+| `app/(tabs)/photos.tsx`      | Gallery + upload + UGC moderation             | Shared gallery primitives use an album-shaped model, but the Guest capability exposes only `app_gallery`; reporting/hide controls remain Guest-only.                       |
+| `app/(tabs)/photo-game.tsx`  | Foto-game with 4 states                       | Submit button wrapped in `<ConsentGate purpose="photo_game">`.                                                                                                             |
+| `app/(tabs)/drinks.tsx`      | Drink log + ranking                           | Hidden when the backend flips `drink_game_enabled: false`.                                                                                                                 |
+| `app/(tabs)/settings.tsx`    | Logout, language, legal/DSGVO surfaces        | Legal rows keep the conventional DE order: Impressum before Datenschutz, then consent/export/erasure.                                                                      |
+| `app/legal/imprint.tsx`      | § 5 DDG imprint                               | Reads through a 24 h SecureStore cache so legal contact info remains available offline.                                                                                    |
+| `app/legal/privacy.tsx`      | Art. 13 privacy notice                        | Reads through a 24 h SecureStore cache so airplane-mode still shows text.                                                                                                  |
+| `app/consents/index.tsx`     | Art. 7 (3) consent management                 | Lists granted consents with timestamps; revocation is one tap.                                                                                                             |
+| `app/data-export.tsx`        | Art. 15 export                                | Streams the JSON to `expo-sharing` — never lands on disk unencrypted.                                                                                                      |
+| `app/hidden-guests.tsx`      | Private content-hide management               | Lists guests whose photo content the current guest has hidden; unhide is local-to-this-guest and server-backed.                                                            |
+| `app/erasure-pending.tsx`    | Art. 17 in-window state                       | Reachable without a session so a guest can always revoke.                                                                                                                  |
 
 ## 6. Design system
 
@@ -161,8 +166,14 @@ Two layers with a strict "consult in this order" rule:
 
 1. **`constants/theme.ts`** — static tokens. Spacing, border radius, semantic
    colours (`error`, `sage`, `muted`). Never overridden by the backend.
-2. **`useEventTheme().colors`** — dynamic brand palette. Every user-facing
-   colour that could plausibly change per event lives here.
+2. **`useEventTheme().colors`** — dynamic brand palette from Guest event-info
+   or the bound Organizer theme block. Every user-facing colour that could
+   plausibly change per event lives here; there is no Organizer palette fork.
+
+`components/EventTabShell.tsx`, `components/ScheduleTimeline.tsx`,
+`components/GenericAppSettingsRows.tsx` and `components/gallery/**` are the shared
+presentation boundary. Guest and management API adapters remain separate so
+reusing presentation never broadens an actor's server capabilities.
 
 Hard-coded hex values inside screens are forbidden. The colour role table in
 `CLAUDE.md` lists every field and its intended use.
@@ -189,13 +200,14 @@ enough that context suffices, and every mid-mount async lookup goes through
 `lib/api.ts` is the only axios instance in the app. It selects the guest or
 organizer bearer via request interceptor (freshly read from SecureStore on
 every call so a mid-session logout takes effect immediately). Management
-requests also receive the persisted `X-Event-ID`, except for user-scoped
+requests also receive the persisted, pairing-bound `X-Event-ID`, except for
 bootstrap endpoints such as `GET /api/management/me/events`. A management
 401 clears only the organizer session and routes back to the shared welcome
 screen and scanner.
 `lib/managementPush.ts` registers the Expo installation token only for an
-organizer session, unregisters it during online logout, and routes an
-`assigned_note` notification to the matching event and highlighted note.
+organizer session, unregisters it during online logout, and opens an
+`assigned_note` only when its event matches the bound session. Notification
+taps never switch events.
 The response interceptor also translates two backend "soft blocks" into
 global side-effects:
 

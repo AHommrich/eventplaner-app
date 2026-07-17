@@ -169,6 +169,7 @@ export default function WelcomeScreen() {
         await redeemManagementPairing(token);
         const events = await fetchManagementEvents();
         await ensureActiveManagementEvent(events);
+        await loadTheme();
         router.replace('/organizer');
         return;
       }

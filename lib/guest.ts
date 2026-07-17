@@ -122,6 +122,29 @@ export type EventInfo = {
   design_preset?: DesignVariantKey | null;
 };
 
+/** Exact theme fields shared by the Guest and bound Organizer APIs. */
+export type EventThemePayload = Pick<
+  EventInfo,
+  | 'color_primary'
+  | 'color_secondary'
+  | 'color_tertiary'
+  | 'color_screen_bg'
+  | 'color_card'
+  | 'color_card_text'
+  | 'color_card_button'
+  | 'color_card_button_text'
+  | 'color_tab_tint'
+  | 'color_border'
+  | 'color_fab'
+  | 'color_fab_icon'
+  | 'color_nav_bg'
+  | 'color_home_text'
+  | 'color_home_shadow'
+  | 'home_shadow_opacity'
+  | 'font_heading'
+  | 'design_preset'
+>;
+
 /**
  * True when the guest has responded with either an accepted-pending or a
  * confirmed acceptance — the two states that unlock the full tab set. Used

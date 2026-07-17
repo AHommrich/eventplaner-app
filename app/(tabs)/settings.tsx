@@ -10,15 +10,15 @@
 import { useEffect, useState } from 'react';
 import { View, TouchableOpacity, Alert } from 'react-native';
 import { ThemedText } from '../../components/ThemedText';
+import { GenericAppSettingsRows } from '../../components/GenericAppSettingsRows';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { getSession, clearSession, GuestSession } from '../../lib/auth';
-import { useLanguage, Language } from '../../lib/LanguageContext';
+import { useLanguage } from '../../lib/LanguageContext';
 import { useEventTheme } from '../../lib/EventThemeContext';
 import { theme } from '../../constants/theme';
 import { cardSurfaceStyle } from '../../lib/variantStyles';
-import { GradientFill } from '../../components/GradientFill';
 import { ScreenGradient } from '../../components/ScreenGradient';
 import { requestErasure } from '../../lib/guest';
 import { saveErasureState } from '../../lib/erasure';
@@ -26,7 +26,7 @@ import { captureSentryTestError } from '../../lib/monitoring';
 
 export default function SettingsScreen() {
   const router = useRouter();
-  const { t, language, setLanguage } = useLanguage();
+  const { t } = useLanguage();
   const { colors, variant } = useEventTheme();
   const isSoft = variant.key === 'soft-luxury';
   const softListCard = isSoft
@@ -148,110 +148,7 @@ export default function SettingsScreen() {
           </View>
         )}
 
-        {/* Language switcher — persisted in SecureStore, effective immediately. */}
-        <View
-          style={{
-            padding: theme.spacing.md,
-            borderBottomWidth: 1,
-            borderBottomColor: colors.border + '30',
-          }}
-        >
-          <ThemedText
-            style={{ fontSize: 12, color: colors.cardText + 'aa', marginBottom: theme.spacing.sm }}
-          >
-            {t('settings.language')}
-          </ThemedText>
-          <View
-            style={{
-              flexDirection: 'row',
-              borderRadius: isSoft ? variant.radius.button : theme.borderRadius.md,
-              overflow: 'hidden',
-              borderWidth: 1,
-              borderColor: colors.border + '55',
-            }}
-          >
-            {(['de', 'en'] as Language[]).map((lang, i) => (
-              <TouchableOpacity
-                key={lang}
-                onPress={() => setLanguage(lang)}
-                style={{
-                  flex: 1,
-                  paddingVertical: 10,
-                  alignItems: 'center',
-                  backgroundColor: language === lang ? colors.cardButton : 'transparent',
-                  borderRightWidth: i === 0 ? 1 : 0,
-                  borderRightColor: colors.border + '55',
-                }}
-              >
-                <ThemedText
-                  style={{
-                    fontWeight: '600',
-                    color: language === lang ? colors.cardButtonText : colors.cardText,
-                  }}
-                >
-                  {lang === 'de' ? t('settings.german') : t('settings.english')}
-                </ThemedText>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </View>
-
-        {/* Logout — clears SecureStore + fires server logout best-effort. */}
-        <TouchableOpacity
-          onPress={handleLogout}
-          style={{
-            margin: theme.spacing.md,
-            paddingVertical: theme.spacing.sm,
-            borderRadius: isSoft ? variant.radius.button : theme.borderRadius.md,
-            alignItems: 'center',
-            backgroundColor: colors.cardButton,
-            overflow: 'hidden',
-          }}
-        >
-          {isSoft && <GradientFill color={colors.cardButton} radius={999} />}
-          <ThemedText style={{ color: colors.cardButtonText, fontWeight: '600', fontSize: 14 }}>
-            {t('settings.logout')}
-          </ThemedText>
-        </TouchableOpacity>
-
-        {/* Imprint + privacy notice — German-market legal surfaces. Imprint
-            stays above privacy because that is the conventional order in DE
-            app/site footers. */}
-        <TouchableOpacity
-          onPress={() => router.push('/legal/imprint')}
-          style={{
-            paddingHorizontal: theme.spacing.md,
-            paddingVertical: theme.spacing.md,
-            borderTopWidth: 1,
-            borderTopColor: colors.border + '30',
-            flexDirection: 'row',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-          }}
-        >
-          <ThemedText style={{ color: colors.cardText, fontSize: 15 }}>
-            {t('settings.imprint')}
-          </ThemedText>
-          <Ionicons name="chevron-forward" size={16} color={colors.cardText + 'aa'} />
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          onPress={() => router.push('/legal/privacy')}
-          style={{
-            paddingHorizontal: theme.spacing.md,
-            paddingVertical: theme.spacing.md,
-            borderTopWidth: 1,
-            borderTopColor: colors.border + '30',
-            flexDirection: 'row',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-          }}
-        >
-          <ThemedText style={{ color: colors.cardText, fontSize: 15 }}>
-            {t('settings.privacy')}
-          </ThemedText>
-          <Ionicons name="chevron-forward" size={16} color={colors.cardText + 'aa'} />
-        </TouchableOpacity>
+        <GenericAppSettingsRows onLogout={handleLogout} />
 
         {/* Consent management — sits directly under the privacy row so the
             DSGVO-related entries stay grouped. */}

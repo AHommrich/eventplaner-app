@@ -16,9 +16,10 @@
  * `FONT_MAP` and exposes it as `colors.fontFamily` for `ThemedText` and the
  * tab-bar label style.
  */
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, useRef, ReactNode } from 'react';
 import * as SecureStore from 'expo-secure-store';
-import { fetchEventInfo, EventInfo } from './guest';
+import { fetchEventInfo, EventInfo, EventThemePayload } from './guest';
+import { fetchManagementEvents } from './management';
 import { FONT_MAP, FontDefinition, FontKey } from '../constants/fonts';
 import {
   DESIGN_VARIANTS,
@@ -31,8 +32,8 @@ import {
  * Resolve the active design preset: DEV override → backend `design_preset` →
  * default. Never throws on an unknown key (legacy/typo) — falls back cleanly.
  */
-function resolveVariant(eventInfo: EventInfo | null): DesignVariant {
-  const key = DEV_FORCE_DESIGN_VARIANT ?? eventInfo?.design_preset ?? DEFAULT_DESIGN_VARIANT;
+function resolveVariant(themeInfo: EventThemePayload | null): DesignVariant {
+  const key = DEV_FORCE_DESIGN_VARIANT ?? themeInfo?.design_preset ?? DEFAULT_DESIGN_VARIANT;
   return DESIGN_VARIANTS[key] ?? DESIGN_VARIANTS[DEFAULT_DESIGN_VARIANT];
 }
 
@@ -107,16 +108,41 @@ const EventThemeContext = createContext<EventThemeContextValue>({
  */
 export function EventThemeProvider({ children }: { children: ReactNode }) {
   const [eventInfo, setEventInfo] = useState<EventInfo | null>(null);
+  const [themeInfo, setThemeInfo] = useState<EventThemePayload | null>(null);
+  const requestId = useRef(0);
 
   async function loadTheme() {
-    const token = await SecureStore.getItemAsync('guest_token');
-    if (!token) return;
+    const currentRequest = ++requestId.current;
+    const [guestToken, managementToken] = await Promise.all([
+      SecureStore.getItemAsync('guest_token'),
+      SecureStore.getItemAsync('management_token'),
+    ]);
+    if (!guestToken && !managementToken) {
+      if (currentRequest === requestId.current) {
+        setEventInfo(null);
+        setThemeInfo(null);
+      }
+      return;
+    }
     try {
+      if (managementToken) {
+        const events = await fetchManagementEvents();
+        if (events.length !== 1) throw new Error('Management theme requires one bound event.');
+        if (currentRequest === requestId.current) {
+          setEventInfo(null);
+          setThemeInfo(events[0].theme);
+        }
+        return;
+      }
+
       const info = await fetchEventInfo();
-      setEventInfo(info);
+      if (currentRequest === requestId.current) {
+        setEventInfo(info);
+        setThemeInfo(info);
+      }
     } catch (e) {
       // Non-fatal: keep the fallback palette so the app is still usable.
-      console.warn('[EventTheme] fetchEventInfo failed:', e);
+      console.warn('[EventTheme] theme fetch failed:', e);
     }
   }
 
@@ -129,31 +155,31 @@ export function EventThemeProvider({ children }: { children: ReactNode }) {
   }, []);
 
   // --- Font resolution ---
-  const fontKey = (eventInfo?.font_heading ?? null) as FontKey | null;
+  const fontKey = (themeInfo?.font_heading ?? null) as FontKey | null;
   const fontFamily: FontDefinition | undefined =
     fontKey && FONT_MAP[fontKey] ? FONT_MAP[fontKey] : undefined;
 
   // --- Colour resolution: backend role → backend palette → hard-coded fallback ---
   const colors: EventThemeColors = {
-    primary: eventInfo?.color_primary ?? FALLBACK_PRIMARY,
-    secondary: eventInfo?.color_secondary ?? FALLBACK_SECONDARY,
-    tertiary: eventInfo?.color_tertiary ?? FALLBACK_TERTIARY,
-    screenBg: eventInfo?.color_screen_bg ?? FALLBACK_SECONDARY,
-    card: eventInfo?.color_card ?? FALLBACK_TERTIARY,
-    cardText: eventInfo?.color_card_text ?? FALLBACK_PRIMARY,
-    cardButton: eventInfo?.color_card_button ?? FALLBACK_PRIMARY,
-    cardButtonText: eventInfo?.color_card_button_text ?? FALLBACK_TERTIARY,
-    border: eventInfo?.color_border ?? FALLBACK_PRIMARY,
-    fab: eventInfo?.color_fab ?? FALLBACK_PRIMARY,
-    fabIcon: eventInfo?.color_fab_icon ?? FALLBACK_TERTIARY,
-    navBg: eventInfo?.color_nav_bg ?? FALLBACK_SECONDARY,
-    homeText: eventInfo?.color_home_text ?? null,
-    homeShadow: eventInfo?.color_home_shadow ?? '#000000',
-    tabTint: eventInfo?.color_tab_tint ?? FALLBACK_PRIMARY,
+    primary: themeInfo?.color_primary ?? FALLBACK_PRIMARY,
+    secondary: themeInfo?.color_secondary ?? FALLBACK_SECONDARY,
+    tertiary: themeInfo?.color_tertiary ?? FALLBACK_TERTIARY,
+    screenBg: themeInfo?.color_screen_bg ?? FALLBACK_SECONDARY,
+    card: themeInfo?.color_card ?? FALLBACK_TERTIARY,
+    cardText: themeInfo?.color_card_text ?? FALLBACK_PRIMARY,
+    cardButton: themeInfo?.color_card_button ?? FALLBACK_PRIMARY,
+    cardButtonText: themeInfo?.color_card_button_text ?? FALLBACK_TERTIARY,
+    border: themeInfo?.color_border ?? FALLBACK_PRIMARY,
+    fab: themeInfo?.color_fab ?? FALLBACK_PRIMARY,
+    fabIcon: themeInfo?.color_fab_icon ?? FALLBACK_TERTIARY,
+    navBg: themeInfo?.color_nav_bg ?? FALLBACK_SECONDARY,
+    homeText: themeInfo?.color_home_text ?? null,
+    homeShadow: themeInfo?.color_home_shadow ?? '#000000',
+    tabTint: themeInfo?.color_tab_tint ?? FALLBACK_PRIMARY,
     fontFamily,
   };
 
-  const variant = resolveVariant(eventInfo);
+  const variant = resolveVariant(themeInfo);
 
   return (
     <EventThemeContext.Provider value={{ eventInfo, colors, variant, loadTheme }}>

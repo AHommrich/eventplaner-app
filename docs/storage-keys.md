@@ -43,7 +43,7 @@ bearer token.
 | `management_user_id`               | Organizer account ID for the local identity display.                                         | Until logout.                                               | Yes                               |
 | `management_user_name`             | Organizer display name.                                                                      | Until logout.                                               | Yes                               |
 | `management_user_email`            | Organizer email address.                                                                     | Until logout.                                               | Yes                               |
-| `management_active_event_id`       | Event selected by the organizer; sent as `X-Event-ID` on scoped requests.                    | Until logout or switching events.                           | Yes                               |
+| `management_active_event_id`       | Event fixed by the pairing response; echoed as `X-Event-ID` on scoped requests.              | Until logout; there is no in-session event switching.       | Yes                               |
 | `management_pending_logout_tokens` | Dedupe-list of non-interactive bearers retained only to retry failed offline server logouts. | Until each retry succeeds or the server reports it invalid. | No (entries are deleted by retry) |
 
 `management_expo_push_token` is installation state, not organizer-session state, and therefore
