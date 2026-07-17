@@ -31,11 +31,31 @@ Logout runs both from `lib/auth.ts` `clearSession` and — as a belt-and-braces
 duplicate — directly in `app/(tabs)/settings.tsx` so a failed API logout still
 wipes the local session.
 
+## Organizer session (set by `lib/management.ts`)
+
+Organizer and guest sessions are mutually exclusive: saving either session deletes every key of
+the other actor type first. This prevents the central API client from ever selecting an ambiguous
+bearer token.
+
+| Key                                | Purpose                                                                                      | Retention                                                   | Cleared on logout?                |
+| ---------------------------------- | -------------------------------------------------------------------------------------------- | ----------------------------------------------------------- | --------------------------------- |
+| `management_token`                 | User Sanctum bearer for `/api/management/*`.                                                 | Up to 90 days; shorter on logout or server-side revoke.     | Yes                               |
+| `management_user_id`               | Organizer account ID for the local identity display.                                         | Until logout.                                               | Yes                               |
+| `management_user_name`             | Organizer display name.                                                                      | Until logout.                                               | Yes                               |
+| `management_user_email`            | Organizer email address.                                                                     | Until logout.                                               | Yes                               |
+| `management_active_event_id`       | Event selected by the organizer; sent as `X-Event-ID` on scoped requests.                    | Until logout or switching events.                           | Yes                               |
+| `management_pending_logout_tokens` | Dedupe-list of non-interactive bearers retained only to retry failed offline server logouts. | Until each retry succeeds or the server reports it invalid. | No (entries are deleted by retry) |
+
+`management_expo_push_token` is installation state, not organizer-session state, and therefore
+lives with the persistent preferences below. It cannot authorize an API request.
+
 ## Preferences (persistent across sessions)
 
-| Key            | Purpose                                                                                   | Retention                   | Cleared on logout?                                                        |
-| -------------- | ----------------------------------------------------------------------------------------- | --------------------------- | ------------------------------------------------------------------------- |
-| `app_language` | Chosen UI locale (`de` or `en`). Restored on next app start by `lib/LanguageContext.tsx`. | Until the guest changes it. | **No** — a returning guest keeps their language preference across logins. |
+| Key                          | Purpose                                                                                   | Retention                   | Cleared on logout?                                                        |
+| ---------------------------- | ----------------------------------------------------------------------------------------- | --------------------------- | ------------------------------------------------------------------------- |
+| `app_language`               | Chosen UI locale (`de` or `en`). Restored on next app start by `lib/LanguageContext.tsx`. | Until the guest changes it. | **No** — a returning guest keeps their language preference across logins. |
+| `management_expo_push_token` | Last Expo installation token; reused for opt-in sync and token rotation.                  | Until app-data deletion.    | **No** — server delivery still requires a live bound organizer PAT.       |
+| `management_push_enabled`    | Explicit organizer push opt-in (`true`/`false`).                                          | Until changed in the app.   | **No** — this is an installation preference.                              |
 
 `app_language` is intentionally kept on logout so an English-speaking guest
 does not have to re-pick the language after re-scanning their QR code.

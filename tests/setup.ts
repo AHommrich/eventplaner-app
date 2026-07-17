@@ -37,6 +37,7 @@ jest.mock('expo-router', () => {
   return {
     router,
     useRouter: () => router,
+    useLocalSearchParams: () => (globalThis as any).__routerParams ?? {},
     useSegments: () => [],
     useFocusEffect: (cb: () => void | (() => void)) => {
       // Mock: real `useFocusEffect` fires on route focus events; in Jest
@@ -164,6 +165,22 @@ jest.mock('expo-font', () => ({
 jest.mock('expo-splash-screen', () => ({
   preventAutoHideAsync: jest.fn(async () => {}),
   hideAsync: jest.fn(async () => {}),
+}));
+
+// --- expo-notifications ---
+// Permission/token APIs are opt-in per test. The listener registration stays
+// inert unless a test invokes the captured callback itself.
+jest.mock('expo-notifications', () => ({
+  AndroidImportance: { HIGH: 4 },
+  setNotificationHandler: jest.fn(),
+  setNotificationChannelAsync: jest.fn(async () => null),
+  getPermissionsAsync: jest.fn(async () => ({ granted: true, status: 'granted' })),
+  requestPermissionsAsync: jest.fn(async () => ({ granted: true, status: 'granted' })),
+  getExpoPushTokenAsync: jest.fn(async () => ({ data: 'ExponentPushToken[test-device]' })),
+  addNotificationResponseReceivedListener: jest.fn(() => ({ remove: jest.fn() })),
+  addPushTokenListener: jest.fn(() => ({ remove: jest.fn() })),
+  getLastNotificationResponseAsync: jest.fn(async () => null),
+  clearLastNotificationResponseAsync: jest.fn(async () => undefined),
 }));
 
 // --- expo-haptics ---

@@ -21,6 +21,7 @@
  * hall polling in parallel does not hammer the backend.
  */
 import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
+import * as SecureStore from 'expo-secure-store';
 import api, {
   registerDrinksBlockedHandler,
   clearDrinksBlockedHandler,
@@ -50,14 +51,23 @@ export function BlockedFeaturesProvider({ children }: { children: React.ReactNod
   function startPolling() {
     stopPolling();
     pollRef.current = setInterval(() => {
-      api
-        .get('/api/drinks')
-        .then(() => {
+      void SecureStore.getItemAsync('guest_token').then((guestToken) => {
+        if (!guestToken) {
           resetDrinksBlocked();
           setDrinksBlocked(false);
           stopPolling();
-        })
-        .catch(() => {});
+          return;
+        }
+
+        api
+          .get('/api/drinks')
+          .then(() => {
+            resetDrinksBlocked();
+            setDrinksBlocked(false);
+            stopPolling();
+          })
+          .catch(() => {});
+      });
     }, POLL_INTERVAL_MS);
   }
 
@@ -68,7 +78,9 @@ export function BlockedFeaturesProvider({ children }: { children: React.ReactNod
     });
     // Initial probe: if the game is already off at app start, this triggers
     // the handler above the same way a later blocked response would.
-    api.get('/api/drinks').catch(() => {});
+    void SecureStore.getItemAsync('guest_token').then((guestToken) => {
+      if (guestToken) api.get('/api/drinks').catch(() => {});
+    });
     return () => {
       clearDrinksBlockedHandler();
       stopPolling();

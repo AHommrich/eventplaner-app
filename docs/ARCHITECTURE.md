@@ -5,8 +5,8 @@ first time. It is written for a reviewer with React Native / TypeScript
 experience; it does not re-explain Expo Router or NativeWind, but it does
 explain every non-obvious choice this app makes on top of them.
 
-For product context (what a "guest" is, who scans what, why there is no
-password) start with `README.md`. For legal / DSGVO reasoning start with
+For product context (what a "guest" is, who scans what, and why guest access
+has no password) start with `README.md`. For legal / DSGVO reasoning start with
 `docs/dependencies.md`, `docs/storage-keys.md` and the in-app privacy notice.
 For historical reasoning behind the refactor phases start with
 `docs/REFACTOR_PLAN.md`.
@@ -14,11 +14,12 @@ For historical reasoning behind the refactor phases start with
 ## 1. One-paragraph summary
 
 The app is a small Expo Router client that talks to a Laravel backend. A
-guest holds an invitation card with a QR code, scans it once, and lands in a
-tab layout that mirrors the wedding weekend (RSVP, home, photos, photo game,
-drinks, settings). There are no passwords and no accounts — the bearer
-token behind the QR code IS the identity. Everything else (theme colours,
-event info, photos, drink logs) flows down from the backend at runtime.
+guest scans the invitation card's QR code and lands in a tab layout that
+mirrors the wedding weekend. An organizer instead redeems a one-time
+device-pairing QR code generated from an authenticated web account. Guest and
+organizer bearer sessions are deliberately mutually exclusive. Everything
+else (theme colours, event info, photos, drink logs) flows down from the
+backend at runtime.
 
 ## 2. Runtime layers
 
@@ -111,12 +112,33 @@ sequenceDiagram
 `isDeclinedFlow` centralise the rsvp-status → route mapping so the redirect
 matrix cannot drift between the session probe and the post-login path.
 
+Organizer access is a separate session type reached through the same scanner.
+`app/scan.tsx` recognizes the token contract before making a request: Guest
+invitation tokens are 32 characters, while one-time Organizer pairing secrets
+are 64 alphanumeric characters. This prevents a management secret from being
+sent in a Guest-auth URL. `lib/management.ts` stores the organizer identity,
+loads `GET /api/management/me/events`, and persists one active event. Saving
+either session type deletes the other one, preventing a guest token from ever
+being sent to the management API (or vice versa). The backend password endpoint
+is intentionally not exposed by this client until native password and OAuth
+sign-in can ship together with equivalent account support.
+
+Organizer push is explicit opt-in. The install-level preference survives logout, while every Expo
+token is server-bound to exactly one expiring management bearer. A successful logout therefore
+cascade-revokes delivery. If logout is offline, the interactive session is cleared but a dedicated,
+non-interactive bearer copy retries server revocation on later starts. Expo token rotation updates
+the same server device context. Cold-start notification routing is consumed by the welcome-session
+probe before its default organizer redirect, so the deep link cannot be overwritten.
+
 ## 5. Screens and their non-obvious rules
 
 | Route                       | Purpose                                       | Non-obvious rule                                                                                                                                                           |
 | --------------------------- | --------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `app/index.tsx`             | Welcome + session probe + gallery-QR fallback | Also probes for a pending Art. 17 erasure — if one exists we route to `/erasure-pending` without showing the welcome screen.                                               |
-| `app/scan.tsx`              | Live QR scanner + DEV token input             | Calls `ensureConsent('camera_scan')` before `requestPermission()` so the DSGVO consent shows before the OS camera dialog.                                                  |
+| `app/scan.tsx`              | Shared Guest/Organizer QR scanner             | Distinguishes the fixed 32-character invitation and 64-character pairing contracts locally, then opens the matching session flow.                                          |
+| `app/organizer/index.tsx`   | Organizer event switcher and tool entry       | Bootstraps authorized events, persists the active event, exposes explicit push opt-in/out, and returns missing or expired sessions to the shared welcome scanner.          |
+| `app/organizer/notes.tsx`   | Organizer notes and ToDos                     | Mirrors server-side visibility: assignees may check off assigned ToDos, while assignment and deletion remain limited to the authoritative role policy.                     |
+| `app/organizer/photos.tsx`  | Cross-gallery photo management                | Reads every album for the active event; deletion uses the management route so the server performs event authorization and object-storage cleanup.                          |
 | `app/rsvp.tsx`              | First-time RSVP after login                   | The tab bar is not yet mounted here — this is the one place where a full-screen route sits outside `(tabs)`.                                                               |
 | `app/declined.tsx`          | Declined guest surface                        | Offers revocation. Known issue: `useSafeAreaInsets` is called after an early return (see `docs/REFACTOR_PLAN.md` follow-ups).                                              |
 | `app/blocked.tsx`           | Global app-block screen                       | Polls the backend for re-enable and calls `clearBlocked()` from `lib/api.ts` before navigating home.                                                                       |
@@ -164,10 +186,18 @@ enough that context suffices, and every mid-mount async lookup goes through
 
 ## 8. Networking
 
-`lib/api.ts` is the only axios instance in the app. It applies a bearer via
-request interceptor (freshly read from SecureStore on every call so a mid-
-session logout takes effect immediately) and translates two backend "soft
-blocks" into global side-effects via response interceptor:
+`lib/api.ts` is the only axios instance in the app. It selects the guest or
+organizer bearer via request interceptor (freshly read from SecureStore on
+every call so a mid-session logout takes effect immediately). Management
+requests also receive the persisted `X-Event-ID`, except for user-scoped
+bootstrap endpoints such as `GET /api/management/me/events`. A management
+401 clears only the organizer session and routes back to the shared welcome
+screen and scanner.
+`lib/managementPush.ts` registers the Expo installation token only for an
+organizer session, unregisters it during online logout, and routes an
+`assigned_note` notification to the matching event and highlighted note.
+The response interceptor also translates two backend "soft blocks" into
+global side-effects:
 
 - `app_blocked` (403) → route to `/blocked` once, swallow the rejection so no
   screen surfaces a duplicate alert.
@@ -205,7 +235,7 @@ on the backend so a legal edit does not require a store submission.
 ## 10. Testing strategy
 
 The suite is not a coverage-percentage race. The rule is: every regression
-that could reach a guest phone should have a fair chance of failing here
+that could reach a guest or organizer phone should have a fair chance of failing here
 first.
 
 - **`lib/**` and `constants/**`** — pure logic, ≥ 90 % lines.

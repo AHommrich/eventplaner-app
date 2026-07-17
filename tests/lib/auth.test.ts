@@ -36,6 +36,7 @@ describe('lib/auth', () => {
     await SecureStore.deleteItemAsync('guest_lastname');
     await SecureStore.deleteItemAsync('guest_type');
     await SecureStore.deleteItemAsync('guest_family_name');
+    await SecureStore.deleteItemAsync('management_token');
   });
 
   it('getSession returns null when no token is present', async () => {
@@ -43,9 +44,11 @@ describe('lib/auth', () => {
   });
 
   it('saveSession + getSession round-trip a solo session', async () => {
+    await SecureStore.setItemAsync('management_token', 'old-management-token');
     await saveSession(soloSession);
     const roundTrip = await getSession();
     expect(roundTrip).toEqual(soloSession);
+    expect(await SecureStore.getItemAsync('management_token')).toBeNull();
   });
 
   it('saveSession + getSession round-trip a family session', async () => {

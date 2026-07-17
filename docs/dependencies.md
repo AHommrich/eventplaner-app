@@ -19,7 +19,7 @@ production bundle is produced by Metro from `dependencies` only.
 
 ## Networked dependencies
 
-Exactly **two** runtime dependencies can open network sockets, both under app
+Exactly **four** runtime dependencies can open network sockets, all under app
 control:
 
 | Package                | Phones home?                                                                                                                                          | To whom                                                                     | Notes                                                                                                                                                                                                                         |
@@ -27,6 +27,7 @@ control:
 | `axios`                | Only to `constants/env.ts::API_BASE`                                                                                                                  | `beta.hommrich.app` (Expo Go / EAS Preview) / `eveplan.de` (EAS Production) | Sole HTTP client. All backend calls funnel through `lib/api.ts`, which enforces the base URL and attaches the bearer via interceptor.                                                                                         |
 | `@sentry/react-native` | Only when `EXPO_PUBLIC_SENTRY_DSN` is set and the app is not running in Expo Go.                                                                      | Configured Sentry project                                                   | Crash/error monitoring only. `sendDefaultPii: false`, no Session Replay, no Sentry Logs, no analytics events. `lib/monitoring.ts` strips user data and auth/cookie headers before sending.                                    |
 | `react-native-webview` | Only when we render a WebView; the only such surface is `lib/QrFromImage.tsx` which loads an inline HTML string (no remote URL, no `src` attributes). | —                                                                           | Never used to render remote URLs. The HTML template inlines a vendored `jsQR` copy (`lib/vendor/jsQRSource.ts`) — the previous CDN reference to `cdn.jsdelivr.net` was removed so the WebView produces zero outbound traffic. |
+| `expo-notifications`   | Only after an organizer grants the OS notification permission and `lib/managementPush.ts` requests/registers an Expo installation token.              | Expo Push Service, then Apple APNs / Google FCM                             | Push bodies contain no note text, guest data, or names. Routing data is limited to the event and note IDs. The Expo sub-processor and transfer safeguards are documented in the backend privacy/governance documents.         |
 
 Everything else in the list is either pure UI, a native module wrapping a
 local device capability, or a bundle-time helper.
@@ -66,25 +67,26 @@ Nothing over the wire.
 
 ## Expo native modules
 
-| Package                  | Purpose                                                                                          | Phones home?                                                                                                                                             |
-| ------------------------ | ------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `expo`                   | Expo SDK core runtime.                                                                           | No, once Expo Go itself is installed.                                                                                                                    |
-| `@expo/metro-runtime`    | Metro bundler runtime shim. Bundle-time; no network I/O.                                         | No                                                                                                                                                       |
-| `expo-build-properties`  | Build-time config for native builds. Not evaluated at runtime by the client.                     | No                                                                                                                                                       |
-| `expo-camera`            | Camera preview + capture; wraps AVFoundation / Camera2.                                          | No                                                                                                                                                       |
-| `expo-clipboard`         | Read/write system clipboard.                                                                     | No                                                                                                                                                       |
-| `expo-constants`         | Reads env values baked into the bundle.                                                          | No                                                                                                                                                       |
-| `expo-font`              | Loads font assets registered by `@expo-google-fonts/*`.                                          | No                                                                                                                                                       |
-| `expo-image`             | Native image renderer; caches decoded bitmaps on disk under the OS-managed sandbox.              | Only when we pass it a remote URL (e.g. photo gallery items) — those URLs already point at the configured backend (`beta.hommrich.app` or `eveplan.de`). |
-| `expo-image-manipulator` | On-device rotate/resize/crop. Runs in-process.                                                   | No                                                                                                                                                       |
-| `expo-image-picker`      | System photo-library / camera picker.                                                            | No                                                                                                                                                       |
-| `expo-linear-gradient`   | Gradient renderer.                                                                               | No                                                                                                                                                       |
-| `expo-linking`           | Deep-link URL parsing and opening.                                                               | No                                                                                                                                                       |
-| `expo-localization`      | Reads device locale on start-up.                                                                 | No                                                                                                                                                       |
-| `expo-router`            | File-based routing.                                                                              | No                                                                                                                                                       |
-| `expo-secure-store`      | Keychain (iOS) / Keystore (Android) wrapper for the values documented in `docs/storage-keys.md`. | No                                                                                                                                                       |
-| `expo-splash-screen`     | Splash controller.                                                                               | No                                                                                                                                                       |
-| `expo-status-bar`        | Status-bar styling.                                                                              | No                                                                                                                                                       |
+| Package                  | Purpose                                                                                                   | Phones home?                                                                                                                                             |
+| ------------------------ | --------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `expo`                   | Expo SDK core runtime.                                                                                    | No, once Expo Go itself is installed.                                                                                                                    |
+| `@expo/metro-runtime`    | Metro bundler runtime shim. Bundle-time; no network I/O.                                                  | No                                                                                                                                                       |
+| `expo-build-properties`  | Build-time config for native builds. Not evaluated at runtime by the client.                              | No                                                                                                                                                       |
+| `expo-camera`            | Camera preview + capture; wraps AVFoundation / Camera2.                                                   | No                                                                                                                                                       |
+| `expo-clipboard`         | Read/write system clipboard.                                                                              | No                                                                                                                                                       |
+| `expo-constants`         | Reads env values baked into the bundle.                                                                   | No                                                                                                                                                       |
+| `expo-font`              | Loads font assets registered by `@expo-google-fonts/*`.                                                   | No                                                                                                                                                       |
+| `expo-image`             | Native image renderer; caches decoded bitmaps on disk under the OS-managed sandbox.                       | Only when we pass it a remote URL (e.g. photo gallery items) — those URLs already point at the configured backend (`beta.hommrich.app` or `eveplan.de`). |
+| `expo-image-manipulator` | On-device rotate/resize/crop. Runs in-process.                                                            | No                                                                                                                                                       |
+| `expo-image-picker`      | System photo-library / camera picker.                                                                     | No                                                                                                                                                       |
+| `expo-linear-gradient`   | Gradient renderer.                                                                                        | No                                                                                                                                                       |
+| `expo-linking`           | Deep-link URL parsing and opening.                                                                        | No                                                                                                                                                       |
+| `expo-localization`      | Reads device locale on start-up.                                                                          | No                                                                                                                                                       |
+| `expo-notifications`     | Requests notification permission, obtains an Expo installation token, and handles task-notification taps. | Networked only when explicitly registered; see the networked-dependencies table above.                                                                   |
+| `expo-router`            | File-based routing.                                                                                       | No                                                                                                                                                       |
+| `expo-secure-store`      | Keychain (iOS) / Keystore (Android) wrapper for the values documented in `docs/storage-keys.md`.          | No                                                                                                                                                       |
+| `expo-splash-screen`     | Splash controller.                                                                                        | No                                                                                                                                                       |
+| `expo-status-bar`        | Status-bar styling.                                                                                       | No                                                                                                                                                       |
 
 ## React Native core and bridging
 
@@ -116,6 +118,8 @@ Nothing over the wire.
   crash/error monitoring, not analytics.
 - **1** package renders content on demand from a URL we pass (`expo-image`) —
   the URLs point at the same configured backend.
+- **1** package registers organizer devices for privacy-minimized task pushes
+  (`expo-notifications`) through the documented Expo sub-processor.
 - **10** font packages ship font files locally with no CDN fallback.
 - **1** vendored copy of `jsqr` ships inside the JS bundle so the gallery-
   based QR decoder needs zero CDN traffic (`lib/vendor/jsQRSource.ts`).
@@ -123,25 +127,27 @@ Nothing over the wire.
   pure computation / rendering library.
 
 There is **no** analytics SDK, feature-flag service, remote-config client, ad
-tracker, session-replay tool, or push-notification service in the tree.
-Sentry is the single explicit error-monitoring exception and is guarded by
-`lib/monitoring.ts` plus `tests/regressions/no-tracking.test.ts`. The same test
-also fails if a CDN hostname (jsDelivr, unpkg, Google Fonts) reappears in the
-source tree.
+tracker or session-replay tool in the tree. Sentry is the explicit
+error-monitoring exception; Expo Notifications is the explicit organizer push
+exception. Both are documented and scoped, while
+`tests/regressions/no-tracking.test.ts` still rejects undeclared tracking SDKs
+and public-CDN hostnames.
 
 ## Vulnerability posture
 
-`npm audit` reports 25 advisories as of the last refactor pass. Two rules
+`npm audit` reports 26 advisories as of the P6 push-notification addition. Two rules
 govern how they get handled:
 
 1. **Runtime deps get fixed immediately.** `axios` was pinned at
    `^1.13.6`, ran into the November 2025 wave of SSRF / prototype-
    pollution / ReDoS advisories, and was bumped to `^1.18.1`
-   (`>= 1.16.0` clears every one). Nothing else on the _runtime_ list
-   currently has an open advisory.
+   (`>= 1.16.0` clears every one). npm also labels the direct Expo packages,
+   including `expo-notifications`, because they inherit the
+   `expo-constants → @expo/config` toolchain finding; that chain is handled by
+   rule 2 rather than by replacing one SDK package in isolation.
 
 2. **Expo-toolchain transitive deps stay where they are.** The remaining
-   25 advisories all sit under `@expo/cli`, `@expo/config`,
+   advisories all sit under `@expo/cli`, `@expo/config`,
    `@expo/config-plugins`, `expo-splash-screen`'s prebuild chain,
    `@xmldom/xmldom`, `ws`, `shell-quote`, `xcode`, etc. — these run at
    bundle time and never ship to a guest phone. Bumping `expo` or

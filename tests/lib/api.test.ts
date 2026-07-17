@@ -59,6 +59,8 @@ describe('lib/api — module wiring', () => {
 describe('lib/api — request interceptor', () => {
   beforeEach(async () => {
     await SecureStore.deleteItemAsync('guest_token');
+    await SecureStore.deleteItemAsync('management_token');
+    await SecureStore.deleteItemAsync('management_active_event_id');
     await SecureStore.deleteItemAsync('app_language');
   });
 
@@ -73,6 +75,45 @@ describe('lib/api — request interceptor', () => {
     const cfg = { headers: {} as Record<string, string> };
     const result = await requestInterceptor(cfg);
     expect(result.headers.Authorization).toBeUndefined();
+  });
+
+  it('attaches management bearer and X-Event-ID to scoped management requests', async () => {
+    await SecureStore.setItemAsync('management_token', 'management-token');
+    await SecureStore.setItemAsync('management_active_event_id', '17');
+    const cfg = { url: '/api/management/notes', headers: {} as Record<string, string> };
+
+    const result = await requestInterceptor(cfg);
+    expect(result.headers.Authorization).toBe('Bearer management-token');
+    expect(result.headers['X-Event-ID']).toBe('17');
+  });
+
+  it('never attaches a management bearer to a guest endpoint', async () => {
+    await SecureStore.setItemAsync('management_token', 'management-token');
+    const cfg = { url: '/api/drinks', headers: {} as Record<string, string> };
+
+    const result = await requestInterceptor(cfg);
+    expect(result.headers.Authorization).toBeUndefined();
+  });
+
+  it('preserves an explicit pending-revocation bearer on logout', async () => {
+    await SecureStore.setItemAsync('management_token', 'new-management-token');
+    const cfg = {
+      url: '/api/auth/logout',
+      headers: { Authorization: 'Bearer pending-old-token' } as Record<string, string>,
+    };
+
+    const result = await requestInterceptor(cfg);
+    expect(result.headers.Authorization).toBe('Bearer pending-old-token');
+  });
+
+  it('omits X-Event-ID for management event bootstrap', async () => {
+    await SecureStore.setItemAsync('management_token', 'management-token');
+    await SecureStore.setItemAsync('management_active_event_id', '17');
+    const cfg = { url: '/api/management/me/events', headers: {} as Record<string, string> };
+
+    const result = await requestInterceptor(cfg);
+    expect(result.headers.Authorization).toBe('Bearer management-token');
+    expect(result.headers['X-Event-ID']).toBeUndefined();
   });
 
   it('defaults Accept-Language to de when no language is persisted', async () => {
@@ -100,6 +141,8 @@ describe('lib/api — response interceptor', () => {
     await SecureStore.deleteItemAsync('guest_lastname');
     await SecureStore.deleteItemAsync('guest_type');
     await SecureStore.deleteItemAsync('guest_family_name');
+    await SecureStore.deleteItemAsync('management_token');
+    await SecureStore.deleteItemAsync('management_user_id');
     (router.replace as jest.Mock).mockClear();
   });
 
@@ -179,6 +222,25 @@ describe('lib/api — response interceptor', () => {
     };
     await expect(responseOnError(err)).rejects.toBe(err);
     expect(router.replace).not.toHaveBeenCalled();
+  });
+
+  it('clears a rejected management session and routes to the shared welcome scanner', async () => {
+    resetUnauthorizedRedirect();
+    await SecureStore.setItemAsync('management_token', 'expired-management-token');
+    await SecureStore.setItemAsync('management_user_id', '5');
+
+    responseOnError({
+      config: {
+        url: '/api/management/me/events',
+        headers: { Authorization: 'Bearer expired-management-token' },
+      },
+      response: { status: 401, data: {} },
+    });
+    await Promise.resolve();
+
+    expect(await SecureStore.getItemAsync('management_token')).toBeNull();
+    expect(await SecureStore.getItemAsync('management_user_id')).toBeNull();
+    expect(router.replace).toHaveBeenCalledWith('/');
   });
 
   it('lets logout 401s bubble so clearSession can finish local cleanup', async () => {
