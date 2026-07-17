@@ -132,4 +132,66 @@ describe('lib/management', () => {
       JSON.parse((await SecureStore.getItemAsync('management_pending_logout_tokens'))!)
     ).toEqual(['management-bearer', 'second-bearer']);
   });
+
+  it('clears the active event when no events are accessible', async () => {
+    await SecureStore.setItemAsync('management_active_event_id', '99');
+
+    expect(await ensureActiveManagementEvent([])).toBeNull();
+    expect(await SecureStore.getItemAsync('management_active_event_id')).toBeNull();
+  });
+
+  it('treats a corrupt pending-logout store as empty', async () => {
+    await SecureStore.setItemAsync('management_pending_logout_tokens', '{not json');
+
+    await retryPendingManagementLogout();
+
+    expect(mockDelete).not.toHaveBeenCalled();
+    expect(await SecureStore.getItemAsync('management_pending_logout_tokens')).toBeNull();
+  });
+
+  it('keeps a pending logout token when the retry fails with a non-401 error', async () => {
+    await SecureStore.setItemAsync(
+      'management_pending_logout_tokens',
+      JSON.stringify(['still-valid'])
+    );
+    mockDelete.mockRejectedValue({ response: { status: 500 } });
+
+    await retryPendingManagementLogout();
+
+    expect(
+      JSON.parse((await SecureStore.getItemAsync('management_pending_logout_tokens'))!)
+    ).toEqual(['still-valid']);
+  });
+
+  it('drops a pending logout token when the bearer is already revoked (401)', async () => {
+    await SecureStore.setItemAsync('management_pending_logout_tokens', JSON.stringify(['revoked']));
+    mockDelete.mockRejectedValue({ response: { status: 401 } });
+
+    await retryPendingManagementLogout();
+
+    expect(await SecureStore.getItemAsync('management_pending_logout_tokens')).toBeNull();
+  });
+
+  it('treats a non-array pending-logout store as empty', async () => {
+    await SecureStore.setItemAsync('management_pending_logout_tokens', '{"unexpected":true}');
+
+    await retryPendingManagementLogout();
+
+    expect(mockDelete).not.toHaveBeenCalled();
+  });
+
+  it('returns empty name and email when only token and id are stored', async () => {
+    await SecureStore.setItemAsync('management_token', 'bearer');
+    await SecureStore.setItemAsync('management_user_id', '5');
+
+    expect(await getManagementSession()).toEqual({ token: 'bearer', id: 5, name: '', email: '' });
+  });
+
+  it('clears an offline session without queuing when no bearer is stored', async () => {
+    mockDelete.mockRejectedValue(new Error('offline'));
+
+    await clearManagementSession();
+
+    expect(await SecureStore.getItemAsync('management_pending_logout_tokens')).toBeNull();
+  });
 });
