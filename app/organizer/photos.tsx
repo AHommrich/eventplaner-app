@@ -3,6 +3,7 @@ import {
   ActivityIndicator,
   Alert,
   Dimensions,
+  FlatList,
   Modal,
   Pressable,
   RefreshControl,
@@ -40,6 +41,7 @@ import { pickPhotoFromLibrary, takePhotoWithCamera } from '../../lib/photoPicker
 const TILE_GAP = theme.spacing.sm;
 // Dense 3-column thumbnail grid to match the guest gallery (not a card list).
 const TILE_SIZE = (Dimensions.get('window').width - theme.spacing.lg * 2 - TILE_GAP * 2) / 3;
+const SCREEN_WIDTH = Dimensions.get('window').width;
 
 export default function OrganizerPhotosScreen() {
   const router = useRouter();
@@ -198,23 +200,7 @@ export default function OrganizerPhotosScreen() {
               onSelect={setSelectedAlbumId}
             />
             {selectedAlbum && (
-              <View style={[styles.card, eventStyles.card]}>
-                <View style={styles.albumHeader}>
-                  <ThemedText style={[styles.cardTitle, eventStyles.title]}>
-                    {selectedAlbum.name}
-                  </ThemedText>
-                  <ThemedText
-                    style={[
-                      styles.count,
-                      {
-                        backgroundColor: eventStyles.colors.cardButton,
-                        color: eventStyles.colors.cardButtonText,
-                      },
-                    ]}
-                  >
-                    {selectedAlbum.photos.length}
-                  </ThemedText>
-                </View>
+              <>
                 {selectedAlbum.photos.length === 0 ? (
                   <ThemedText style={styles.empty}>{t('organizer.photos.emptyAlbum')}</ThemedText>
                 ) : (
@@ -235,7 +221,7 @@ export default function OrganizerPhotosScreen() {
                     {t('organizer.photos.photoGameUploadHint')}
                   </ThemedText>
                 )}
-              </View>
+              </>
             )}
           </>
         )}
@@ -278,7 +264,30 @@ export default function OrganizerPhotosScreen() {
         <View style={styles.detail}>
           {selectedPhoto && (
             <>
-              <ZoomableGalleryImage uri={selectedPhoto.url} />
+              <FlatList
+                data={selectedAlbum?.photos ?? []}
+                keyExtractor={(p) => String(p.id)}
+                horizontal
+                pagingEnabled
+                showsHorizontalScrollIndicator={false}
+                initialScrollIndex={Math.max(
+                  0,
+                  (selectedAlbum?.photos ?? []).findIndex((p) => p.id === selectedPhoto.id)
+                )}
+                getItemLayout={(_, index) => ({
+                  length: SCREEN_WIDTH,
+                  offset: SCREEN_WIDTH * index,
+                  index,
+                })}
+                onMomentumScrollEnd={(e) => {
+                  const index = Math.round(e.nativeEvent.contentOffset.x / SCREEN_WIDTH);
+                  const next = (selectedAlbum?.photos ?? [])[index];
+                  if (next) setSelectedPhoto(next);
+                }}
+                renderItem={({ item }) => (
+                  <ZoomableGalleryImage uri={item.url} width={SCREEN_WIDTH} />
+                )}
+              />
               <Pressable
                 accessibilityLabel={t('a11y.closePhoto')}
                 onPress={() => setSelectedPhoto(null)}
@@ -344,7 +353,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '700',
   },
-  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: TILE_GAP },
+  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: TILE_GAP, marginTop: theme.spacing.md },
   photoCard: { width: TILE_SIZE, overflow: 'hidden' },
   photoInfo: { padding: theme.spacing.sm, minHeight: 54 },
   uploader: { fontSize: 13, fontWeight: '600' },

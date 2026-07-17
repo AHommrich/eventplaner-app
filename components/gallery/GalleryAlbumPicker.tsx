@@ -1,4 +1,4 @@
-import { ScrollView, StyleSheet, TouchableOpacity } from 'react-native';
+import { StyleSheet, TouchableOpacity, View } from 'react-native';
 import { ThemedText } from '../ThemedText';
 import { theme } from '../../constants/theme';
 import { useEventTheme } from '../../lib/EventThemeContext';
@@ -9,6 +9,11 @@ export type GalleryAlbumOption = {
   name: string;
 };
 
+/**
+ * Album switcher styled as the drink-game segmented toggle: one rounded bar
+ * split into segments, the active segment filled with cardButton, inactive
+ * segments transparent — not separate pills.
+ */
 export function GalleryAlbumPicker({
   albums,
   selectedId,
@@ -21,13 +26,15 @@ export function GalleryAlbumPicker({
   const { colors, variant } = useEventTheme();
 
   return (
-    <ScrollView
-      horizontal
-      showsHorizontalScrollIndicator={false}
-      contentContainerStyle={styles.row}
+    <View
+      style={[
+        styles.container,
+        { borderRadius: variant.radius.button, borderColor: colors.border + '55' },
+      ]}
     >
-      {albums.map((album) => {
+      {albums.map((album, index) => {
         const selected = album.id === selectedId;
+        const last = index === albums.length - 1;
         return (
           <TouchableOpacity
             key={album.id}
@@ -35,34 +42,29 @@ export function GalleryAlbumPicker({
             accessibilityState={{ selected }}
             onPress={() => onSelect(album.id)}
             style={[
-              styles.button,
+              styles.segment,
               {
-                borderRadius: variant.radius.button,
-                borderColor: colors.border,
-                backgroundColor: selected ? colors.cardButton : colors.card,
+                backgroundColor: selected ? colors.cardButton : 'transparent',
+                borderRightWidth: last ? 0 : 1,
+                borderRightColor: colors.border + '55',
               },
             ]}
           >
             <ThemedText
-              style={{
-                color: selected ? colors.cardButtonText : colors.cardText,
-                fontWeight: '600',
-              }}
+              numberOfLines={1}
+              style={[styles.text, { color: selected ? colors.cardButtonText : colors.cardText }]}
             >
               {album.name}
             </ThemedText>
           </TouchableOpacity>
         );
       })}
-    </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  row: { gap: theme.spacing.sm, paddingVertical: theme.spacing.xs },
-  button: {
-    borderWidth: 1,
-    paddingHorizontal: theme.spacing.md,
-    paddingVertical: theme.spacing.sm,
-  },
+  container: { flexDirection: 'row', overflow: 'hidden', borderWidth: 1.5 },
+  segment: { flex: 1, paddingVertical: theme.spacing.sm, alignItems: 'center' },
+  text: { fontWeight: '600', fontSize: 14 },
 });
