@@ -38,7 +38,8 @@ import { useOrganizerStyles } from '../../lib/organizerStyles';
 import { pickPhotoFromLibrary, takePhotoWithCamera } from '../../lib/photoPicker';
 
 const TILE_GAP = theme.spacing.sm;
-const TILE_SIZE = (Dimensions.get('window').width - theme.spacing.lg * 2 - TILE_GAP) / 2;
+// Dense 3-column thumbnail grid to match the guest gallery (not a card list).
+const TILE_SIZE = (Dimensions.get('window').width - theme.spacing.lg * 2 - TILE_GAP * 2) / 3;
 
 export default function OrganizerPhotosScreen() {
   const router = useRouter();
@@ -219,24 +220,13 @@ export default function OrganizerPhotosScreen() {
                 ) : (
                   <View style={styles.grid}>
                     {selectedAlbum.photos.map((photo) => (
-                      <View key={photo.id} style={[styles.photoCard, eventStyles.tile]}>
-                        <GalleryThumbnail
-                          photo={photo}
-                          size={TILE_SIZE}
-                          radius={variant.radius.tile}
-                          onPress={() => setSelectedPhoto(photo)}
-                        />
-                        <View style={styles.photoInfo}>
-                          <ThemedText numberOfLines={1} style={[styles.uploader, eventStyles.text]}>
-                            {photo.guest_name ?? photo.uploaded_by ?? t('organizer.photos.unknown')}
-                          </ThemedText>
-                          {!!(photo.task_description ?? photo.description) && (
-                            <ThemedText numberOfLines={2} style={styles.description}>
-                              {photo.task_description ?? photo.description}
-                            </ThemedText>
-                          )}
-                        </View>
-                      </View>
+                      <GalleryThumbnail
+                        key={photo.id}
+                        photo={photo}
+                        size={TILE_SIZE}
+                        radius={variant.radius.tile}
+                        onPress={() => setSelectedPhoto(photo)}
+                      />
                     ))}
                   </View>
                 )}
