@@ -3,9 +3,6 @@ import {
   ActivityIndicator,
   Alert,
   Dimensions,
-  FlatList,
-  Modal,
-  Pressable,
   RefreshControl,
   ScrollView,
   StyleSheet,
@@ -16,11 +13,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { GalleryAlbumPicker } from '../../components/gallery/GalleryAlbumPicker';
-import {
-  GalleryEmptyState,
-  GalleryThumbnail,
-  ZoomableGalleryImage,
-} from '../../components/gallery/GalleryPrimitives';
+import { GalleryEmptyState, GalleryThumbnail } from '../../components/gallery/GalleryPrimitives';
+import { PhotoLightbox } from '../../components/gallery/PhotoLightbox';
 import { ScreenGradient } from '../../components/ScreenGradient';
 import { ThemedText } from '../../components/ThemedText';
 import { theme } from '../../constants/theme';
@@ -41,7 +35,6 @@ import { pickPhotoFromLibrary, takePhotoWithCamera } from '../../lib/photoPicker
 const TILE_GAP = theme.spacing.sm;
 // Dense 3-column thumbnail grid to match the guest gallery (not a card list).
 const TILE_SIZE = (Dimensions.get('window').width - theme.spacing.lg * 2 - TILE_GAP * 2) / 3;
-const SCREEN_WIDTH = Dimensions.get('window').width;
 
 export default function OrganizerPhotosScreen() {
   const router = useRouter();
@@ -178,11 +171,6 @@ export default function OrganizerPhotosScreen() {
           />
         }
       >
-        <ThemedText style={[styles.title, eventStyles.title]}>
-          {t('organizer.photos.title')}
-        </ThemedText>
-        <ThemedText style={styles.subtitle}>{t('organizer.photos.subtitle')}</ThemedText>
-
         {loading ? (
           <ActivityIndicator color={eventStyles.colors.cardText} />
         ) : failed ? (
@@ -254,80 +242,39 @@ export default function OrganizerPhotosScreen() {
         </TouchableOpacity>
       )}
 
-      <Modal
+      <PhotoLightbox
         visible={selectedPhoto !== null}
-        transparent
-        statusBarTranslucent
-        animationType="fade"
-        onRequestClose={() => setSelectedPhoto(null)}
-      >
-        <View style={styles.detail}>
-          {selectedPhoto && (
-            <>
-              <FlatList
-                data={selectedAlbum?.photos ?? []}
-                keyExtractor={(p) => String(p.id)}
-                horizontal
-                pagingEnabled
-                showsHorizontalScrollIndicator={false}
-                initialScrollIndex={Math.max(
-                  0,
-                  (selectedAlbum?.photos ?? []).findIndex((p) => p.id === selectedPhoto.id)
-                )}
-                getItemLayout={(_, index) => ({
-                  length: SCREEN_WIDTH,
-                  offset: SCREEN_WIDTH * index,
-                  index,
-                })}
-                onMomentumScrollEnd={(e) => {
-                  const index = Math.round(e.nativeEvent.contentOffset.x / SCREEN_WIDTH);
-                  const next = (selectedAlbum?.photos ?? [])[index];
-                  if (next) setSelectedPhoto(next);
-                }}
-                renderItem={({ item }) => (
-                  <ZoomableGalleryImage uri={item.url} width={SCREEN_WIDTH} />
-                )}
-              />
-              <Pressable
-                accessibilityLabel={t('a11y.closePhoto')}
-                onPress={() => setSelectedPhoto(null)}
-                style={[styles.close, { top: insets.top + theme.spacing.md }]}
-              >
-                <Ionicons name="close" size={30} color="#ffffff" />
-              </Pressable>
-              <View
-                style={[styles.detailInfo, { paddingBottom: insets.bottom + theme.spacing.lg }]}
-              >
-                <ThemedText style={styles.detailText}>
-                  {selectedPhoto.guest_name ??
-                    selectedPhoto.uploaded_by ??
-                    t('organizer.photos.unknown')}
-                </ThemedText>
-                {!!(selectedPhoto.task_description ?? selectedPhoto.description) && (
-                  <ThemedText style={styles.detailText}>
-                    {selectedPhoto.task_description ?? selectedPhoto.description}
-                  </ThemedText>
-                )}
-                <TouchableOpacity
-                  accessibilityLabel={t('organizer.photos.deletePhoto')}
-                  onPress={() => remove(selectedPhoto)}
-                  disabled={deletingId === selectedPhoto.id}
-                  style={styles.deleteButton}
-                >
-                  {deletingId === selectedPhoto.id ? (
-                    <ActivityIndicator color="#ffffff" />
-                  ) : (
-                    <Ionicons name="trash-outline" size={18} color="#ffffff" />
-                  )}
-                  <ThemedText style={styles.deleteText}>
-                    {t('organizer.photos.deletePhoto')}
-                  </ThemedText>
-                </TouchableOpacity>
-              </View>
-            </>
-          )}
-        </View>
-      </Modal>
+        photos={selectedAlbum?.photos ?? []}
+        initialPhotoId={selectedPhoto?.id ?? null}
+        onClose={() => setSelectedPhoto(null)}
+        onPhotoChange={(photo) => setSelectedPhoto(photo)}
+        closeLabel={t('a11y.closePhoto')}
+        renderFooter={(photo) => (
+          <>
+            <ThemedText style={styles.detailText}>
+              {photo.guest_name ?? photo.uploaded_by ?? t('organizer.photos.unknown')}
+            </ThemedText>
+            {!!(photo.task_description ?? photo.description) && (
+              <ThemedText style={styles.detailText}>
+                {photo.task_description ?? photo.description}
+              </ThemedText>
+            )}
+            <TouchableOpacity
+              accessibilityLabel={t('organizer.photos.deletePhoto')}
+              onPress={() => remove(photo)}
+              disabled={deletingId === photo.id}
+              style={styles.deleteButton}
+            >
+              {deletingId === photo.id ? (
+                <ActivityIndicator color="#ffffff" />
+              ) : (
+                <Ionicons name="trash-outline" size={18} color="#ffffff" />
+              )}
+              <ThemedText style={styles.deleteText}>{t('organizer.photos.deletePhoto')}</ThemedText>
+            </TouchableOpacity>
+          </>
+        )}
+      />
     </View>
   );
 }
