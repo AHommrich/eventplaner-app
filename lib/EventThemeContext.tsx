@@ -179,15 +179,16 @@ export function EventThemeProvider({ children }: { children: ReactNode }) {
     fontKey && FONT_MAP[fontKey] ? FONT_MAP[fontKey] : undefined;
 
   // --- Colour resolution: backend role → backend palette → hard-coded fallback ---
+  const cardText = themeInfo?.color_card_text ?? FALLBACK_PRIMARY;
   const colors: EventThemeColors = {
     primary: themeInfo?.color_primary ?? FALLBACK_PRIMARY,
     secondary: themeInfo?.color_secondary ?? FALLBACK_SECONDARY,
     tertiary: themeInfo?.color_tertiary ?? FALLBACK_TERTIARY,
     screenBg: themeInfo?.color_screen_bg ?? FALLBACK_SECONDARY,
     card: themeInfo?.color_card ?? FALLBACK_TERTIARY,
-    cardText: themeInfo?.color_card_text ?? FALLBACK_PRIMARY,
+    cardText,
     // Secondary/hint text on cards = cardText at ~70% opacity → always legible.
-    mutedOnCard: (themeInfo?.color_card_text ?? FALLBACK_PRIMARY) + 'B3',
+    mutedOnCard: cardText + 'B3',
     cardButton: themeInfo?.color_card_button ?? FALLBACK_PRIMARY,
     cardButtonText: themeInfo?.color_card_button_text ?? FALLBACK_TERTIARY,
     border: themeInfo?.color_border ?? FALLBACK_PRIMARY,

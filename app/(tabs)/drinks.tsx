@@ -778,7 +778,7 @@ export default function DrinksScreen() {
                 <TextInput
                   style={[styles.searchInput, { color: colors.cardText }]}
                   placeholder={t('drinks.searchPlaceholder')}
-                  placeholderTextColor={colors.cardText + 'aa'}
+                  placeholderTextColor={colors.mutedOnCard}
                   value={search}
                   onChangeText={setSearch}
                   autoCapitalize="none"

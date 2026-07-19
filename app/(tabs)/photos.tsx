@@ -715,7 +715,7 @@ export default function PhotosScreen() {
                       setReportError(null);
                     }}
                     placeholder={t('photos.reportMessagePlaceholder')}
-                    placeholderTextColor={colors.cardText + '88'}
+                    placeholderTextColor={colors.mutedOnCard}
                     multiline
                     maxLength={1000}
                     style={{

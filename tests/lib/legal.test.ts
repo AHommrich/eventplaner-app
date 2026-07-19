@@ -98,6 +98,20 @@ describe('lib/legal', () => {
     const enCache = await readCachedPrivacyNotice('en');
     expect(enCache).toBeNull();
   });
+
+  it('treats a 200 with empty sections as a failure and uses the fallback', async () => {
+    // The backend returned OK but with no renderable sections — this must NOT be
+    // shown (blank screen) or cached; fall through to the bundled fallback.
+    api.get.mockResolvedValueOnce({
+      data: { locale: 'de', updated_at: '2026-07-19T00:00:00Z', sections: [] },
+    });
+
+    const result = await fetchPrivacyNotice('de');
+
+    expect(result.sections.length).toBeGreaterThan(0);
+    expect(result.sections.map((section) => section.id)).toContain('controller');
+    expect(await SecureStore.getItemAsync('legal_privacy_cache_de')).toBeNull();
+  });
 });
 
 describe('lib/legal — imprint', () => {
@@ -140,6 +154,18 @@ describe('lib/legal — imprint', () => {
     expect(result.locale).toBe('de');
     expect(result.sections.map((section) => section.id)).toContain('provider');
     expect(result.sections.map((section) => section.id)).toContain('contact');
+  });
+
+  it('treats a 200 with empty imprint sections as a failure and uses the fallback', async () => {
+    api.get.mockResolvedValueOnce({
+      data: { locale: 'de', updated_at: '2026-07-19T00:00:00Z', sections: [] },
+    });
+
+    const result = await fetchImprint('de');
+
+    expect(result.sections.length).toBeGreaterThan(0);
+    expect(result.sections.map((section) => section.id)).toContain('provider');
+    expect(await SecureStore.getItemAsync('legal_imprint_cache_de')).toBeNull();
   });
 });
 

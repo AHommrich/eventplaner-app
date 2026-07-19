@@ -79,15 +79,22 @@ function buster(): string {
   return `${version}-1`;
 }
 
-/** Wire persistence with the allowlist policy. Call once at app bootstrap. */
+/**
+ * Persist options shared by the imperative `initQueryPersistence()` and the
+ * `PersistQueryClientProvider` in `app/_layout.tsx`. The provider uses these to
+ * restore the on-disk cache and expose `isRestoring`, so the app can hold its
+ * splash until the restore completes (no empty→restored flash on cold start).
+ */
+export const persistOptions = {
+  persister,
+  maxAge: 24 * 60 * 60 * 1000, // 24h — stale cache beyond this is discarded.
+  buster: buster(),
+  dehydrateOptions: { shouldDehydrateQuery: shouldPersistQuery },
+} as const;
+
+/** Wire persistence with the allowlist policy imperatively (kept for the guard test). */
 export function initQueryPersistence(): void {
-  persistQueryClient({
-    queryClient,
-    persister,
-    maxAge: 24 * 60 * 60 * 1000, // 24h — stale cache beyond this is discarded.
-    buster: buster(),
-    dehydrateOptions: { shouldDehydrateQuery: shouldPersistQuery },
-  });
+  persistQueryClient({ queryClient, ...persistOptions });
 }
 
 /**

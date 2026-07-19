@@ -52,18 +52,15 @@ import { LanguageProvider } from '../lib/LanguageContext';
 import { EventThemeProvider } from '../lib/EventThemeContext';
 import { BlockedFeaturesProvider } from '../lib/BlockedFeaturesContext';
 import { ConsentGateProvider } from '../components/ConsentGate';
-import { QueryClientProvider } from '@tanstack/react-query';
+import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
 import { initMonitoring } from '../lib/monitoring';
 import { initializeManagementPushNotifications } from '../lib/managementPush';
 import { primeFromStore } from '../lib/sessionCache';
 import { queryClient } from '../lib/queryClient';
-import { initQueryPersistence } from '../lib/queryPersistence';
+import { persistOptions } from '../lib/queryPersistence';
 
 SplashScreen.preventAutoHideAsync();
 void initMonitoring();
-// Restore the allowlisted, scope-isolated query cache from disk so the app can
-// show last-known data offline after a restart (CP6). Purged on logout/erasure.
-initQueryPersistence();
 
 // Splash gradient — hand-picked to match the eveplan brand identity. Never
 // resolves through the dynamic theme because splash renders BEFORE the theme
@@ -76,6 +73,11 @@ export default function RootLayout() {
   // the axios interceptor and session scope are ready on the first request
   // (Checkpoint 1). The splash covers this; priming is well under the hold.
   const [primed, setPrimed] = useState(false);
+  // Set by `PersistQueryClientProvider.onSuccess` once the on-disk query cache
+  // has been restored (or there was nothing to restore). We hold the splash
+  // until this is true so a cold start never flashes empty content before the
+  // last-known cache paints (Checkpoint 6 restore/fetch race).
+  const [restored, setRestored] = useState(false);
   // Lazy-initialised via `useState` so the `Animated.Value` is created ONCE
   // and never re-instantiated on re-render. `useRef(new Animated.Value(1))`
   // would still work but reads `.current` during render — React 19 flags
@@ -108,7 +110,10 @@ export default function RootLayout() {
   }, []);
 
   useEffect(() => {
-    if (!fontsLoaded || !primed) return;
+    // Hold the splash until fonts are ready, the session cache is primed AND the
+    // persisted query cache has been restored — so the first painted frame is
+    // the real (last-known) content, never an empty flash.
+    if (!fontsLoaded || !primed || !restored) return;
     SplashScreen.hideAsync();
     // 1.5 s brand hold, then a 500 ms cross-fade to the router content —
     // long enough for the guest to see the logo, short enough not to feel
@@ -121,12 +126,18 @@ export default function RootLayout() {
       }).start(() => setSplashVisible(false));
     }, 1500);
     return () => clearTimeout(timer);
-  }, [fontsLoaded, primed, fadeAnim]);
+  }, [fontsLoaded, primed, restored, fadeAnim]);
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <LanguageProvider>
-        <QueryClientProvider client={queryClient}>
+        <PersistQueryClientProvider
+          client={queryClient}
+          persistOptions={persistOptions}
+          onSuccess={() => setRestored(true)}
+          // Never let a restore failure hang the splash — start with a cold cache.
+          onError={() => setRestored(true)}
+        >
           <EventThemeProvider>
             <BlockedFeaturesProvider>
               <ConsentGateProvider>
@@ -169,7 +180,7 @@ export default function RootLayout() {
               </ConsentGateProvider>
             </BlockedFeaturesProvider>
           </EventThemeProvider>
-        </QueryClientProvider>
+        </PersistQueryClientProvider>
       </LanguageProvider>
     </GestureHandlerRootView>
   );

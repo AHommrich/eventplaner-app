@@ -1,14 +1,66 @@
-import { ComponentProps, ReactNode, useEffect, useState } from 'react';
+import { ComponentProps, ReactNode, useEffect, useMemo, useState } from 'react';
 import { Animated, Pressable, StyleProp, StyleSheet, Text, View, ViewStyle } from 'react-native';
 import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Tabs } from 'expo-router';
+import { Tabs, usePathname, useRouter } from 'expo-router';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import { runOnJS } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useEventTheme } from '../lib/EventThemeContext';
 import { haptics } from '../lib/haptics';
 import { sheenGradient } from '../lib/variantStyles';
+
+// Horizontal swipe distance / velocity that commits a tab change. Deliberately
+// generous so a casual drag on content doesn't trigger a navigation.
+const SWIPE_DISTANCE = 70;
+const SWIPE_VELOCITY = 650;
+
+/**
+ * Swipe-between-tabs gesture (W1). Guest tabs pass their visible, ordered route
+ * names; a decisive horizontal fling moves to the neighbouring tab. It yields to
+ * vertical scrolling (`failOffsetY`) and requires clear horizontal intent
+ * (`activeOffsetX`), and — because the photo lightbox is a `Modal` that captures
+ * its own gestures while open — it never fights the gallery's horizontal swipe.
+ *
+ * NOTE: unverified on device. Horizontal in-content scrollers (album picker,
+ * timeline) still need a real-device tuning pass before this ships.
+ */
+function useTabSwipeGesture(basePath: string, orderedTabNames?: readonly string[]) {
+  const router = useRouter();
+  const pathname = usePathname();
+
+  return useMemo(() => {
+    // Group index routes (e.g. `app/organizer/index.tsx`) resolve to the bare base
+    // path (`/organizer`), so the last URL segment is the group name, not `index` —
+    // normalise both directions so the `index` tab swipes like any other.
+    const baseSegment = basePath.split('/').filter(Boolean).pop();
+    function step(direction: 1 | -1) {
+      if (!orderedTabNames?.length) return;
+      const last = (pathname ?? '').split('/').filter(Boolean).pop() ?? '';
+      const current = last === baseSegment ? 'index' : last;
+      const index = orderedTabNames.indexOf(current);
+      if (index === -1) return;
+      const target = orderedTabNames[index + direction];
+      if (!target) return;
+      haptics.selection();
+      router.navigate((target === 'index' ? basePath : `${basePath}/${target}`) as never);
+    }
+
+    return Gesture.Pan()
+      .activeOffsetX([-30, 30])
+      .failOffsetY([-24, 24])
+      .onEnd((event) => {
+        'worklet';
+        if (event.translationX <= -SWIPE_DISTANCE || event.velocityX <= -SWIPE_VELOCITY) {
+          runOnJS(step)(1);
+        } else if (event.translationX >= SWIPE_DISTANCE || event.velocityX >= SWIPE_VELOCITY) {
+          runOnJS(step)(-1);
+        }
+      });
+  }, [basePath, orderedTabNames, pathname, router]);
+}
 
 const BAR_HEIGHT = 66;
 const BAR_MARGIN = 14;
@@ -209,23 +261,30 @@ export function EventTabShell({
   hiddenTabs = new Set<string>(),
   overCover = false,
   classicTabBarStyle,
+  orderedTabNames,
+  tabBasePath = '/(tabs)',
 }: {
   children: ReactNode;
   icons: EventTabIconMap;
   hiddenTabs?: ReadonlySet<string>;
   overCover?: boolean;
   classicTabBarStyle?: StyleProp<ViewStyle>;
+  /** Visible tab route names, in order — enables swipe-between-tabs (W1). */
+  orderedTabNames?: readonly string[];
+  /** Route group the tabs live under (guest `/(tabs)`, organizer `/organizer`). */
+  tabBasePath?: string;
 }) {
   const { colors, variant } = useEventTheme();
   const insets = useSafeAreaInsets();
   const isSheet = variant.tabBar === 'sheet';
+  const swipe = useTabSwipeGesture(tabBasePath, orderedTabNames);
   const defaultClassicStyle = {
     backgroundColor: colors.navBg,
     borderTopColor: colors.border + '33',
     borderTopWidth: 1,
   };
 
-  return (
+  const tabs = (
     <Tabs
       tabBar={
         isSheet
@@ -254,5 +313,16 @@ export function EventTabShell({
     >
       {children}
     </Tabs>
+  );
+
+  // No ordered tab list → no swipe (keeps the navigator untouched for callers
+  // that don't opt in). `collapsable={false}` so the gesture has a real host view.
+  if (!orderedTabNames?.length) return tabs;
+  return (
+    <GestureDetector gesture={swipe}>
+      <View style={{ flex: 1 }} collapsable={false}>
+        {tabs}
+      </View>
+    </GestureDetector>
   );
 }
