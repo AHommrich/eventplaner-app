@@ -20,8 +20,10 @@ export type ManagementPhotoAlbum = {
   photos: ManagementPhoto[];
 };
 
-export async function fetchManagementPhotos(): Promise<ManagementPhotoAlbum[]> {
-  const response = await api.get<{ albums: ManagementPhotoAlbum[] }>('/api/management/photos');
+export async function fetchManagementPhotos(signal?: AbortSignal): Promise<ManagementPhotoAlbum[]> {
+  const response = await api.get<{ albums: ManagementPhotoAlbum[] }>('/api/management/photos', {
+    signal,
+  });
   return response.data.albums;
 }
 

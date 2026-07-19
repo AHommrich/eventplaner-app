@@ -25,7 +25,7 @@ describe('management photos API', () => {
     mockedApi.get.mockResolvedValue({ data: { albums } });
 
     await expect(fetchManagementPhotos()).resolves.toEqual(albums);
-    expect(mockedApi.get).toHaveBeenCalledWith('/api/management/photos');
+    expect(mockedApi.get).toHaveBeenCalledWith('/api/management/photos', { signal: undefined });
   });
 
   it('supports single and batch deletion through management routes', async () => {

@@ -19,7 +19,7 @@
  * Deadline handling: `deadlinePassed` disables every button and shows a
  * copy string; no post-deadline mutation is possible.
  */
-import { useCallback, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   View,
   TouchableOpacity,
@@ -30,19 +30,20 @@ import {
 } from 'react-native';
 import Animated, { FadeIn, FadeOut, LinearTransition } from 'react-native-reanimated';
 import { ThemedText } from '../../components/ThemedText';
+import { isHandledApiError } from '../../lib/api';
 import { CardSkeleton } from '../../components/ui/ScreenSkeletons';
 import { ErrorBanner } from '../../components/ui/ErrorBanner';
 import { haptics } from '../../lib/haptics';
-import { useFocusEffect, useRouter } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLanguage } from '../../lib/LanguageContext';
 import { useEventTheme } from '../../lib/EventThemeContext';
+import { useRefetchOnFocus } from '../../lib/useRefetchOnFocus';
 import { useRefreshToast } from '../../lib/useRefreshToast';
 import { RefreshToast } from '../../components/RefreshToast';
 import { Toast } from '../../components/ui/Toast';
 import {
   fetchGuestMe,
-  fetchEventInfo,
   postRsvp,
   postGroupRsvp,
   GuestMe,
@@ -51,6 +52,10 @@ import {
   isDeclinedFlow,
 } from '../../lib/guest';
 import { Ionicons } from '@expo/vector-icons';
+import { useQuery } from '@tanstack/react-query';
+import { queryClient } from '../../lib/queryClient';
+import { qk } from '../../lib/queryKeys';
+import { useSessionScope } from '../../lib/SessionContext';
 import { theme } from '../../constants/theme';
 import { cardSurfaceStyle } from '../../lib/variantStyles';
 import { GradientFill } from '../../components/GradientFill';
@@ -96,7 +101,8 @@ function StatusBadge({ status, t }: { status: RsvpStatus; t: (k: string) => stri
 export default function RsvpTabScreen() {
   const router = useRouter();
   const { t, language } = useLanguage();
-  const { colors, variant, loadTheme } = useEventTheme();
+  const { colors, variant, loadTheme, eventInfo } = useEventTheme();
+  const scope = useSessionScope();
   const isSoft = variant.key === 'soft-luxury';
   // Soft-luxury overlay for the list cards: bigger radius, glass-lite fill, no
   // hard border, soft shadow. `overflow: visible` so iOS renders the shadow
@@ -106,19 +112,37 @@ export default function RsvpTabScreen() {
     : null;
   const insets = useSafeAreaInsets();
 
-  const [guest, setGuest] = useState<GuestMe | null>(null);
-  const [deadline, setDeadline] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [loadError, setLoadError] = useState(false);
   const [savingOwn, setSavingOwn] = useState(false);
   const [savingMemberId, setSavingMemberId] = useState<number | null>(null);
-  const [deadlinePassed, setDeadlinePassed] = useState(false);
   const [expandedMemberId, setExpandedMemberId] = useState<number | null>(null);
   const [savedToast, setSavedToast] = useState(false);
   const savedToastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Guest RSVP state is a cache-backed query (CP4); the deadline comes from the
+  // shared theme/event query (no second /api/event/info fetch here).
+  const guestQuery = useQuery(
+    {
+      queryKey: qk.guestMe(scope),
+      queryFn: ({ signal }) => fetchGuestMe(signal),
+      enabled: scope !== null,
+    },
+    queryClient
+  );
+  const guest = guestQuery.data ?? null;
+  const loading = guestQuery.isLoading;
+  const loadError = guestQuery.isError;
+  const deadline = eventInfo?.rsvp_deadline ?? null;
+  // No deadline set → it can never have "passed"; otherwise `new Date(null)`
+  // would resolve to the epoch and lock every RSVP button.
+  const deadlinePassed = deadline ? new Date(deadline) < new Date() : false;
+
+  /** Optimistically patch the cached guest record. */
+  function patchGuest(updater: (prev: GuestMe) => GuestMe) {
+    queryClient.setQueryData<GuestMe>(qk.guestMe(scope), (prev) => (prev ? updater(prev) : prev));
+  }
+
   const { refreshing, refreshed, onRefresh } = useRefreshToast(async () => {
-    await loadData(true);
-    loadTheme();
+    await Promise.all([guestQuery.refetch(), loadTheme()]);
   });
 
   function showSavedToast() {
@@ -128,40 +152,17 @@ export default function RsvpTabScreen() {
     savedToastTimer.current = setTimeout(() => setSavedToast(false), 2000);
   }
 
-  async function loadData(isRefresh = false) {
-    if (!isRefresh) setLoading(true);
-    try {
-      const [g, info] = await Promise.all([fetchGuestMe(), fetchEventInfo()]);
-      // Route guards — see file header for why this happens on every fetch.
-      if (isDeclinedFlow(g.rsvp_status)) {
-        router.replace('/declined');
-        return;
-      }
-      if (g.rsvp_status === 'accepted') {
-        router.replace('/(tabs)/home');
-        return;
-      }
-      setGuest(g);
-      setDeadline(info.rsvp_deadline);
-      // No deadline set → it can never have "passed"; otherwise `new Date(null)`
-      // would resolve to the epoch and lock every RSVP button.
-      setDeadlinePassed(info.rsvp_deadline ? new Date(info.rsvp_deadline) < new Date() : false);
-      setLoadError(false);
-    } catch {
-      setLoadError(true);
-    } finally {
-      setLoading(false);
-    }
-  }
+  // Route guards — an accepted/declined guest belongs on Home/Declined, not on
+  // the RSVP tab. Runs whenever the cached status changes (see file header).
+  useEffect(() => {
+    if (!guest) return;
+    if (isDeclinedFlow(guest.rsvp_status)) router.replace('/declined');
+    else if (guest.rsvp_status === 'accepted') router.replace('/(tabs)/home');
+  }, [guest, router]);
 
-  // Same focus-effect pattern as the other tab screens — captured once so
-  // it re-runs on route focus, not on every render. Explicit block body
-  // (rather than `() => loadData()`) so the async return value is not
-  // handed to React as a `useFocusEffect` teardown function.
-  // prettier-ignore
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const onFocus = useCallback(() => { loadData(); }, []);
-  useFocusEffect(onFocus);
+  // Revalidate on tab focus only when stale (respects staleTime — no refetch
+  // storm on every tab switch).
+  useRefetchOnFocus(guestQuery);
 
   /** Double-confirm gate — decline is destructive so we surface a native alert. */
   function confirmDecline(onConfirm: () => void, memberName?: string) {
@@ -186,9 +187,10 @@ export default function RsvpTabScreen() {
         router.replace('/declined');
         return;
       }
-      setGuest((prev) => (prev ? { ...prev, rsvp_status: newStatus } : prev));
+      patchGuest((prev) => ({ ...prev, rsvp_status: newStatus }));
       showSavedToast();
     } catch (e: any) {
+      if (isHandledApiError(e)) return;
       haptics.error();
       Alert.alert(t('common.error'), e?.response?.data?.message ?? t('common.unknownError'));
     } finally {
@@ -206,8 +208,7 @@ export default function RsvpTabScreen() {
     setSavingMemberId(guestId);
     try {
       const res = await postGroupRsvp(guestId, attending);
-      setGuest((prev) => {
-        if (!prev) return prev;
+      patchGuest((prev) => {
         return {
           ...prev,
           group_members: prev.group_members.map((m) =>
@@ -227,6 +228,7 @@ export default function RsvpTabScreen() {
       });
       showSavedToast();
     } catch (e: any) {
+      if (isHandledApiError(e)) return;
       haptics.error();
       Alert.alert(t('common.error'), e?.response?.data?.message ?? t('common.unknownError'));
     } finally {
@@ -259,7 +261,9 @@ export default function RsvpTabScreen() {
           padding: theme.spacing.lg,
         }}
       >
-        {loadError && <ErrorBanner message={t('common.loadFailed')} onRetry={() => loadData()} />}
+        {loadError && (
+          <ErrorBanner message={t('common.loadFailed')} onRetry={() => guestQuery.refetch()} />
+        )}
       </View>
     );
   }

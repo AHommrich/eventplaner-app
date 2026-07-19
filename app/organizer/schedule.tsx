@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   RefreshControl,
@@ -6,43 +6,44 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { useFocusEffect } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useQuery } from '@tanstack/react-query';
 import { ScheduleTimeline } from '../../components/ScheduleTimeline';
 import { ScreenGradient } from '../../components/ScreenGradient';
 import { ThemedText } from '../../components/ThemedText';
 import { theme } from '../../constants/theme';
 import { useEventTheme } from '../../lib/EventThemeContext';
 import { useLanguage } from '../../lib/LanguageContext';
-import { fetchManagementSchedule, ManagementSchedule } from '../../lib/managementSchedule';
+import { fetchManagementSchedule } from '../../lib/managementSchedule';
+import { queryClient } from '../../lib/queryClient';
+import { qk } from '../../lib/queryKeys';
+import { useSessionScope } from '../../lib/SessionContext';
+import { useRefetchOnFocus } from '../../lib/useRefetchOnFocus';
 
 export default function OrganizerScheduleScreen() {
   const insets = useSafeAreaInsets();
   const { t } = useLanguage();
   const { colors, variant } = useEventTheme();
-  const [schedule, setSchedule] = useState<ManagementSchedule | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [failed, setFailed] = useState(false);
+  const scope = useSessionScope();
   const [now, setNow] = useState(() => Date.now());
 
-  const load = useCallback(async () => {
-    try {
-      setSchedule(await fetchManagementSchedule());
-      setFailed(false);
-    } catch {
-      setFailed(true);
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  }, []);
-
-  useFocusEffect(
-    useCallback(() => {
-      void load();
-    }, [load])
+  // Read-only schedule as a cache-backed query (CP5).
+  const scheduleQuery = useQuery(
+    {
+      queryKey: qk.managementSchedule(scope),
+      queryFn: ({ signal }) => fetchManagementSchedule(signal),
+      enabled: scope?.actor === 'management',
+    },
+    queryClient
   );
+  const schedule = scheduleQuery.data ?? null;
+  const loading = scheduleQuery.isLoading;
+  const failed = scheduleQuery.isError;
+  const refreshing = scheduleQuery.isRefetching;
+
+  // Revalidate on focus only when stale (respects staleTime) — not on every
+  // focus, which raced the initial fetch and caused a redundant refetch.
+  useRefetchOnFocus(scheduleQuery);
 
   useEffect(() => {
     const id = setInterval(() => setNow(Date.now()), 1000);
@@ -62,10 +63,7 @@ export default function OrganizerScheduleScreen() {
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
-            onRefresh={() => {
-              setRefreshing(true);
-              void load();
-            }}
+            onRefresh={() => void scheduleQuery.refetch()}
             tintColor={colors.tabTint}
             colors={[colors.tabTint]}
           />
@@ -74,7 +72,7 @@ export default function OrganizerScheduleScreen() {
         {loading ? (
           <ActivityIndicator color={colors.tabTint} />
         ) : failed ? (
-          <TouchableOpacity onPress={() => void load()}>
+          <TouchableOpacity onPress={() => void scheduleQuery.refetch()}>
             <ThemedText style={{ color: colors.cardText }}>{t('common.loadFailed')}</ThemedText>
             <ThemedText style={{ color: colors.primary, textDecorationLine: 'underline' }}>
               {t('common.retry')}

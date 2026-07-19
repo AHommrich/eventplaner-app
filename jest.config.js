@@ -20,6 +20,9 @@ module.exports = {
   // `@testing-library/react-native` is imported anywhere in the suite, so we
   // do not wire `@testing-library/jest-native/extend-expect` separately.
   setupFiles: ['./tests/setup.ts'],
+  // Runs after the framework is installed; resets the singleton session cache
+  // + SecureStore mock before every test so session state cannot leak.
+  setupFilesAfterEnv: ['./tests/setupAfterEnv.ts'],
   testMatch: ['**/*.test.ts', '**/*.test.tsx'],
   transformIgnorePatterns: [
     'node_modules/(?!((jest-)?react-native|@react-native(-community)?|expo(nent)?|@expo(nent)?/.*|@expo-google-fonts/.*|react-navigation|@react-navigation/.*|@sentry/react-native|native-base|react-native-svg|nativewind))',

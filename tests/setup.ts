@@ -204,6 +204,37 @@ jest.mock('@react-navigation/native', () => ({
   useIsFocused: () => true,
 }));
 
+// --- @react-native-async-storage/async-storage ---
+// Backs the CP6 query-cache persister. A simple in-memory map keeps
+// persistence code paths (init + purge) working in tests without native code.
+jest.mock('@react-native-async-storage/async-storage', () => {
+  const store = new Map<string, string>();
+  return {
+    __esModule: true,
+    default: {
+      getItem: jest.fn(async (k: string) => (store.has(k) ? store.get(k)! : null)),
+      setItem: jest.fn(async (k: string, v: string) => {
+        store.set(k, v);
+      }),
+      removeItem: jest.fn(async (k: string) => {
+        store.delete(k);
+      }),
+    },
+  };
+});
+
+// --- @react-native-community/netinfo ---
+// `lib/queryClient.ts` wires NetInfo into TanStack's onlineManager at import.
+// Stub it so importing the query client in tests doesn't touch the native
+// module; the listener is inert and connectivity reports "online".
+jest.mock('@react-native-community/netinfo', () => ({
+  __esModule: true,
+  default: {
+    addEventListener: jest.fn(() => jest.fn()),
+    fetch: jest.fn(async () => ({ isConnected: true, isInternetReachable: true })),
+  },
+}));
+
 // --- react-native-gesture-handler ---
 // `jestSetup` isn't itself a module replacement — it's a script that mocks
 // just the native submodules underneath (RNGestureHandlerModule etc.) via

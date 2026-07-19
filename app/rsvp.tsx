@@ -18,6 +18,7 @@
 import { useEffect, useState } from 'react';
 import { View, TouchableOpacity, ActivityIndicator, ScrollView, Alert } from 'react-native';
 import { ThemedText } from '../components/ThemedText';
+import { isHandledApiError } from '../lib/api';
 import { useRouter } from 'expo-router';
 import { useLanguage } from '../lib/LanguageContext';
 import { useEventTheme } from '../lib/EventThemeContext';
@@ -82,6 +83,7 @@ export default function RsvpScreen() {
         router.replace('/declined');
       }
     } catch (e: any) {
+      if (isHandledApiError(e)) return;
       Alert.alert(t('common.error'), e?.response?.data?.message ?? t('common.unknownError'));
     } finally {
       setSavingOwn(false);

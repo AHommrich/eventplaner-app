@@ -10,6 +10,7 @@
 import { useEffect, useState } from 'react';
 import { View, TouchableOpacity, Alert } from 'react-native';
 import { ThemedText } from '../../components/ThemedText';
+import { isHandledApiError } from '../../lib/api';
 import { GenericAppSettingsRows } from '../../components/GenericAppSettingsRows';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -22,6 +23,8 @@ import { cardSurfaceStyle } from '../../lib/variantStyles';
 import { ScreenGradient } from '../../components/ScreenGradient';
 import { requestErasure } from '../../lib/guest';
 import { saveErasureState } from '../../lib/erasure';
+import { deleteGuestSession } from '../../lib/sessionStorage';
+import { purgePersistedCache } from '../../lib/queryPersistence';
 import { captureSentryTestError } from '../../lib/monitoring';
 
 export default function SettingsScreen() {
@@ -78,16 +81,13 @@ export default function SettingsScreen() {
         scheduledAt: res.scheduled_erasure_at,
         canRevokeUntil: res.can_revoke_until,
       });
-      // Local session wipe — backend already revoked the bearer.
-      const SecureStore = await import('expo-secure-store');
-      await SecureStore.deleteItemAsync('guest_token');
-      await SecureStore.deleteItemAsync('guest_id');
-      await SecureStore.deleteItemAsync('guest_firstname');
-      await SecureStore.deleteItemAsync('guest_lastname');
-      await SecureStore.deleteItemAsync('guest_type');
-      await SecureStore.deleteItemAsync('guest_family_name');
+      // Local session wipe — backend already revoked the bearer. Also purge the
+      // on-disk query cache so no personal data survives the erasure (GDPR).
+      await deleteGuestSession();
+      await purgePersistedCache();
       router.replace('/erasure-pending');
     } catch (e: any) {
+      if (isHandledApiError(e)) return;
       const message =
         e?.response?.status === 409 ? t('erasure.alreadyPending') : t('erasure.errorMessage');
       Alert.alert(t('erasure.errorTitle'), message);

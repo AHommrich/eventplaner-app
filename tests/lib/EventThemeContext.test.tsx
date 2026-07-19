@@ -4,7 +4,6 @@
 import React from 'react';
 import { Text } from 'react-native';
 import { act, render, waitFor } from '@testing-library/react-native';
-import * as SecureStore from 'expo-secure-store';
 
 const mockFetchEventInfo = jest.fn();
 const mockFetchManagementEvents = jest.fn();
@@ -18,6 +17,23 @@ jest.mock('../../lib/management', () => ({
 }));
 
 import { EventThemeProvider, useEventTheme } from '../../lib/EventThemeContext';
+import { setCached, mintSessionId } from '../../lib/sessionCache';
+import { deleteManagementSession } from '../../lib/sessionStorage';
+
+/** Establish an active guest session scope so the theme query is enabled. */
+async function loginGuest() {
+  await setCached('guest_token', 'x');
+  await setCached('guest_id', '1');
+  await mintSessionId();
+}
+
+/** Establish an active management session scope bound to one event. */
+async function loginManagement() {
+  await setCached('management_token', 'management-bearer');
+  await setCached('management_user_id', '1');
+  await setCached('management_active_event_id', '9');
+  await mintSessionId();
+}
 
 function Probe() {
   const { colors, eventInfo, loadTheme, variant } = useEventTheme();
@@ -37,11 +53,10 @@ function Probe() {
 }
 
 describe('lib/EventThemeContext', () => {
-  beforeEach(async () => {
+  beforeEach(() => {
     mockFetchEventInfo.mockReset();
     mockFetchManagementEvents.mockReset();
-    await SecureStore.deleteItemAsync('guest_token');
-    await SecureStore.deleteItemAsync('management_token');
+    // Session cache + query cache are reset globally in tests/setupAfterEnv.ts.
   });
 
   it('falls back to the hard-coded palette when no session is active', async () => {
@@ -56,7 +71,7 @@ describe('lib/EventThemeContext', () => {
   });
 
   it('applies backend colours when the session fetch succeeds', async () => {
-    await SecureStore.setItemAsync('guest_token', 'x');
+    await loginGuest();
     mockFetchEventInfo.mockResolvedValueOnce({
       name: 'Test wedding',
       color_primary: '#000001',
@@ -81,7 +96,7 @@ describe('lib/EventThemeContext', () => {
   });
 
   it('leaves colours at their fallback when a role is null on the backend', async () => {
-    await SecureStore.setItemAsync('guest_token', 'x');
+    await loginGuest();
     mockFetchEventInfo.mockResolvedValueOnce({
       name: 'Partial theme',
       color_primary: null,
@@ -103,7 +118,7 @@ describe('lib/EventThemeContext', () => {
   });
 
   it('loadTheme re-fetches so mid-event palette changes propagate', async () => {
-    await SecureStore.setItemAsync('guest_token', 'x');
+    await loginGuest();
     mockFetchEventInfo
       .mockResolvedValueOnce({ name: 'First', color_primary: '#111111' })
       .mockResolvedValueOnce({ name: 'Second', color_primary: '#222222' });
@@ -124,9 +139,8 @@ describe('lib/EventThemeContext', () => {
   });
 
   it('survives a failed fetch by keeping the current palette in place', async () => {
-    await SecureStore.setItemAsync('guest_token', 'x');
-    mockFetchEventInfo.mockRejectedValueOnce(new Error('offline'));
-    const warn = jest.spyOn(console, 'warn').mockImplementation(() => {});
+    await loginGuest();
+    mockFetchEventInfo.mockRejectedValue(new Error('offline'));
 
     const { getByTestId } = render(
       <EventThemeProvider>
@@ -134,16 +148,15 @@ describe('lib/EventThemeContext', () => {
       </EventThemeProvider>
     );
 
-    // No re-fetch was triggered by loadTheme in this test — the initial
-    // mount call is the one that fails, so we simply verify the palette
-    // stays at its fallback and no crash bubbles up.
-    await waitFor(() => expect(warn).toHaveBeenCalled());
-    expect(getByTestId('primary').props.children).toBe('#7c2d3e');
-    warn.mockRestore();
+    // The theme query rejects (retries are off in tests); the provider keeps the
+    // hard-coded fallback palette and never crashes.
+    await waitFor(() => expect(mockFetchEventInfo).toHaveBeenCalled());
+    await waitFor(() => expect(getByTestId('primary').props.children).toBe('#7c2d3e'));
+    expect(getByTestId('name').props.children).toBe('unset');
   });
 
   it('uses the bound management event theme through the same root provider', async () => {
-    await SecureStore.setItemAsync('management_token', 'management-bearer');
+    await loginManagement();
     mockFetchManagementEvents.mockResolvedValueOnce([
       {
         id: 9,
@@ -172,7 +185,7 @@ describe('lib/EventThemeContext', () => {
   });
 
   it('clears a previous event theme when the session disappears', async () => {
-    await SecureStore.setItemAsync('management_token', 'management-bearer');
+    await loginManagement();
     mockFetchManagementEvents.mockResolvedValueOnce([
       { id: 9, theme: { color_primary: '#303030' } },
     ]);
@@ -184,9 +197,10 @@ describe('lib/EventThemeContext', () => {
     );
     await waitFor(() => expect(getByTestId('primary').props.children).toBe('#303030'));
 
-    await SecureStore.deleteItemAsync('management_token');
+    // Session teardown clears the scope reactively → theme query disables →
+    // provider falls back to the hard-coded palette.
     await act(async () => {
-      getByTestId('reload').props.onPress();
+      await deleteManagementSession();
     });
 
     await waitFor(() => expect(getByTestId('primary').props.children).toBe('#7c2d3e'));

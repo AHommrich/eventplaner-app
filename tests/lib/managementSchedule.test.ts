@@ -16,6 +16,6 @@ describe('lib/managementSchedule', () => {
     (api.get as jest.Mock).mockResolvedValue({ data: payload });
 
     await expect(fetchManagementSchedule()).resolves.toEqual(payload);
-    expect(api.get).toHaveBeenCalledWith('/api/management/schedule');
+    expect(api.get).toHaveBeenCalledWith('/api/management/schedule', { signal: undefined });
   });
 });

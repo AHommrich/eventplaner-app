@@ -43,9 +43,14 @@ function renderScreen() {
 }
 
 describe('app/(tabs)/photo-game', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     mockFetchPhotoGameStatus.mockReset();
     mockAssignPhotoGameTask.mockReset();
+    // Seed a guest session scope so the `enabled: scope !== null` gate runs.
+    const { setCached, mintSessionId } = require('../../lib/sessionCache');
+    await setCached('guest_token', 't');
+    await setCached('guest_id', '1');
+    await mintSessionId();
   });
 
   it('ended state renders the "game over" card', async () => {

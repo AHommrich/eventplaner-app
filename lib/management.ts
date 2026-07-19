@@ -3,7 +3,9 @@ import { Platform } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
 import api, { resetUnauthorizedRedirect } from './api';
 import type { EventThemePayload } from './guest';
+import { getCached, mintSessionId, removeCached, setCached } from './sessionCache';
 import { deleteGuestSession, deleteManagementSession } from './sessionStorage';
+import { purgePersistedCache } from './queryPersistence';
 
 export type ManagementUser = {
   id: number;
@@ -69,21 +71,27 @@ export function isManagementPairingToken(token: string): boolean {
 export async function saveManagementSession(response: AuthResponse): Promise<ManagementSession> {
   resetUnauthorizedRedirect();
   await deleteGuestSession();
-  await SecureStore.setItemAsync('management_token', response.token);
-  await SecureStore.setItemAsync('management_user_id', String(response.user.id));
+  // Account switch: drop the previous actor's persisted cache (GDPR).
+  await purgePersistedCache();
+  // Cached (hot-path / scope) keys via the session cache; display fields stay
+  // direct SecureStore writes.
+  await setCached('management_token', response.token);
+  await setCached('management_user_id', String(response.user.id));
   await SecureStore.setItemAsync('management_user_name', response.user.name);
   await SecureStore.setItemAsync('management_user_email', response.user.email);
-  await SecureStore.setItemAsync('management_active_event_id', String(response.event.id));
+  await setCached('management_active_event_id', String(response.event.id));
+  // Mint last: the scope only resolves once token + ids + sessionId are present.
+  await mintSessionId();
 
   return { token: response.token, ...response.user };
 }
 
 export async function getManagementSession(): Promise<ManagementSession | null> {
-  const token = await SecureStore.getItemAsync('management_token');
+  const token = await getCached('management_token');
   if (!token) return null;
 
   const [id, name, email] = await Promise.all([
-    SecureStore.getItemAsync('management_user_id'),
+    getCached('management_user_id'),
     SecureStore.getItemAsync('management_user_name'),
     SecureStore.getItemAsync('management_user_email'),
   ]);
@@ -105,29 +113,31 @@ export async function redeemManagementPairing(token: string): Promise<Management
   return saveManagementSession(response.data);
 }
 
-export async function fetchManagementEvents(): Promise<ManagementEvent[]> {
-  const response = await api.get<{ events: ManagementEvent[] }>('/api/management/me/events');
+export async function fetchManagementEvents(signal?: AbortSignal): Promise<ManagementEvent[]> {
+  const response = await api.get<{ events: ManagementEvent[] }>('/api/management/me/events', {
+    signal,
+  });
   return response.data.events;
 }
 
 export async function getActiveManagementEventId(): Promise<number | null> {
-  const value = await SecureStore.getItemAsync('management_active_event_id');
+  const value = await getCached('management_active_event_id');
   return value ? Number(value) : null;
 }
 
 export async function setActiveManagementEvent(eventId: number): Promise<void> {
-  await SecureStore.setItemAsync('management_active_event_id', String(eventId));
+  await setCached('management_active_event_id', String(eventId));
 }
 
 export async function ensureActiveManagementEvent(
   events: ManagementEvent[]
 ): Promise<number | null> {
   if (events.length === 0) {
-    await SecureStore.deleteItemAsync('management_active_event_id');
+    await removeCached('management_active_event_id');
     return null;
   }
   if (events.length !== 1) {
-    await SecureStore.deleteItemAsync('management_active_event_id');
+    await removeCached('management_active_event_id');
     throw new Error('A management device session must resolve exactly one event.');
   }
 
@@ -136,7 +146,7 @@ export async function ensureActiveManagementEvent(
 }
 
 export async function clearManagementSession(): Promise<void> {
-  const token = await SecureStore.getItemAsync('management_token');
+  const token = await getCached('management_token');
   try {
     await api.delete('/api/auth/logout');
   } catch {
@@ -145,6 +155,7 @@ export async function clearManagementSession(): Promise<void> {
     if (token) await setPendingLogoutTokens([...(await getPendingLogoutTokens()), token]);
   }
   await deleteManagementSession();
+  await purgePersistedCache();
 }
 
 export async function retryPendingManagementLogout(): Promise<void> {

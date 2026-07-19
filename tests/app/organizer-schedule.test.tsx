@@ -25,7 +25,12 @@ function renderScreen() {
 }
 
 describe('app/organizer/schedule', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
+    const { setCached, mintSessionId } = require('../../lib/sessionCache');
+    await setCached('management_token', 'm');
+    await setCached('management_user_id', '7');
+    await setCached('management_active_event_id', '4');
+    await mintSessionId();
     mockFetchManagementSchedule.mockReset().mockResolvedValue({
       date: '2099-06-01',
       schedule: null,

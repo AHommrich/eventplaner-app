@@ -32,7 +32,7 @@ describe('management notes API', () => {
     mockedApi.get.mockResolvedValue({ data: payload });
 
     await expect(fetchManagementNotes()).resolves.toEqual(payload);
-    expect(mockedApi.get).toHaveBeenCalledWith('/api/management/notes');
+    expect(mockedApi.get).toHaveBeenCalledWith('/api/management/notes', { signal: undefined });
   });
 
   it('creates, completes, and deletes notes through management routes', async () => {

@@ -185,14 +185,30 @@ at runtime — deliberately, DSGVO), the active font is a backend key, and
 
 ## 7. Persistence and state
 
-The only persistent storage is `expo-secure-store` (Keychain / Keystore).
-Every key is documented in `docs/storage-keys.md`. There is **no**
-`AsyncStorage`, no `localStorage`, no on-disk cache outside the OS-managed
-image cache of `expo-image`.
+Two persistence layers:
 
-Runtime state is React state, held either in a screen or in one of the four
-providers. There is no Redux / Zustand / MobX in the tree — the app is small
-enough that context suffices, and every mid-mount async lookup goes through
+- **`expo-secure-store` (Keychain / Keystore)** — bearer tokens, the non-secret
+  `session_id`, guest/organizer identity and preference keys. Every key is
+  documented in `docs/storage-keys.md`. The hot-path token/scope reads go through
+  the in-memory write-through cache in `lib/sessionCache.ts` (SecureStore stays
+  the source of truth; the cache is only an accelerator + reactivity layer).
+- **`@react-native-async-storage/async-storage` — TanStack Query cache
+  (`lib/queryPersistence.ts`, CP6).** A persisted, offline-capable copy of a
+  **strict allowlist** of non-sensitive, session-scoped query results
+  (`eventInfo`, `photos`, `managementEvents`,
+  `managementSchedule`). This is the app's only on-disk data cache. GDPR
+  guarantees: (a) auth/session-derived and non-allowlisted queries never touch
+  disk; (b) every persisted entry keeps its full query key which embeds the
+  non-secret `QueryScope` (actor + id + `sessionId`), so a new login (new
+  `sessionId`) can never surface another account's data; (c) `purgePersistedCache()`
+  wipes memory **and** disk on logout, account switch, and GDPR erasure; (d) a
+  `maxAge` (24h) + version `buster` discard stale/old-schema caches. Beyond this
+  there is no `localStorage` and no on-disk cache except `expo-image`'s
+  OS-managed image cache.
+
+Runtime state is React state, held either in a screen or in one of the
+providers, plus the TanStack Query cache for server data. There is no Redux /
+Zustand / MobX in the tree, and every mid-mount async lookup goes through
 `lib/*` so mocking in tests stays surgical.
 
 ## 8. Networking

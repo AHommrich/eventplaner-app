@@ -9,6 +9,8 @@ export function useOrganizerStyles(): {
   card: ViewStyle;
   title: TextStyle;
   text: TextStyle;
+  /** Dimmed secondary/hint text on cards — legible on every event theme. */
+  muted: TextStyle;
   button: ViewStyle;
   buttonText: TextStyle;
   outline: ViewStyle;
@@ -23,6 +25,7 @@ export function useOrganizerStyles(): {
     card: cardSurfaceStyle(variant, colors.card, colors.border),
     title: { color: colors.cardText },
     text: { color: colors.cardText },
+    muted: { color: colors.mutedOnCard },
     button: { backgroundColor: colors.cardButton, borderRadius: variant.radius.button },
     buttonText: { color: colors.cardButtonText },
     outline: { borderColor: colors.border, borderRadius: variant.radius.button },

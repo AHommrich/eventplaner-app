@@ -50,6 +50,7 @@ jest.mock('react-native-safe-area-context', () => {
 import DeclinedScreen from '../../app/declined';
 import { LanguageProvider } from '../../lib/LanguageContext';
 import { EventThemeProvider } from '../../lib/EventThemeContext';
+import { setCached, mintSessionId } from '../../lib/sessionCache';
 
 function baseGuest(overrides: any = {}) {
   return {
@@ -80,12 +81,16 @@ function renderScreen() {
 }
 
 describe('app/declined', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     mockFetchGuestMe.mockReset();
     mockFetchEventInfo.mockReset();
     mockPostRevoke.mockReset();
     mockClearSession.mockReset();
     (router.replace as jest.Mock).mockClear();
+    // The guest-status query + theme event query only run with an active scope.
+    await setCached('guest_token', 'guest-token');
+    await setCached('guest_id', '1');
+    await mintSessionId();
   });
 
   it('shows the revoke button in the `declined_pending` state', async () => {

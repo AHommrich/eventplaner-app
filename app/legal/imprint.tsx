@@ -165,23 +165,34 @@ export default function ImprintScreen() {
           >
             {t('legal.imprint.updatedAt', { date: formatUpdatedAt(notice.updated_at, language) })}
           </ThemedText>
-          {notice.sections.map((section) => (
-            <View key={section.id} style={{ marginBottom: theme.spacing.lg }}>
-              <ThemedText
-                style={{
-                  fontSize: 16,
-                  fontWeight: '700',
-                  color: colors.cardText,
-                  marginBottom: theme.spacing.sm,
-                }}
-              >
-                {section.heading}
-              </ThemedText>
-              <ThemedText style={{ fontSize: 14, color: colors.cardText, lineHeight: 22 }}>
-                {section.body_markdown}
-              </ThemedText>
-            </View>
-          ))}
+          {/* Sections render on a card surface: the body uses `cardText`, which is
+              tuned to contrast with `card` (not `screenBg`) — on themes where
+              cardText is light it was invisible on the plain screen background. */}
+          <View
+            style={{
+              backgroundColor: colors.card,
+              borderRadius: theme.borderRadius.lg,
+              padding: theme.spacing.lg,
+            }}
+          >
+            {notice.sections.map((section) => (
+              <View key={section.id} style={{ marginBottom: theme.spacing.lg }}>
+                <ThemedText
+                  style={{
+                    fontSize: 16,
+                    fontWeight: '700',
+                    color: colors.cardText,
+                    marginBottom: theme.spacing.sm,
+                  }}
+                >
+                  {section.heading}
+                </ThemedText>
+                <ThemedText style={{ fontSize: 14, color: colors.cardText, lineHeight: 22 }}>
+                  {section.body_markdown}
+                </ThemedText>
+              </View>
+            ))}
+          </View>
         </ScrollView>
       ) : null}
     </View>

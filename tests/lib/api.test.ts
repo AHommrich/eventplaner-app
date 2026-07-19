@@ -154,41 +154,41 @@ describe('lib/api — response interceptor', () => {
   it('routes to /blocked on a 403 app_blocked and debounces subsequent hits', () => {
     responseOnError({
       response: { status: 403, data: { code: 'app_blocked' } },
-    });
+    }).catch(() => {});
     expect(router.replace).toHaveBeenCalledWith('/blocked');
     // Second 403 in the same window is swallowed — the internal debounce
     // prevents a duplicate router.replace call.
     responseOnError({
       response: { status: 403, data: { code: 'app_blocked' } },
-    });
+    }).catch(() => {});
     expect(router.replace).toHaveBeenCalledTimes(1);
   });
 
   it('clearBlocked resets the debounce so the next 403 fires again', () => {
     responseOnError({
       response: { status: 403, data: { code: 'app_blocked' } },
-    });
+    }).catch(() => {});
     clearBlocked();
     responseOnError({
       response: { status: 403, data: { code: 'app_blocked' } },
-    });
+    }).catch(() => {});
     expect(router.replace).toHaveBeenCalledTimes(2);
   });
 
   it('fires the registered drinks_blocked handler exactly once until reset', () => {
     const handler = jest.fn();
     registerDrinksBlockedHandler(handler);
-    responseOnError({ response: { data: { code: 'drinks_blocked' } } });
-    responseOnError({ response: { data: { code: 'drinks_blocked' } } });
+    responseOnError({ response: { data: { code: 'drinks_blocked' } } }).catch(() => {});
+    responseOnError({ response: { data: { code: 'drinks_blocked' } } }).catch(() => {});
     expect(handler).toHaveBeenCalledTimes(1);
   });
 
   it('resetDrinksBlocked lets the handler fire again on the next block', () => {
     const handler = jest.fn();
     registerDrinksBlockedHandler(handler);
-    responseOnError({ response: { data: { code: 'drinks_blocked' } } });
+    responseOnError({ response: { data: { code: 'drinks_blocked' } } }).catch(() => {});
     resetDrinksBlocked();
-    responseOnError({ response: { data: { code: 'drinks_blocked' } } });
+    responseOnError({ response: { data: { code: 'drinks_blocked' } } }).catch(() => {});
     expect(handler).toHaveBeenCalledTimes(2);
   });
 
@@ -203,8 +203,10 @@ describe('lib/api — response interceptor', () => {
     responseOnError({
       config: { url: '/api/guest/me', headers: { Authorization: 'Bearer expired-token' } },
       response: { status: 401, data: {} },
-    });
-    await Promise.resolve();
+    }).catch(() => {});
+    // Flush the cleanup → purge → redirect chain (the teardown now also purges
+    // the persisted cache before redirecting).
+    await new Promise((resolve) => setImmediate(resolve));
 
     expect(await SecureStore.getItemAsync('guest_token')).toBeNull();
     expect(await SecureStore.getItemAsync('guest_id')).toBeNull();
@@ -213,6 +215,22 @@ describe('lib/api — response interceptor', () => {
     expect(await SecureStore.getItemAsync('guest_type')).toBeNull();
     expect(await SecureStore.getItemAsync('guest_family_name')).toBeNull();
     expect(router.replace).toHaveBeenCalledWith('/');
+  });
+
+  it('purges the persisted query cache on an authenticated 401 (GDPR)', async () => {
+    const AsyncStorage = require('@react-native-async-storage/async-storage').default;
+    const { PERSIST_CACHE_KEY } = require('../../lib/queryPersistence');
+    (AsyncStorage.removeItem as jest.Mock).mockClear();
+    await SecureStore.setItemAsync('guest_token', 'expired-token');
+
+    responseOnError({
+      config: { url: '/api/guest/me', headers: { Authorization: 'Bearer expired-token' } },
+      response: { status: 401, data: {} },
+    }).catch(() => {});
+    // Flush the cleanup → purge → redirect microtask chain.
+    await new Promise((resolve) => setImmediate(resolve));
+
+    expect(AsyncStorage.removeItem).toHaveBeenCalledWith(PERSIST_CACHE_KEY);
   });
 
   it('does not treat unauthenticated QR/login 401s as session expiry', async () => {
@@ -235,8 +253,10 @@ describe('lib/api — response interceptor', () => {
         headers: { Authorization: 'Bearer expired-management-token' },
       },
       response: { status: 401, data: {} },
-    });
-    await Promise.resolve();
+    }).catch(() => {});
+    // Flush pending microtasks so the fire-and-forget `cleanup.finally(...)`
+    // redirect settles regardless of how many awaits the cleanup chains.
+    await new Promise((resolve) => setImmediate(resolve));
 
     expect(await SecureStore.getItemAsync('management_token')).toBeNull();
     expect(await SecureStore.getItemAsync('management_user_id')).toBeNull();

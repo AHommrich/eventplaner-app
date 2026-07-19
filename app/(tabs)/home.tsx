@@ -12,12 +12,11 @@
  *   5. Live countdown pill — updates every 1 s until day-of, then flips to
  *      "today" and finally to "past".
  *
- * Refresh: pull-to-refresh runs `loadData` which re-fetches `EventInfo` AND
- * calls `loadTheme()` so colour changes on the backend propagate. The
- * `useFocusEffect` runs `loadData` on every tab focus for the same reason
- * without needing a manual pull.
+ * Refresh: `eventInfo` comes from the shared theme query (CP3); pull-to-refresh
+ * and every tab focus call `loadTheme()`, which revalidates that one query so
+ * colour + event-data changes on the backend propagate without a second fetch.
  */
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   View,
   ImageBackground,
@@ -29,14 +28,14 @@ import {
 import { ThemedText } from '../../components/ThemedText';
 import { CardSkeleton } from '../../components/ui/ScreenSkeletons';
 import { ErrorBanner } from '../../components/ui/ErrorBanner';
-import { useFocusEffect } from 'expo-router';
+import { useRefetchOnFocus } from '../../lib/useRefetchOnFocus';
 import { useIsFocused } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
 import { getSession, GuestSession } from '../../lib/auth';
 import { useLanguage } from '../../lib/LanguageContext';
 import { useEventTheme } from '../../lib/EventThemeContext';
-import { fetchEventInfo, EventInfo } from '../../lib/guest';
+import { EventInfo } from '../../lib/guest';
 import { focusStation, scheduleStatus } from '../../lib/schedule';
 import { openLocationInMaps } from '../../lib/maps';
 import { useRefreshToast } from '../../lib/useRefreshToast';
@@ -90,13 +89,23 @@ function calcCountdown(iso: string): CountdownParts {
 
 export default function HomeScreen() {
   const { t, language } = useLanguage();
-  const { colors, variant, loadTheme } = useEventTheme();
+  // Event info now comes from the shared theme query (CP3) — Home no longer
+  // fires its own `fetchEventInfo`. `loadTheme` revalidates that one query.
+  const {
+    colors,
+    variant,
+    loadTheme,
+    eventInfo,
+    themeLoading,
+    themeError,
+    themeStale,
+    refetchTheme,
+  } = useEventTheme();
   const insets = useSafeAreaInsets();
   const tabBarHeight = useBottomTabBarHeight();
   const [session, setSession] = useState<GuestSession | null>(null);
-  const [eventInfo, setEventInfo] = useState<EventInfo | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [loadError, setLoadError] = useState<string | null>(null);
+  const loading = themeLoading;
+  const loadError = themeError;
   const [countdown, setCountdown] = useState<CountdownParts | null>(null);
   // Ticks with the countdown so the station status can be derived purely from
   // state in render (no `Date.now()` during render).
@@ -104,35 +113,13 @@ export default function HomeScreen() {
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const isFocused = useIsFocused();
 
-  async function loadData() {
-    try {
-      const info = await fetchEventInfo();
-      setEventInfo(info);
-      await loadTheme();
-      setLoadError(null);
-    } catch (e: any) {
-      console.warn('[Home] fetchEventInfo failed:', e?.response?.status, e?.message);
-      setLoadError(`${e?.response?.status ?? ''} ${e?.message ?? e}`);
-    } finally {
-      setLoading(false);
-    }
-  }
-
   useEffect(() => {
     getSession().then(setSession);
   }, []);
 
-  // Re-fetch on every focus so a mid-session backend change (e.g. new cover
-  // image, updated deadline) is reflected without a pull-to-refresh.
-  useFocusEffect(
-    useCallback(() => {
-      loadData();
-      // Focus-effect callback intentionally captured once — recreating it per
-      // render would defeat useFocusEffect's "run when route becomes active"
-      // semantic and re-fire on every parent render.
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [])
-  );
+  // Revalidate the shared theme/event query on tab focus ONLY when it is stale
+  // (respects staleTime — no refetch on every tab switch).
+  useRefetchOnFocus({ isStale: themeStale, refetch: refetchTheme });
 
   // 1 Hz ticker for the countdown pill — cheap because `calcCountdown` is
   // pure arithmetic; teardown on eventInfo change so a fresh date doesn't
@@ -162,7 +149,7 @@ export default function HomeScreen() {
     // theme/schedule tweak the backend returns.
   }, [eventInfo?.date, isFocused]);
 
-  const { refreshing, refreshed, onRefresh } = useRefreshToast(loadData);
+  const { refreshing, refreshed, onRefresh } = useRefreshToast(loadTheme);
 
   const hasCover = !!eventInfo?.cover_image_url;
   // On a cover image, `homeText` is the couple-picked legible colour; without
@@ -285,7 +272,7 @@ export default function HomeScreen() {
       {loadError && (
         <ErrorBanner
           message={t('home.loadError')}
-          onRetry={loadData}
+          onRetry={loadTheme}
           style={{ marginBottom: theme.spacing.sm }}
         />
       )}

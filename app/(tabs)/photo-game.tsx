@@ -19,6 +19,7 @@
  * assigned on the server side).
  */
 import { useCallback, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import {
   View,
   ScrollView,
@@ -32,7 +33,8 @@ import { ThemedText } from '../../components/ThemedText';
 import { CardSkeleton } from '../../components/ui/ScreenSkeletons';
 import { ErrorBanner } from '../../components/ui/ErrorBanner';
 import { haptics } from '../../lib/haptics';
-import { useFocusEffect } from 'expo-router';
+import { useRefetchOnFocus } from '../../lib/useRefetchOnFocus';
+import { isHandledApiError } from '../../lib/api';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
@@ -49,6 +51,9 @@ import {
   submitPhotoGamePhoto,
   PhotoGameStatusResponse,
 } from '../../lib/guest';
+import { queryClient } from '../../lib/queryClient';
+import { qk } from '../../lib/queryKeys';
+import { useSessionScope } from '../../lib/SessionContext';
 import { theme } from '../../constants/theme';
 import { cardSurfaceStyle } from '../../lib/variantStyles';
 import { GradientFill } from '../../components/GradientFill';
@@ -57,45 +62,50 @@ import { ScreenGradient } from '../../components/ScreenGradient';
 export default function PhotoGameScreen() {
   const { t } = useLanguage();
   const { colors, variant } = useEventTheme();
+  const scope = useSessionScope();
   const isSoft = variant.key === 'soft-luxury';
   const softCard = cardSurfaceStyle(variant, colors.card, colors.border);
   const { ensureConsent } = useConsentGate();
   const insets = useSafeAreaInsets();
-  const [statusData, setStatusData] = useState<PhotoGameStatusResponse | null>(null);
-  const [loading, setLoading] = useState(true);
   const [assigning, setAssigning] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<number | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  // `actionError` holds assign/submit failures; a load failure is derived from
+  // the query below. The inline error card shows whichever is present.
+  const [actionError, setActionError] = useState<string | null>(null);
 
-  /**
-   * Fetch the current photo-game state (enabled? assignment already claimed?
-   * submitted?). Feeds the four-state UI in `<Content />`. Errors are shown
-   * inline on the screen rather than in an alert — the screen has an error
-   * card slot precisely for this, so a transient outage doesn't block the
-   * whole tab.
-   */
-  async function loadStatus() {
-    try {
-      const data = await fetchPhotoGameStatus();
-      setStatusData(data);
-      setError(null);
-    } catch (e: any) {
-      setError(e?.response?.data?.message ?? e?.message ?? t('common.unknownError'));
-    } finally {
-      setLoading(false);
-    }
+  // Photo-game status is a cache-backed query (CP4); the four-state UI reads
+  // `statusData`. Errors surface inline in the screen's error card.
+  const statusQuery = useQuery(
+    {
+      queryKey: qk.photoGameStatus(scope),
+      queryFn: ({ signal }) => fetchPhotoGameStatus(signal),
+      enabled: scope !== null,
+    },
+    queryClient
+  );
+  const statusData = statusQuery.data ?? null;
+  const loading = statusQuery.isLoading;
+  const loadErr = statusQuery.error as any;
+  const error =
+    actionError ??
+    (statusQuery.isError
+      ? (loadErr?.response?.data?.message ?? loadErr?.message ?? t('common.unknownError'))
+      : null);
+
+  /** Re-sync the shared status query (focus, refresh, retry, 409 recovery). */
+  const loadStatus = useCallback(async () => {
+    await statusQuery.refetch();
+  }, [statusQuery]);
+
+  /** Optimistically patch the cached status without a follow-up fetch. */
+  function patchStatus(updater: (prev: PhotoGameStatusResponse) => PhotoGameStatusResponse) {
+    queryClient.setQueryData<PhotoGameStatusResponse>(qk.photoGameStatus(scope), (prev) =>
+      prev ? updater(prev) : prev
+    );
   }
 
-  useFocusEffect(
-    useCallback(() => {
-      loadStatus();
-      // Same rationale as the other tab screens: the focus-effect callback
-      // is captured once so `useFocusEffect` fires on route focus, not on
-      // every render caused by an unrelated state change.
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [])
-  );
+  useRefetchOnFocus(statusQuery);
 
   const { refreshing, refreshed, onRefresh } = useRefreshToast(loadStatus);
 
@@ -107,23 +117,20 @@ export default function PhotoGameScreen() {
    */
   async function handleAssign() {
     setAssigning(true);
-    setError(null);
+    setActionError(null);
     try {
       const result = await assignPhotoGameTask();
-      setStatusData((prev) =>
-        prev
-          ? {
-              ...prev,
-              assignment: { id: result.id, task: result.task, submitted_at: null, photo_url: null },
-            }
-          : prev
-      );
+      patchStatus((prev) => ({
+        ...prev,
+        assignment: { id: result.id, task: result.task, submitted_at: null, photo_url: null },
+      }));
       haptics.success();
     } catch (e: any) {
+      if (isHandledApiError(e)) return;
       if (e?.response?.status === 409) {
         await loadStatus();
       } else {
-        setError(e?.response?.data?.message ?? e?.message ?? t('common.unknownError'));
+        setActionError(e?.response?.data?.message ?? e?.message ?? t('common.unknownError'));
       }
     } finally {
       setAssigning(false);
@@ -182,11 +189,11 @@ export default function PhotoGameScreen() {
 
     setUploading(true);
     setUploadProgress(null);
-    setError(null);
+    setActionError(null);
     try {
       const submitted = await submitPhotoGamePhoto(jpeg.uri, setUploadProgress);
-      setStatusData((prev) =>
-        prev && prev.assignment
+      patchStatus((prev) =>
+        prev.assignment
           ? {
               ...prev,
               assignment: {
@@ -199,10 +206,11 @@ export default function PhotoGameScreen() {
       );
       haptics.success();
     } catch (e: any) {
+      if (isHandledApiError(e)) return;
       if (e?.response?.status === 409) {
         await loadStatus();
       } else {
-        setError(e?.response?.data?.message ?? e?.message ?? t('common.unknownError'));
+        setActionError(e?.response?.data?.message ?? e?.message ?? t('common.unknownError'));
       }
     } finally {
       setUploading(false);

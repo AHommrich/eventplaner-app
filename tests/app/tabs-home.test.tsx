@@ -50,6 +50,7 @@ jest.mock('react-native-safe-area-context', () => {
 import HomeScreen from '../../app/(tabs)/home';
 import { LanguageProvider } from '../../lib/LanguageContext';
 import { EventThemeProvider } from '../../lib/EventThemeContext';
+import { setCached, mintSessionId } from '../../lib/sessionCache';
 
 function renderScreen() {
   return render(
@@ -80,10 +81,15 @@ function baseEvent(overrides: any = {}) {
 }
 
 describe('app/(tabs)/home', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     mockFetchEventInfo.mockReset();
     (Linking.openURL as jest.Mock).mockClear();
     Platform.OS = 'ios';
+    // Home reads eventInfo from the shared theme query (CP3); the query only
+    // runs with an active guest session scope.
+    await setCached('guest_token', 'guest-token');
+    await setCached('guest_id', '1');
+    await mintSessionId();
   });
 
   it('renders event name, date, and venue after the fetch resolves', async () => {

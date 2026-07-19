@@ -27,6 +27,15 @@ jest.mock('react-native-safe-area-context', () => ({
 import OrganizerNotesScreen from '../../app/organizer/notes';
 import { EventThemeProvider } from '../../lib/EventThemeContext';
 import { LanguageProvider } from '../../lib/LanguageContext';
+import { setCached, mintSessionId } from '../../lib/sessionCache';
+
+/** Establish an active management session scope bound to one event. */
+async function loginManagement() {
+  await setCached('management_token', 'm');
+  await setCached('management_user_id', '7');
+  await setCached('management_active_event_id', '4');
+  await mintSessionId();
+}
 
 const todo = {
   id: 12,
@@ -52,9 +61,10 @@ function renderScreen() {
 }
 
 describe('app/organizer/notes', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     jest.clearAllMocks();
     (globalThis as any).__routerParams = {};
+    await loginManagement();
     mockGetActiveManagementEventId.mockResolvedValue(4);
     mockFetchManagementNotes.mockResolvedValue({
       personal: [],
@@ -95,7 +105,9 @@ describe('app/organizer/notes', () => {
   });
 
   it('returns to event selection when no active event exists', async () => {
-    mockGetActiveManagementEventId.mockResolvedValue(null);
+    // No management scope → redirect home, no notes fetch.
+    const { _resetForTests } = require('../../lib/sessionCache');
+    _resetForTests();
     renderScreen();
 
     await waitFor(() => expect(router.replace).toHaveBeenCalledWith('/organizer'));

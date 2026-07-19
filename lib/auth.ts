@@ -16,7 +16,9 @@
  */
 import * as SecureStore from 'expo-secure-store';
 import api, { resetUnauthorizedRedirect } from './api';
+import { getCached, mintSessionId, setCached } from './sessionCache';
 import { deleteGuestSession, deleteManagementSession } from './sessionStorage';
+import { purgePersistedCache } from './queryPersistence';
 
 /** Shape passed to `saveSession` and returned by `getSession`. */
 export type GuestSession = {
@@ -36,14 +38,21 @@ export type GuestSession = {
 export async function saveSession(session: GuestSession): Promise<void> {
   resetUnauthorizedRedirect();
   await deleteManagementSession();
-  await SecureStore.setItemAsync('guest_token', session.token);
-  await SecureStore.setItemAsync('guest_id', String(session.guestId));
+  // Account switch: drop the previous actor's persisted cache from disk + memory
+  // so no prior-account personal data lingers (GDPR account-switch contract).
+  await purgePersistedCache();
+  // Cached (hot-path / scope) keys go through the session cache; the display
+  // fields are not read per request, so they stay direct SecureStore writes.
+  await setCached('guest_token', session.token);
+  await setCached('guest_id', String(session.guestId));
   await SecureStore.setItemAsync('guest_firstname', session.firstname);
   await SecureStore.setItemAsync('guest_lastname', session.lastname);
   await SecureStore.setItemAsync('guest_type', session.type);
   if (session.familyName) {
     await SecureStore.setItemAsync('guest_family_name', session.familyName);
   }
+  // Mint last: the scope only resolves once token + id + sessionId are present.
+  await mintSessionId();
 }
 
 /**
@@ -53,10 +62,10 @@ export async function saveSession(session: GuestSession): Promise<void> {
  * the render tree.
  */
 export async function getSession(): Promise<GuestSession | null> {
-  const token = await SecureStore.getItemAsync('guest_token');
+  const token = await getCached('guest_token');
   if (!token) return null;
 
-  const guestId = await SecureStore.getItemAsync('guest_id');
+  const guestId = await getCached('guest_id');
   const firstname = await SecureStore.getItemAsync('guest_firstname');
   const lastname = await SecureStore.getItemAsync('guest_lastname');
   const type = await SecureStore.getItemAsync('guest_type');
@@ -87,4 +96,7 @@ export async function clearSession(): Promise<void> {
     // locally so the next launch does not think we're logged in.
   }
   await deleteGuestSession();
+  // Purge both the in-memory and on-disk query cache so a later login can't
+  // show the old session's photos/lists and no personal data lingers on disk.
+  await purgePersistedCache();
 }

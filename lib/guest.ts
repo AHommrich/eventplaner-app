@@ -169,15 +169,33 @@ export function isDeclinedFlow(status: RsvpStatus): boolean {
 // --- Fetchers -------------------------------------------------------------
 
 /** Load the currently logged-in guest incl. family group + RSVP state. */
-export async function fetchGuestMe(): Promise<GuestMe> {
-  const res = await api.get<GuestMe>('/api/guest/me');
+export async function fetchGuestMe(signal?: AbortSignal): Promise<GuestMe> {
+  const res = await api.get<GuestMe>('/api/guest/me', { signal });
   return res.data;
 }
 
 /** Load the event configuration + full theme + venue metadata. */
-export async function fetchEventInfo(): Promise<EventInfo> {
-  const res = await api.get<EventInfo>('/api/event/info');
+export async function fetchEventInfo(signal?: AbortSignal): Promise<EventInfo> {
+  const res = await api.get<EventInfo>('/api/event/info', { signal });
   return res.data;
+}
+
+/** A photo in the guest-facing gallery. */
+export type GuestPhoto = {
+  id: number;
+  url: string;
+  guest_id: number | null;
+  guest_name: string;
+  created_at: string;
+};
+
+/**
+ * Pure gallery read for `useQuery` — returns data, never mutates screen state.
+ * Forwards the query's AbortSignal so navigating away cancels the request.
+ */
+export async function fetchGuestPhotos(signal?: AbortSignal): Promise<GuestPhoto[]> {
+  const res = await api.get<{ data: GuestPhoto[] }>('/api/photos', { signal });
+  return res.data.data;
 }
 
 // --- RSVP mutations -------------------------------------------------------
@@ -231,8 +249,8 @@ export type PhotoGameStatusResponse = {
 };
 
 /** Load the current photo-game status + this guest's assignment (if any). */
-export async function fetchPhotoGameStatus(): Promise<PhotoGameStatusResponse> {
-  const res = await api.get<PhotoGameStatusResponse>('/api/game/photo/status');
+export async function fetchPhotoGameStatus(signal?: AbortSignal): Promise<PhotoGameStatusResponse> {
+  const res = await api.get<PhotoGameStatusResponse>('/api/game/photo/status', { signal });
   return res.data;
 }
 

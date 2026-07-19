@@ -26,6 +26,14 @@ jest.mock('react-native-safe-area-context', () => ({
 import OrganizerPhotosScreen from '../../app/organizer/photos';
 import { EventThemeProvider } from '../../lib/EventThemeContext';
 import { LanguageProvider } from '../../lib/LanguageContext';
+import { setCached, mintSessionId } from '../../lib/sessionCache';
+
+async function loginManagement() {
+  await setCached('management_token', 'm');
+  await setCached('management_user_id', '7');
+  await setCached('management_active_event_id', '4');
+  await mintSessionId();
+}
 
 function renderScreen() {
   return render(
@@ -38,8 +46,9 @@ function renderScreen() {
 }
 
 describe('app/organizer/photos', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     jest.clearAllMocks();
+    await loginManagement();
     mockGetActiveManagementEventId.mockResolvedValue(4);
     mockFetchManagementPhotos.mockResolvedValue([
       {
@@ -123,10 +132,30 @@ describe('app/organizer/photos', () => {
   });
 
   it('returns to event selection when no active event exists', async () => {
-    mockGetActiveManagementEventId.mockResolvedValue(null);
+    // No management scope (e.g. session without a bound event) → redirect home.
+    const { _resetForTests } = require('../../lib/sessionCache');
+    _resetForTests();
     renderScreen();
 
     await waitFor(() => expect(router.replace).toHaveBeenCalledWith('/organizer'));
     expect(mockFetchManagementPhotos).not.toHaveBeenCalled();
+  });
+
+  it('loads (does NOT redirect) for a pre-CP1 session that had no session_id', async () => {
+    // Reproduces the real bug: an organizer already logged in on the OLD build
+    // has management_token + ids in SecureStore but no session_id. After the
+    // update, primeFromStore must back-fill it so the screen still works.
+    const SecureStore = require('expo-secure-store');
+    const { _resetForTests, primeFromStore } = require('../../lib/sessionCache');
+    _resetForTests();
+    await SecureStore.setItemAsync('management_token', 'legacy-bearer');
+    await SecureStore.setItemAsync('management_user_id', '7');
+    await SecureStore.setItemAsync('management_active_event_id', '4');
+    await primeFromStore();
+
+    renderScreen();
+
+    await waitFor(() => expect(mockFetchManagementPhotos).toHaveBeenCalled());
+    expect(router.replace).not.toHaveBeenCalledWith('/organizer');
   });
 });
