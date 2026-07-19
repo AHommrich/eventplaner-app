@@ -38,6 +38,7 @@ jest.mock('expo-router', () => {
     router,
     useRouter: () => router,
     useLocalSearchParams: () => (globalThis as any).__routerParams ?? {},
+    usePathname: () => (globalThis as any).__pathname ?? '/home',
     useSegments: () => [],
     useFocusEffect: (cb: () => void | (() => void)) => {
       // Mock: real `useFocusEffect` fires on route focus events; in Jest
@@ -221,6 +222,36 @@ jest.mock('@react-native-async-storage/async-storage', () => {
       }),
     },
   };
+});
+
+// --- axios (no real network in tests) ---
+// Screen specs render `EventThemeProvider`, whose event-info query is NOT mocked
+// per file, so it would otherwise hit the real staging API. Those live requests
+// starve the single-worker event loop and make heavy screens (schedule,
+// photo-game) flakily miss their `findBy` timeout. Stub every axios instance to
+// reject instantly ("offline") — screens already fall back to default colours.
+// `lib/api.test.ts` registers its own `jest.mock('axios')`, which overrides this
+// for that file, so the interceptor contract is still tested against a real-ish axios.
+jest.mock('axios', () => {
+  const offline = () => Promise.reject(new Error('network disabled in tests'));
+  const makeInstance = () => {
+    const instance: any = jest.fn(offline);
+    instance.get = jest.fn(offline);
+    instance.post = jest.fn(offline);
+    instance.put = jest.fn(offline);
+    instance.patch = jest.fn(offline);
+    instance.delete = jest.fn(offline);
+    instance.request = jest.fn(offline);
+    instance.interceptors = {
+      request: { use: jest.fn(), eject: jest.fn() },
+      response: { use: jest.fn(), eject: jest.fn() },
+    };
+    instance.defaults = { headers: { common: {} } };
+    return instance;
+  };
+  const axios: any = makeInstance();
+  axios.create = jest.fn(() => makeInstance());
+  return { __esModule: true, default: axios, create: axios.create, isAxiosError: () => false };
 });
 
 // --- @react-native-community/netinfo ---

@@ -73,12 +73,16 @@ export default function TabLayout() {
     borderTopWidth: 1,
   };
 
+  // Visible tabs in manifest order — drives swipe-between-tabs (W1).
+  const orderedTabNames = GUEST_TAB_MANIFEST.filter((name) => !hiddenTabs.has(name));
+
   return (
     <EventTabShell
       icons={GUEST_TAB_ICONS}
       hiddenTabs={hiddenTabs}
       overCover={overCover}
       classicTabBarStyle={classicTabBarStyle}
+      orderedTabNames={orderedTabNames}
     >
       <Tabs.Screen
         name="home"

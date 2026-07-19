@@ -22,7 +22,11 @@ export default function OrganizerTabLayout() {
   const { t } = useLanguage();
 
   return (
-    <EventTabShell icons={ORGANIZER_TAB_ICONS}>
+    <EventTabShell
+      icons={ORGANIZER_TAB_ICONS}
+      orderedTabNames={ORGANIZER_TAB_MANIFEST}
+      tabBasePath="/organizer"
+    >
       <Tabs.Screen
         name="index"
         options={{

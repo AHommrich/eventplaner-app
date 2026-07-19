@@ -34,8 +34,9 @@ invisible on the beige `screenBg`. (Confirmed by the visible scrollbar in the
 screenshot — content is present, just unreadable.) This is the **same class as C3**.
 
 **Fix (pick one, keep it consistent with the app's card design):**
+
 - Preferred: render the legal sections inside a **card surface** (`backgroundColor:
-  colors.card`, text `colors.cardText`) — then `cardText` is on its intended surface
+colors.card`, text `colors.cardText`) — then `cardText` is on its intended surface
   and is guaranteed legible; matches the rest of the app. Also fix the small
   "Zuletzt aktualisiert" line + the offline/error states (they use
   `theme.colors.muted` on `screenBg`).
@@ -69,6 +70,7 @@ the card colour → fails contrast. Guest placeholders use `colors.cardText + '8
 (borderline on some palettes).
 
 **Fix approach:**
+
 - Derive on-card secondary/placeholder colour **from the event theme**, not the
   static `muted`. Simplest: use `colors.cardText` at a higher alpha for hints (e.g.
   `+ 'CC'`) and a stronger placeholder alpha (aim ~4.5:1). Cleaner: add a
@@ -77,7 +79,7 @@ the card colour → fails contrast. Guest placeholders use `colors.cardText + '8
 - Replace static `theme.colors.muted` for **on-card** secondary text + placeholders
   in: `app/organizer/index.tsx` (`pushHint`, `role`, `email`), `app/organizer/notes.tsx`
   (`placeholderTextColor`, `noteBody`, `meta`, `empty`, `fieldLabel`), `app/organizer/
-  photos.tsx`, `app/organizer/schedule.tsx`. Re-check guest placeholders in
+photos.tsx`, `app/organizer/schedule.tsx`. Re-check guest placeholders in
   `app/(tabs)/photos.tsx` (`cardText + '88'`) and `app/(tabs)/drinks.tsx`
   (`cardText + 'aa'`).
 - Do NOT change `theme.colors.muted` globally where it sits on the neutral app
@@ -91,13 +93,27 @@ low risk, JS-only.
 
 ## Item 1 — Boot / restore gate (the known open race) · P1 before the build
 
-**Context (from `docs/APP_PERFORMANCE_DATA_LAYER_PLAN.md` "STILL OPEN"):** `app/
+**✅ IMPLEMENTED 2026-07-19 (needs device verify).** `app/_layout.tsx` now wraps the
+tree in `PersistQueryClientProvider` (client + `persistOptions` exported from
+`lib/queryPersistence.ts`); the splash is held until fonts + session-prime + on-disk
+cache-restore are all done (new `restored` state set by `onSuccess`/`onError`), so no
+empty→restored flash and queries stay paused (`isRestoring`) during restore. The
+`<Stack>` is kept always-mounted (expo-router safety) rather than unmounted; the
+splash overlay covers it. The standalone `initQueryPersistence()` call was removed
+(the provider owns restore; the function stays for its test). typecheck/lint/prettier
+green, coverage 90.9%. **Still MUST be device-verified** (`_layout` has no test
+coverage): cold start online, cold start in airplane mode after a prior online
+session (offline-after-restart shows last-known data, no white screen), login/
+logout/switch.
+
+**Original context (from `docs/APP_PERFORMANCE_DATA_LAYER_PLAN.md` "STILL OPEN"):** `app/
 _layout.tsx` renders the router tree before `primeFromStore()` + the persisted-cache
 restore complete (`primed` only hides the splash). This is the "offline after
 restart" / cache-race risk Codex and Claude both flagged as a must-fix before the
 build.
 
 **Fix:**
+
 - Export a `persistOptions` object (persister + maxAge + buster + dehydrateOptions)
   from `lib/queryPersistence.ts` (keep `initQueryPersistence` for the existing test).
 - In `app/_layout.tsx`: replace `QueryClientProvider` with `PersistQueryClientProvider`
@@ -137,6 +153,7 @@ Getting it needs a pager-backed navigator (`@react-navigation/material-top-tabs`
 pager — a navigation-architecture change.
 
 **Conflicts (the user's instinct is right):**
+
 - `components/gallery/PhotoLightbox.tsx` uses **horizontal swipe** to page photos;
   the album picker + schedule timeline are horizontal too. A global tab pager will
   fight these.
@@ -153,9 +170,10 @@ current build. NOT part of the TestFlight build.
 ---
 
 ## Suggested execution order
+
 1. Backend **C1 + C2** (companion plan) → staging → verify in Expo Go → production.
 2. App **C2b + C3 + Item 1** → verify in Expo Go (staging) + existing dev-client.
 3. Full green preflight (`npm run typecheck && npm run lint && npm run format:check &&
-   npm test`) + `maestro test .maestro` on a quiet machine.
+npm test`) + `maestro test .maestro` on a quiet machine.
 4. Only then: the one `eas build --profile production` → TestFlight → smoke on
    `eveplan.de`. Upload ≠ public release.
