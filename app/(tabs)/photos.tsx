@@ -1,3 +1,10 @@
+/* eslint-disable react-hooks/immutability --
+ * This screen writes Reanimated shared values (`dragY.value = …`,
+ * `entryOpacity.value = …`) inside gesture/worklet callbacks — the intended
+ * Reanimated pattern, not a React-state mutation. The rule only fires here
+ * (and not on the identical shared PhotoLightbox) because the CP2 query
+ * refactor made this component compilable by the React Compiler. Scoped to
+ * this file; every write is a legitimate worklet assignment. */
 /**
  * Photo gallery — shared wedding album.
  *
@@ -52,7 +59,11 @@ import { sheenGradient } from '../../lib/variantStyles';
 import { ScreenGradient } from '../../components/ScreenGradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import api from '../../lib/api';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useIsFocused } from '@react-navigation/native';
+import api, { isHandledApiError } from '../../lib/api';
+import { qk } from '../../lib/queryKeys';
+import { useSessionScope } from '../../lib/SessionContext';
 import { getSession } from '../../lib/auth';
 import { theme } from '../../constants/theme';
 import { useLanguage } from '../../lib/LanguageContext';
@@ -61,7 +72,13 @@ import { useRefreshToast } from '../../lib/useRefreshToast';
 import { RefreshToast } from '../../components/RefreshToast';
 import { Toast } from '../../components/ui/Toast';
 import { useConsentGate } from '../../components/ConsentGate';
-import { hideGuestContent, PhotoReportReason, reportPhoto } from '../../lib/guest';
+import {
+  fetchGuestPhotos,
+  type GuestPhoto,
+  hideGuestContent,
+  PhotoReportReason,
+  reportPhoto,
+} from '../../lib/guest';
 import { captureException } from '../../lib/monitoring';
 import { haptics } from '../../lib/haptics';
 import {
@@ -74,13 +91,7 @@ import { buildGuestGalleryAlbums } from '../../lib/galleryAlbums';
 
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
 
-type Photo = {
-  id: number;
-  url: string;
-  guest_id: number | null;
-  guest_name: string;
-  created_at: string;
-};
+type Photo = GuestPhoto;
 
 type PhotoUploadResponse = Omit<Photo, 'guest_id'> & {
   guest_id?: number | null;
@@ -106,9 +117,23 @@ export default function PhotosScreen() {
   const tileSize = (SCREEN_W - gap * (COLUMNS + 1)) / COLUMNS;
   const tileRadius = isSoft ? variant.radius.tile : 2;
   const { ensureConsent } = useConsentGate();
-  const [photos, setPhotos] = useState<Photo[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [loadError, setLoadError] = useState(false);
+  const scope = useSessionScope();
+  const isFocused = useIsFocused();
+  const queryClient = useQueryClient();
+  const photosQuery = useQuery({
+    queryKey: qk.photos(scope),
+    queryFn: ({ signal }) => fetchGuestPhotos(signal),
+    enabled: scope !== null,
+    // Poll only while this tab is focused (AppState alone doesn't know the
+    // active tab); background polling off.
+    refetchInterval: isFocused ? POLL_INTERVAL : false,
+    refetchIntervalInBackground: false,
+  });
+  // Memoised so the empty-fallback array keeps a stable identity across renders
+  // (the guest-albums useMemo below depends on it).
+  const photos = useMemo(() => photosQuery.data ?? [], [photosQuery.data]);
+  const loading = photosQuery.isLoading;
+  const loadError = photosQuery.isError && photos.length === 0;
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<number | null>(null);
   const [uploadToast, setUploadToast] = useState(false);
@@ -121,10 +146,9 @@ export default function PhotosScreen() {
   const [reportError, setReportError] = useState<string | null>(null);
   const [submittingReport, setSubmittingReport] = useState(false);
   const [detailMounted, setDetailMounted] = useState(false);
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const insets = useSafeAreaInsets();
   const { refreshing, refreshed, onRefresh } = useRefreshToast(async () => {
-    await fetchPhotos();
+    await photosQuery.refetch();
     loadTheme();
   });
   // Guests stay on app_gallery in this checkpoint. The album collection keeps
@@ -149,39 +173,10 @@ export default function PhotosScreen() {
     ],
   }));
 
-  /**
-   * Load the photo list from the backend. Swallows errors on purpose:
-   * `fetchPhotos` is called both by the initial mount effect AND by the
-   * 30-second polling interval, so a transient network hiccup should not
-   * pop an alert or clear the currently-rendered list. The next poll or a
-   * pull-to-refresh retries.
-   */
-  async function fetchPhotos() {
-    try {
-      const res = await api.get<{ data: Photo[] }>('/api/photos');
-      setPhotos(res.data.data);
-      setLoadError(false);
-    } catch {
-      // Silent when we already have photos to show — retain the previous
-      // list, next poll or pull will retry. Only surface an error banner on
-      // the very first load, where there's nothing to fall back to.
-      if (photos.length === 0) setLoadError(true);
-    } finally {
-      setLoading(false);
-    }
-  }
-
+  // The photo list, polling, focus refetch and load/error state are owned by
+  // `photosQuery` above. Only the current guest id still needs a one-shot read.
   useEffect(() => {
-    fetchPhotos();
     getSession().then((session) => setCurrentGuestId(session?.guestId ?? null));
-    intervalRef.current = setInterval(fetchPhotos, POLL_INTERVAL);
-    return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current);
-    };
-    // Mount-once effect — `fetchPhotos` now reads `photos.length` for the
-    // load-error gate, which makes it a "changing" dependency by identity,
-    // but re-running this effect per render would reset the poll interval.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   /**
@@ -213,12 +208,16 @@ export default function PhotosScreen() {
         ...res.data,
         guest_id: res.data.guest_id ?? session?.guestId ?? null,
       };
-      setPhotos((prev) => [uploadedPhoto, ...prev]);
+      queryClient.setQueryData<Photo[]>(qk.photos(scope), (prev) => [
+        uploadedPhoto,
+        ...(prev ?? []),
+      ]);
       haptics.success();
       setUploadToast(true);
       if (uploadToastTimer.current) clearTimeout(uploadToastTimer.current);
       uploadToastTimer.current = setTimeout(() => setUploadToast(false), 2000);
     } catch (e: any) {
+      if (isHandledApiError(e)) return;
       const msg = e?.response?.data?.message ?? e?.message ?? t('common.unknownError');
       Alert.alert(t('common.error'), msg);
     } finally {
@@ -363,11 +362,14 @@ export default function PhotosScreen() {
         reason: reportReason,
         ...(message ? { message } : {}),
       });
-      setPhotos((prev) => prev.filter((p) => p.id !== reportingPhoto.id));
+      queryClient.setQueryData<Photo[]>(qk.photos(scope), (prev) =>
+        (prev ?? []).filter((p) => p.id !== reportingPhoto.id)
+      );
       doCloseDetail();
       haptics.success();
       Alert.alert(t('photos.reportSuccess'));
     } catch (e: any) {
+      if (isHandledApiError(e)) return;
       if (e?.response?.status === 429) {
         Alert.alert(t('photos.reportRateLimited'));
       } else if (e?.response?.status === 422) {
@@ -401,7 +403,9 @@ export default function PhotosScreen() {
     if (photo.guest_id === null) return;
     try {
       await hideGuestContent(photo.guest_id);
-      setPhotos((prev) => prev.filter((p) => p.guest_id !== photo.guest_id));
+      queryClient.setQueryData<Photo[]>(qk.photos(scope), (prev) =>
+        (prev ?? []).filter((p) => p.guest_id !== photo.guest_id)
+      );
       doCloseDetail();
       haptics.success();
       Alert.alert(t('photos.hideUploaderSuccess', { name: photo.guest_name }));
@@ -427,11 +431,14 @@ export default function PhotosScreen() {
   async function deletePhoto(photo: Photo) {
     try {
       await api.delete(`/api/photos/${photo.id}`);
-      setPhotos((prev) => prev.filter((p) => p.id !== photo.id));
+      queryClient.setQueryData<Photo[]>(qk.photos(scope), (prev) =>
+        (prev ?? []).filter((p) => p.id !== photo.id)
+      );
       doCloseDetail();
       haptics.success();
       Alert.alert(t('photos.deleteSuccess'));
     } catch (e) {
+      if (isHandledApiError(e)) return;
       captureException(e);
       Alert.alert(t('common.error'), t('photos.deleteError'));
     }
@@ -474,7 +481,7 @@ export default function PhotosScreen() {
           loadError ? (
             <ErrorBanner
               message={t('common.loadFailed')}
-              onRetry={fetchPhotos}
+              onRetry={() => photosQuery.refetch()}
               style={{ margin: GAP }}
             />
           ) : null

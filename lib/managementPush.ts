@@ -109,6 +109,18 @@ export async function syncManagementPushPreference(): Promise<boolean> {
   if (!(await getManagementPushEnabled())) return false;
   if (!(await SecureStore.getItemAsync('management_token'))) return true;
 
+  // Focus-safe fast path: this runs on every organizer-home focus. If OS
+  // permission is still granted and we already hold a registered token, the
+  // server destination is current — skip the slow getExpoPushTokenAsync()
+  // network round-trip and the /push/register POST entirely. Actual token
+  // rotation is reconciled separately by the push-token listener.
+  if (!isExpoGo()) {
+    const permissions = await Notifications.getPermissionsAsync();
+    if (permissions.granted && (await SecureStore.getItemAsync(PUSH_TOKEN_KEY))) {
+      return true;
+    }
+  }
+
   const token = await registerManagementPushToken();
   if (token) return true;
 
@@ -145,6 +157,11 @@ async function registerRotatedPushToken(): Promise<void> {
   const easProjectId = projectId();
   if (!easProjectId) return;
   const token = (await Notifications.getExpoPushTokenAsync({ projectId: easProjectId })).data;
+
+  // iOS can fire the token listener without an actual change; a blind POST
+  // every time floods /push/register. Bail out when the "rotation" resolves
+  // to the token we already hold.
+  if ((await SecureStore.getItemAsync(PUSH_TOKEN_KEY)) === token) return;
 
   // Installation state must follow rotation even while delivery is disabled,
   // otherwise a later opt-in would re-register the obsolete token.

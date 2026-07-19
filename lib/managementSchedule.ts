@@ -8,7 +8,7 @@ export type ManagementSchedule = {
 };
 
 /** Fetches the complete read-only schedule for the event-bound organizer session. */
-export async function fetchManagementSchedule(): Promise<ManagementSchedule> {
-  const response = await api.get<ManagementSchedule>('/api/management/schedule');
+export async function fetchManagementSchedule(signal?: AbortSignal): Promise<ManagementSchedule> {
+  const response = await api.get<ManagementSchedule>('/api/management/schedule', { signal });
   return response.data;
 }

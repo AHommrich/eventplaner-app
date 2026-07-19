@@ -32,6 +32,21 @@ control:
 Everything else in the list is either pure UI, a native module wrapping a
 local device capability, or a bundle-time helper.
 
+## Data-layer dependencies (no network of their own)
+
+Added in the CP1–CP6 performance/data-layer work (see
+`docs/APP_PERFORMANCE_DATA_LAYER_PLAN.md`). None of these phone home; they
+manage caching and connectivity for calls that still funnel through `axios` /
+`lib/api.ts`.
+
+| Package                                     | Purpose                                                                                                       | Phones home?                                                                  |
+| ------------------------------------------- | ------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
+| `@tanstack/react-query`                     | Client cache / dedup / stale-while-revalidate for server reads (`lib/queryClient.ts`, `lib/queryKeys.ts`).    | No — it only orchestrates the existing `axios` calls.                         |
+| `@react-native-community/netinfo`           | Connectivity signal wired into TanStack's `onlineManager` so queries pause offline and refetch on reconnect.  | No — reads OS connectivity state locally.                                     |
+| `@tanstack/react-query-persist-client`      | Persists the query cache to storage (`lib/queryPersistence.ts`, CP6).                                         | No.                                                                           |
+| `@tanstack/query-async-storage-persister`   | AsyncStorage adapter for the persister.                                                                       | No.                                                                           |
+| `@react-native-async-storage/async-storage` | On-disk backing for the persisted, allowlisted, scope-isolated offline query cache. Purged on logout/erasure. | No — local device storage only. See `docs/storage-keys.md` + ARCHITECTURE §7. |
+
 ### Why two backend domains?
 
 Staging (`beta.hommrich.app`) has its own database with local test guests and

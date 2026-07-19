@@ -13,9 +13,9 @@
  * `app/_layout.tsx` for the ordering relative to `EventThemeProvider`.
  */
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import * as SecureStore from 'expo-secure-store';
 import * as Localization from 'expo-localization';
 import i18n from './i18n';
+import { getCached, setCached } from './sessionCache';
 
 /** The two catalogues shipped in `locales/`. Adding one requires new files. */
 export type Language = 'de' | 'en';
@@ -46,7 +46,7 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
   const [needsLanguagePick, setNeedsLanguagePick] = useState(false);
 
   useEffect(() => {
-    SecureStore.getItemAsync('app_language').then((saved) => {
+    getCached('app_language').then((saved) => {
       if (saved === 'de' || saved === 'en') {
         // The guest has picked before — honour it, no device sniffing.
         i18n.locale = saved;
@@ -74,7 +74,7 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
     i18n.locale = lang;
     setLang(lang);
     setNeedsLanguagePick(false);
-    await SecureStore.setItemAsync('app_language', lang);
+    await setCached('app_language', lang);
   }
 
   /** Thin re-export of `i18n.t` — kept on the context so consumers only need one hook. */

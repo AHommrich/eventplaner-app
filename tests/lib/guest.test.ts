@@ -76,7 +76,7 @@ describe('lib/guest — fetchers', () => {
     };
     api.get.mockResolvedValueOnce({ data: payload });
     const result = await fetchGuestMe();
-    expect(api.get).toHaveBeenCalledWith('/api/guest/me');
+    expect(api.get).toHaveBeenCalledWith('/api/guest/me', { signal: undefined });
     expect(result).toEqual(payload);
   });
 
@@ -84,14 +84,14 @@ describe('lib/guest — fetchers', () => {
     const payload = { name: 'Wedding', date: '2026-08-01', rsvp_deadline: '2026-07-01' };
     api.get.mockResolvedValueOnce({ data: payload });
     const result = await fetchEventInfo();
-    expect(api.get).toHaveBeenCalledWith('/api/event/info');
+    expect(api.get).toHaveBeenCalledWith('/api/event/info', { signal: undefined });
     expect(result).toEqual(payload);
   });
 
   it('fetchPhotoGameStatus hits /api/game/photo/status', async () => {
     api.get.mockResolvedValueOnce({ data: { status: 'active', assignment: null } });
     const result = await fetchPhotoGameStatus();
-    expect(api.get).toHaveBeenCalledWith('/api/game/photo/status');
+    expect(api.get).toHaveBeenCalledWith('/api/game/photo/status', { signal: undefined });
     expect(result.status).toBe('active');
   });
 });

@@ -41,7 +41,7 @@ function renderScreen() {
 }
 
 describe('app/organizer/index', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     mockGetManagementSession.mockReset();
     mockFetchManagementEvents.mockReset();
     mockEnsureActiveManagementEvent.mockReset();
@@ -49,6 +49,12 @@ describe('app/organizer/index', () => {
     mockSetManagementPushEnabled.mockReset().mockResolvedValue(true);
     mockSyncManagementPushPreference.mockReset().mockResolvedValue(false);
     (router.replace as jest.Mock).mockClear();
+    // Seed a management session scope so the events query's enable gate runs.
+    const { setCached, mintSessionId } = require('../../lib/sessionCache');
+    await setCached('management_token', 'm');
+    await setCached('management_user_id', '7');
+    await setCached('management_active_event_id', '4');
+    await mintSessionId();
     mockGetManagementSession.mockResolvedValue({
       token: 't',
       id: 1,
@@ -69,6 +75,8 @@ describe('app/organizer/index', () => {
   });
 
   it('redirects to the shared welcome scanner without a session', async () => {
+    // A true no-session state has no scope either — clear the seeded one.
+    require('../../lib/sessionCache')._resetForTests();
     mockGetManagementSession.mockResolvedValue(null);
     renderScreen();
 

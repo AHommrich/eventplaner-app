@@ -25,13 +25,18 @@ import {
   RefreshControl,
 } from 'react-native';
 import { ThemedText } from '../components/ThemedText';
+import { isHandledApiError } from '../lib/api';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useLanguage } from '../lib/LanguageContext';
 import { useEventTheme } from '../lib/EventThemeContext';
 import { clearSession } from '../lib/auth';
-import { fetchGuestMe, fetchEventInfo, postRevoke, RsvpStatus, isFullAccess } from '../lib/guest';
+import { useQuery } from '@tanstack/react-query';
+import { fetchGuestMe, postRevoke, GuestMe, RsvpStatus, isFullAccess } from '../lib/guest';
+import { queryClient } from '../lib/queryClient';
+import { qk } from '../lib/queryKeys';
+import { useSessionScope } from '../lib/SessionContext';
 import { theme } from '../constants/theme';
 
 /** Poll interval — matches the "check every 30 s" pattern of the photos tab. */
@@ -48,84 +53,56 @@ function formatDeadline(iso: string, locale: string): string {
 export default function DeclinedScreen() {
   const router = useRouter();
   const { t, language } = useLanguage();
-  const { colors } = useEventTheme();
+  const { colors, eventInfo } = useEventTheme();
+  const scope = useSessionScope();
   // Read insets up here — every hook must run on every render to satisfy
   // React's rules-of-hooks. The early `if (loading) return …` further down
   // used to sit above this call and produced a "conditional hook" warning.
   const insets = useSafeAreaInsets();
 
-  const [status, setStatus] = useState<RsvpStatus>(null);
-  const [deadline, setDeadline] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
   const [revoking, setRevoking] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [refreshed, setRefreshed] = useState(false);
   const refreshedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  async function loadData(isRefresh = false) {
-    try {
-      const [guest, info] = await Promise.all([fetchGuestMe(), fetchEventInfo()]);
-      setStatus(guest.rsvp_status);
-      setDeadline(info.rsvp_deadline);
-      // Post-load routing: if the couple has meanwhile moved the guest back
-      // into an active-RSVP state, bounce out of the declined screen so it
-      // never gets "stuck".
-      if (guest.rsvp_status === null) {
-        router.replace('/rsvp');
-        return;
-      }
-      if (isFullAccess(guest.rsvp_status)) {
-        router.replace('/(tabs)/home');
-      }
-    } catch {
-      // Silent — the polling loop tries again in POLL_INTERVAL ms.
-    } finally {
-      setLoading(false);
-      if (isRefresh) setRefreshing(false);
-    }
-  }
+  // Guest status is a cache-backed query polling every 30 s (CP4); the deadline
+  // comes from the shared theme/event query (no second /api/event/info fetch).
+  const guestQuery = useQuery(
+    {
+      queryKey: qk.guestMe(scope),
+      queryFn: ({ signal }) => fetchGuestMe(signal),
+      enabled: scope !== null,
+      refetchInterval: POLL_INTERVAL,
+      refetchIntervalInBackground: false,
+    },
+    queryClient
+  );
+  const status: RsvpStatus = guestQuery.data?.rsvp_status ?? null;
+  const deadline = eventInfo?.rsvp_deadline ?? null;
+  const loading = guestQuery.isLoading;
+
+  // Route guards: if the couple moved the guest back into an active-RSVP state,
+  // bounce out of the declined screen so it never gets "stuck".
+  useEffect(() => {
+    if (!guestQuery.data) return;
+    const s = guestQuery.data.rsvp_status;
+    if (s === null) router.replace('/rsvp');
+    else if (isFullAccess(s)) router.replace('/(tabs)/home');
+  }, [guestQuery.data, router]);
 
   async function handleRefresh() {
     setRefreshing(true);
-    await loadData(true);
+    await guestQuery.refetch();
+    setRefreshing(false);
     setRefreshed(true);
     if (refreshedTimer.current) clearTimeout(refreshedTimer.current);
     refreshedTimer.current = setTimeout(() => setRefreshed(false), 2000);
   }
 
   useEffect(() => {
-    // Every state update in this effect happens in an async continuation
-    // (`loadData()` resolves the fetch, the interval callback runs later) —
-    // React 19's `set-state-in-effect` check would only be accurate if we
-    // set state synchronously in the effect body, which we do not.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    loadData();
-    // Passive poll — same route as the manual pull-to-refresh above, minus
-    // the toast/spinner side effects, so the guest doesn't see a spinner
-    // every 30 s.
-    intervalRef.current = setInterval(async () => {
-      try {
-        const guest = await fetchGuestMe();
-        if (guest.rsvp_status === null) {
-          router.replace('/rsvp');
-        } else if (isFullAccess(guest.rsvp_status)) {
-          router.replace('/(tabs)/home');
-        } else {
-          setStatus(guest.rsvp_status);
-        }
-      } catch {
-        // silent
-      }
-    }, POLL_INTERVAL);
-
     return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current);
+      if (refreshedTimer.current) clearTimeout(refreshedTimer.current);
     };
-    // Bootstrap poll — captures `loadData` and `router` once. Re-running on
-    // every render would tear down and re-create the interval and could
-    // race the 30 s polling clock.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   /**
@@ -137,8 +114,11 @@ export default function DeclinedScreen() {
     setRevoking(true);
     try {
       const newStatus = await postRevoke();
-      setStatus(newStatus);
+      queryClient.setQueryData<GuestMe>(qk.guestMe(scope), (prev) =>
+        prev ? { ...prev, rsvp_status: newStatus } : prev
+      );
     } catch (e: any) {
+      if (isHandledApiError(e)) return;
       Alert.alert(t('common.error'), e?.response?.data?.message ?? t('common.unknownError'));
     } finally {
       setRevoking(false);

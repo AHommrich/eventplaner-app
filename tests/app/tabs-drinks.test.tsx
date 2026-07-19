@@ -78,16 +78,12 @@ function wireApi({
 describe('app/(tabs)/drinks', () => {
   beforeEach(async () => {
     mockApiGet.mockReset();
-    // `EventThemeProvider` only fetches `/api/event/info` when a bearer
-    // token exists in secure-store — seed one so the mocked `eventInfo`
-    // reaches the screen.
-    const SecureStore = require('expo-secure-store');
-    await SecureStore.setItemAsync('guest_token', 't');
-  });
-
-  afterEach(async () => {
-    const SecureStore = require('expo-secure-store');
-    await SecureStore.deleteItemAsync('guest_token');
+    // `EventThemeProvider` fetches `/api/event/info` only with an active guest
+    // session scope — seed one so the mocked `eventInfo` reaches the screen.
+    const { setCached, mintSessionId } = require('../../lib/sessionCache');
+    await setCached('guest_token', 't');
+    await setCached('guest_id', '1');
+    await mintSessionId();
   });
 
   it('renders the log tab as active on first render', async () => {

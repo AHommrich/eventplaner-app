@@ -26,6 +26,7 @@ jest.mock('../../lib/api', () => ({
     post: (...a: any[]) => mockApiPost(...a),
     delete: (...a: any[]) => mockApiDelete(...a),
   },
+  isHandledApiError: () => false,
 }));
 
 // Same rationale as the other tab tests — safe-area hook stubbed to avoid the
@@ -35,20 +36,26 @@ jest.mock('react-native-safe-area-context', () => {
   return { ...actual, useSafeAreaInsets: () => ({ top: 0, right: 0, bottom: 0, left: 0 }) };
 });
 
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import PhotosScreen from '../../app/(tabs)/photos';
 import { LanguageProvider } from '../../lib/LanguageContext';
 import { EventThemeProvider } from '../../lib/EventThemeContext';
 import { ConsentGateProvider } from '../../components/ConsentGate';
+import { setCached, mintSessionId } from '../../lib/sessionCache';
 
 function renderScreen() {
+  // Fresh client per render (retries off) so tests don't share cache state.
+  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
-    <LanguageProvider>
-      <EventThemeProvider>
-        <ConsentGateProvider>
-          <PhotosScreen />
-        </ConsentGateProvider>
-      </EventThemeProvider>
-    </LanguageProvider>
+    <QueryClientProvider client={queryClient}>
+      <LanguageProvider>
+        <EventThemeProvider>
+          <ConsentGateProvider>
+            <PhotosScreen />
+          </ConsentGateProvider>
+        </EventThemeProvider>
+      </LanguageProvider>
+    </QueryClientProvider>
   );
 }
 
@@ -63,8 +70,11 @@ describe('app/(tabs)/photos', () => {
     mockApiPost.mockReset();
     mockApiDelete.mockReset();
     await SecureStore.deleteItemAsync('consent_photo_upload');
-    await SecureStore.deleteItemAsync('guest_token');
-    await SecureStore.deleteItemAsync('guest_id');
+    // Establish an active guest session scope so the photos `useQuery` is
+    // enabled (it keys on the session scope and is disabled when signed out).
+    await setCached('guest_token', 'guest-token');
+    await setCached('guest_id', '99');
+    await mintSessionId();
   });
 
   it('renders the grid after a successful fetch', async () => {
@@ -93,7 +103,7 @@ describe('app/(tabs)/photos', () => {
 
     // Once the fetch resolves, the empty-state string disappears.
     await waitFor(() => expect(queryByText('Noch keine Fotos')).toBeNull());
-    expect(mockApiGet).toHaveBeenCalledWith('/api/photos');
+    expect(mockApiGet).toHaveBeenCalledWith('/api/photos', expect.anything());
   });
 
   it('FAB opens the upload alert when consent is already granted', async () => {
@@ -146,7 +156,7 @@ describe('app/(tabs)/photos', () => {
         created_at: '2026-07-09T12:00:00.000000Z',
       },
     });
-    await SecureStore.setItemAsync('guest_id', '42');
+    await setCached('guest_id', '42');
     await SecureStore.setItemAsync(
       'consent_photo_upload',
       JSON.stringify({ granted_at: new Date().toISOString() })
@@ -373,7 +383,7 @@ describe('app/(tabs)/photos', () => {
       },
     });
     await SecureStore.setItemAsync('guest_token', 'test-token');
-    await SecureStore.setItemAsync('guest_id', '42');
+    await setCached('guest_id', '42');
 
     const { findByTestId, queryByTestId, queryByText } = renderScreen();
     fireEvent.press(await findByTestId('photo-1'));
@@ -406,7 +416,7 @@ describe('app/(tabs)/photos', () => {
     });
     mockApiDelete.mockResolvedValue({ data: undefined });
     await SecureStore.setItemAsync('guest_token', 'test-token');
-    await SecureStore.setItemAsync('guest_id', '42');
+    await setCached('guest_id', '42');
     const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
 
     const { findByTestId, queryByTestId } = renderScreen();

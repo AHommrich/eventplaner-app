@@ -12,7 +12,13 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useQuery } from '@tanstack/react-query';
 import { GalleryAlbumPicker } from '../../components/gallery/GalleryAlbumPicker';
+import { isHandledApiError } from '../../lib/api';
+import { queryClient } from '../../lib/queryClient';
+import { qk } from '../../lib/queryKeys';
+import { useSessionScope } from '../../lib/SessionContext';
+import { useRefetchOnFocus } from '../../lib/useRefetchOnFocus';
 import { GalleryEmptyState, GalleryThumbnail } from '../../components/gallery/GalleryPrimitives';
 import { PhotoLightbox } from '../../components/gallery/PhotoLightbox';
 import { ScreenGradient } from '../../components/ScreenGradient';
@@ -21,7 +27,6 @@ import { theme } from '../../constants/theme';
 import { useEventTheme } from '../../lib/EventThemeContext';
 import { isManagementUploadableAlbum } from '../../lib/galleryAlbums';
 import { useLanguage } from '../../lib/LanguageContext';
-import { getActiveManagementEventId } from '../../lib/management';
 import {
   deleteManagementPhoto,
   fetchManagementPhotos,
@@ -42,50 +47,61 @@ export default function OrganizerPhotosScreen() {
   const { t } = useLanguage();
   const { colors, variant } = useEventTheme();
   const eventStyles = useOrganizerStyles();
-  const [albums, setAlbums] = useState<ManagementPhotoAlbum[]>([]);
+  const scope = useSessionScope();
   const [selectedAlbumId, setSelectedAlbumId] = useState<number | null>(null);
   const [selectedPhoto, setSelectedPhoto] = useState<ManagementPhoto | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [failed, setFailed] = useState(false);
   const [deletingId, setDeletingId] = useState<number | null>(null);
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<number | null>(null);
 
+  // Albums are a cache-backed query (CP5), sorted by the backend `sort_order`.
+  const photosQuery = useQuery(
+    {
+      queryKey: qk.managementPhotos(scope),
+      queryFn: async ({ signal }) =>
+        [...(await fetchManagementPhotos(signal))].sort((a, b) => a.sort_order - b.sort_order),
+      enabled: scope?.actor === 'management',
+    },
+    queryClient
+  );
+  const albums = useMemo(() => photosQuery.data ?? [], [photosQuery.data]);
+  const loading = photosQuery.isLoading;
+  const refreshing = photosQuery.isRefetching;
+  const failed = photosQuery.isError;
+
+  /** Re-sync the albums query after an upload/delete. */
   const load = useCallback(async () => {
-    if (!(await getActiveManagementEventId())) {
-      router.replace('/organizer');
-      return;
-    }
+    await photosQuery.refetch();
+  }, [photosQuery]);
 
-    try {
-      const available = [...(await fetchManagementPhotos())].sort(
-        (first, second) => first.sort_order - second.sort_order
-      );
-      setAlbums(available);
-      setSelectedAlbumId((current) =>
-        current !== null && available.some((album) => album.id === current)
-          ? current
-          : (available[0]?.id ?? null)
-      );
-      setFailed(false);
-    } catch {
-      setFailed(true);
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  }, [router]);
+  /** Optimistically patch the cached albums (e.g. after a delete). */
+  function patchAlbums(updater: (prev: ManagementPhotoAlbum[]) => ManagementPhotoAlbum[]) {
+    queryClient.setQueryData<ManagementPhotoAlbum[]>(qk.managementPhotos(scope), (prev) =>
+      prev ? updater(prev) : prev
+    );
+  }
 
+  // No bound event → no photo context; return to the organizer home.
   useFocusEffect(
     useCallback(() => {
-      void load();
-    }, [load])
+      if (scope?.actor !== 'management') router.replace('/organizer');
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [scope])
   );
+  // Revalidate on focus only when stale, and only while the query is enabled
+  // (a non-management scope redirects above — do not fire a photo fetch there).
+  useRefetchOnFocus(photosQuery, scope?.actor === 'management');
+
+  // Derive the effective album instead of syncing state in an effect: honour
+  // the user's explicit pick while it still exists, else default to the first.
+  const effectiveAlbumId =
+    selectedAlbumId !== null && albums.some((album) => album.id === selectedAlbumId)
+      ? selectedAlbumId
+      : (albums[0]?.id ?? null);
 
   const selectedAlbum = useMemo(
-    () => albums.find((album) => album.id === selectedAlbumId) ?? null,
-    [albums, selectedAlbumId]
+    () => albums.find((album) => album.id === effectiveAlbumId) ?? null,
+    [albums, effectiveAlbumId]
   );
   const canUpload = !!selectedAlbum && isManagementUploadableAlbum(selectedAlbum.slug);
 
@@ -99,14 +115,15 @@ export default function OrganizerPhotosScreen() {
           setDeletingId(photo.id);
           try {
             await deleteManagementPhoto(photo.id);
-            setAlbums((current) =>
+            patchAlbums((current) =>
               current.map((album) => ({
                 ...album,
                 photos: album.photos.filter((item) => item.id !== photo.id),
               }))
             );
             setSelectedPhoto(null);
-          } catch {
+          } catch (e) {
+            if (isHandledApiError(e)) return;
             Alert.alert(t('common.error'), t('organizer.photos.deleteFailed'));
           } finally {
             setDeletingId(null);
@@ -133,7 +150,8 @@ export default function OrganizerPhotosScreen() {
     try {
       await uploadManagementPhoto(selectedAlbum.id, result.uri, setUploadProgress);
       await load();
-    } catch {
+    } catch (e) {
+      if (isHandledApiError(e)) return;
       Alert.alert(t('common.error'), t('organizer.photos.uploadFailed'));
     } finally {
       setUploading(false);
@@ -162,13 +180,7 @@ export default function OrganizerPhotosScreen() {
           gap: theme.spacing.md,
         }}
         refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={() => {
-              setRefreshing(true);
-              void load();
-            }}
-          />
+          <RefreshControl refreshing={refreshing} onRefresh={() => void photosQuery.refetch()} />
         }
       >
         {loading ? (
@@ -176,7 +188,7 @@ export default function OrganizerPhotosScreen() {
         ) : failed ? (
           <TouchableOpacity style={[styles.card, eventStyles.card]} onPress={() => void load()}>
             <ThemedText style={styles.error}>{t('common.loadFailed')}</ThemedText>
-            <ThemedText style={styles.retry}>{t('common.retry')}</ThemedText>
+            <ThemedText style={[styles.retry, eventStyles.muted]}>{t('common.retry')}</ThemedText>
           </TouchableOpacity>
         ) : albums.length === 0 ? (
           <GalleryEmptyState title={t('organizer.photos.noAlbums')} />
@@ -184,13 +196,15 @@ export default function OrganizerPhotosScreen() {
           <>
             <GalleryAlbumPicker
               albums={albums}
-              selectedId={selectedAlbumId}
+              selectedId={effectiveAlbumId}
               onSelect={setSelectedAlbumId}
             />
             {selectedAlbum && (
               <>
                 {selectedAlbum.photos.length === 0 ? (
-                  <ThemedText style={styles.empty}>{t('organizer.photos.emptyAlbum')}</ThemedText>
+                  <ThemedText style={[styles.empty, eventStyles.muted]}>
+                    {t('organizer.photos.emptyAlbum')}
+                  </ThemedText>
                 ) : (
                   <View style={styles.grid}>
                     {selectedAlbum.photos.map((photo) => (
@@ -205,7 +219,7 @@ export default function OrganizerPhotosScreen() {
                   </View>
                 )}
                 {!canUpload && (
-                  <ThemedText style={styles.uploadHint}>
+                  <ThemedText style={[styles.uploadHint, eventStyles.muted]}>
                     {t('organizer.photos.photoGameUploadHint')}
                   </ThemedText>
                 )}

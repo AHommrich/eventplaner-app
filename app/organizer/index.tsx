@@ -1,4 +1,5 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import {
   ActivityIndicator,
   Alert,
@@ -13,6 +14,11 @@ import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ThemedText } from '../../components/ThemedText';
+import { isHandledApiError } from '../../lib/api';
+import { queryClient } from '../../lib/queryClient';
+import { qk } from '../../lib/queryKeys';
+import { useSessionScope } from '../../lib/SessionContext';
+import { useRefetchOnFocus } from '../../lib/useRefetchOnFocus';
 import { theme } from '../../constants/theme';
 import { useLanguage } from '../../lib/LanguageContext';
 import { useEventTheme } from '../../lib/EventThemeContext';
@@ -21,7 +27,6 @@ import {
   ensureActiveManagementEvent,
   fetchManagementEvents,
   getManagementSession,
-  ManagementEvent,
   ManagementSession,
 } from '../../lib/management';
 import {
@@ -36,18 +41,37 @@ export default function OrganizerHomeScreen() {
   const { t } = useLanguage();
   const { colors, variant } = useEventTheme();
   const [session, setSession] = useState<ManagementSession | null>(null);
-  const [events, setEvents] = useState<ManagementEvent[]>([]);
-  const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [failed, setFailed] = useState(false);
   const [pushEnabled, setPushEnabled] = useState(false);
   const [pushSaving, setPushSaving] = useState(false);
 
-  const load = useCallback(async () => {
+  const scope = useSessionScope();
+  // Shared canonical events query (CP3) — same cache the theme provider reads,
+  // so the organizer home no longer fires a second `fetchManagementEvents`.
+  const eventsQuery = useQuery(
+    {
+      queryKey: qk.managementEvents(scope),
+      queryFn: ({ signal }) => fetchManagementEvents(signal),
+      enabled: scope?.actor === 'management',
+    },
+    queryClient
+  );
+  const events = eventsQuery.data ?? [];
+  const loading = eventsQuery.isLoading;
+  const failed = eventsQuery.isError;
+
+  // Persist the resolved active event whenever the shared query updates.
+  useEffect(() => {
+    if (eventsQuery.data) void ensureActiveManagementEvent(eventsQuery.data);
+  }, [eventsQuery.data]);
+
+  // Session + push preference bootstrap (no data fetch). Redirects to the
+  // shared welcome scanner when the organizer session is gone.
+  const bootstrapSession = useCallback(async (): Promise<boolean> => {
     const current = await getManagementSession();
     if (!current) {
       router.replace('/');
-      return;
+      return false;
     }
     setSession(current);
     const currentPushEnabled = await getManagementPushEnabled();
@@ -59,30 +83,32 @@ export default function OrganizerHomeScreen() {
           // Keep the preference and retry on the next organizer focus.
         });
     }
-    try {
-      const accessible = await fetchManagementEvents();
-      setEvents(accessible);
-      await ensureActiveManagementEvent(accessible);
-      setFailed(false);
-    } catch {
-      setFailed(true);
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
+    return true;
   }, [router]);
+
+  // Pull-to-refresh / retry: bootstrap + a forced revalidation of the shared query.
+  const load = useCallback(async () => {
+    const ok = await bootstrapSession();
+    if (ok) await eventsQuery.refetch();
+    setRefreshing(false);
+  }, [bootstrapSession, eventsQuery]);
 
   useFocusEffect(
     useCallback(() => {
-      void load();
-    }, [load])
+      void bootstrapSession();
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [])
   );
+  // Stale-gated background revalidation on focus (mirrors the guest tabs); the
+  // enable gate keeps it from firing before a management scope exists.
+  useRefetchOnFocus(eventsQuery, scope?.actor === 'management');
 
   async function togglePush(enabled: boolean) {
     setPushSaving(true);
     try {
       setPushEnabled(await setManagementPushEnabled(enabled));
-    } catch {
+    } catch (e) {
+      if (isHandledApiError(e)) return;
       Alert.alert(t('common.error'), t('organizer.pushUpdateFailed'));
     } finally {
       setPushSaving(false);
@@ -114,7 +140,9 @@ export default function OrganizerHomeScreen() {
           <ThemedText style={[styles.title, { color: colors.cardText }]}>
             {session?.name ?? t('organizer.title')}
           </ThemedText>
-          <ThemedText style={styles.email}>{session?.email}</ThemedText>
+          <ThemedText style={[styles.email, { color: colors.mutedOnCard }]}>
+            {session?.email}
+          </ThemedText>
         </View>
       </View>
 
@@ -125,7 +153,9 @@ export default function OrganizerHomeScreen() {
           <ThemedText style={[styles.cardTitleCompact, { color: colors.cardText }]}>
             {t('organizer.pushTitle')}
           </ThemedText>
-          <ThemedText style={styles.pushHint}>{t('organizer.pushHint')}</ThemedText>
+          <ThemedText style={[styles.pushHint, { color: colors.mutedOnCard }]}>
+            {t('organizer.pushHint')}
+          </ThemedText>
         </View>
         <Switch
           accessibilityLabel={t('organizer.pushTitle')}
@@ -147,14 +177,16 @@ export default function OrganizerHomeScreen() {
             <ThemedText style={styles.retry}>{t('common.retry')}</ThemedText>
           </TouchableOpacity>
         ) : events.length === 0 ? (
-          <ThemedText style={styles.empty}>{t('organizer.noEvents')}</ThemedText>
+          <ThemedText style={[styles.empty, { color: colors.mutedOnCard }]}>
+            {t('organizer.noEvents')}
+          </ThemedText>
         ) : (
           <View style={[styles.eventRow, { borderColor: colors.border }]}>
             <View style={styles.eventText}>
               <ThemedText style={[styles.eventName, { color: colors.cardText }]}>
                 {events[0].name}
               </ThemedText>
-              <ThemedText style={styles.role}>
+              <ThemedText style={[styles.role, { color: colors.mutedOnCard }]}>
                 {t(`organizer.roles.${events[0].my_role}`)}
               </ThemedText>
             </View>

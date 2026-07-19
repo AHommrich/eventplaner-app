@@ -12,9 +12,11 @@ canonical reference for two DSGVO exercises:
 values are encrypted at rest with a key the OS binds to the app install; a
 reinstall or "clear app data" purges everything even if this file drifts.
 
-No key ever holds a payload larger than a few hundred bytes. There is no
-`AsyncStorage`, no `localStorage`, no on-disk cache outside the OS-managed
-image cache of `expo-image`.
+No SecureStore key ever holds a payload larger than a few hundred bytes. The
+one non-SecureStore persistence layer is the allowlisted, purged-on-logout
+offline query cache in `@react-native-async-storage/async-storage` (see its
+section below); apart from that there is no `AsyncStorage`, no `localStorage`,
+and no on-disk cache outside the OS-managed image cache of `expo-image`.
 
 ## Guest session (set by `lib/auth.ts` `saveSession`)
 
@@ -107,14 +109,32 @@ by the locale.
 The cache is content addressable per locale so switching language does not
 serve the wrong-language notice.
 
+## Session id (set by `lib/sessionCache.ts`)
+
+| Key          | Purpose                                                                                                                                             | Retention                    | Cleared on logout? |
+| ------------ | --------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------- | ------------------ |
+| `session_id` | Non-secret random id minted at login. Scopes the query cache (`QueryScope`) so persisted data can never cross accounts. Contains no personal value. | Until logout/account switch. | **Yes**            |
+
+## Offline query cache (AsyncStorage, set by `lib/queryPersistence.ts`, CP6)
+
+Unlike everything above (Keychain-backed `expo-secure-store`), this one key
+lives in `@react-native-async-storage/async-storage`.
+
+| Key                      | Purpose                                                                                                                                                                                                                                                             | Retention                                             | Cleared on logout?                                                                                 |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| `eveplan_query_cache_v1` | Persisted TanStack Query cache — an **allowlist** of non-sensitive, session-scoped reads (`eventInfo`, `photos`, `managementEvents`, `managementSchedule`) so the app shows last-known data offline after a restart. Every entry is scope-isolated by `session_id`. | 24 h `maxAge` + version `buster`; older is discarded. | **Yes** — `purgePersistedCache()` on logout, account switch, and GDPR erasure wipes disk + memory. |
+
 ## What is NOT stored
 
-- No photos, drink logs, RSVPs or any other personal payloads — all fetched
-  on demand from the backend.
-- No analytics, session IDs, device IDs, install IDs.
-- No `AsyncStorage` at all (deliberate: only the Keychain-backed
-  `expo-secure-store` holds guest data).
-- No files outside `expo-secure-store` and the OS-managed `expo-image` cache.
+- No **auth/session-derived** query results on disk — the persister allowlist
+  excludes `guestMe`, `notes`, `managementPhotos`, `photoGameStatus`, etc.
+- No analytics, device IDs, install IDs. The only session id is the non-secret
+  `session_id` above.
+- No `AsyncStorage` beyond the single allowlisted, purged-on-logout offline
+  query cache above (`eveplan_query_cache_v1`). All secrets stay in the
+  Keychain-backed `expo-secure-store`.
+- No files outside `expo-secure-store`, the offline query cache, and the
+  OS-managed `expo-image` cache.
 
 ## When this file must be updated
 

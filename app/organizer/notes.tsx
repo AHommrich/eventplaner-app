@@ -12,10 +12,15 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useQuery } from '@tanstack/react-query';
 import { ThemedText } from '../../components/ThemedText';
+import { isHandledApiError } from '../../lib/api';
 import { theme } from '../../constants/theme';
 import { useLanguage } from '../../lib/LanguageContext';
-import { getActiveManagementEventId } from '../../lib/management';
+import { queryClient } from '../../lib/queryClient';
+import { qk } from '../../lib/queryKeys';
+import { useSessionScope } from '../../lib/SessionContext';
+import { useRefetchOnFocus } from '../../lib/useRefetchOnFocus';
 import { useOrganizerStyles } from '../../lib/organizerStyles';
 import {
   createManagementNote,
@@ -41,41 +46,45 @@ export default function OrganizerNotesScreen() {
   const insets = useSafeAreaInsets();
   const { t } = useLanguage();
   const eventStyles = useOrganizerStyles();
-  const [notes, setNotes] = useState<ManagementNotesPayload>(EMPTY_NOTES);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
+  const scope = useSessionScope();
   const [saving, setSaving] = useState(false);
-  const [failed, setFailed] = useState(false);
   const [type, setType] = useState<ManagementNoteType>('todo');
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
   const [assigneeId, setAssigneeId] = useState<number | null>(null);
+
+  // Notes are a cache-backed query (CP5); CRUD ops re-sync via `load`.
+  const notesQuery = useQuery(
+    {
+      queryKey: qk.notes(scope),
+      queryFn: ({ signal }) => fetchManagementNotes(signal),
+      enabled: scope?.actor === 'management',
+    },
+    queryClient
+  );
+  const notes = notesQuery.data ?? EMPTY_NOTES;
+  const loading = notesQuery.isLoading;
+  const refreshing = notesQuery.isRefetching;
+  const failed = notesQuery.isError;
   const openedNote = [...notes.assigned_to_me, ...notes.personal, ...notes.assigned_team].find(
     (note) => note.id === Number(noteId)
   );
 
+  /** Re-sync the notes query after a create/toggle/delete. */
   const load = useCallback(async () => {
-    if (!(await getActiveManagementEventId())) {
-      router.replace('/organizer');
-      return;
-    }
+    await notesQuery.refetch();
+  }, [notesQuery]);
 
-    try {
-      setNotes(await fetchManagementNotes());
-      setFailed(false);
-    } catch {
-      setFailed(true);
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  }, [router]);
-
+  // No bound event → this organizer session has no notes context; go home.
   useFocusEffect(
     useCallback(() => {
-      void load();
-    }, [load])
+      if (scope?.actor !== 'management') router.replace('/organizer');
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [scope])
   );
+  // Revalidate on focus only when stale, and only while the query is enabled
+  // (a non-management scope redirects above — do not fire a notes fetch there).
+  useRefetchOnFocus(notesQuery, scope?.actor === 'management');
 
   async function create() {
     if (!title.trim()) {
@@ -95,7 +104,8 @@ export default function OrganizerNotesScreen() {
       setBody('');
       setAssigneeId(null);
       await load();
-    } catch {
+    } catch (e) {
+      if (isHandledApiError(e)) return;
       Alert.alert(t('common.error'), t('organizer.notes.saveFailed'));
     } finally {
       setSaving(false);
@@ -106,7 +116,8 @@ export default function OrganizerNotesScreen() {
     try {
       await setManagementNoteDone(note.id, !note.is_done);
       await load();
-    } catch {
+    } catch (e) {
+      if (isHandledApiError(e)) return;
       Alert.alert(t('common.error'), t('organizer.notes.saveFailed'));
     }
   }
@@ -121,7 +132,8 @@ export default function OrganizerNotesScreen() {
           try {
             await deleteManagementNote(note.id);
             await load();
-          } catch {
+          } catch (e) {
+            if (isHandledApiError(e)) return;
             Alert.alert(t('common.error'), t('organizer.notes.deleteFailed'));
           }
         },
@@ -141,13 +153,7 @@ export default function OrganizerNotesScreen() {
       ]}
       keyboardShouldPersistTaps="handled"
       refreshControl={
-        <RefreshControl
-          refreshing={refreshing}
-          onRefresh={() => {
-            setRefreshing(true);
-            void load();
-          }}
-        />
+        <RefreshControl refreshing={refreshing} onRefresh={() => void notesQuery.refetch()} />
       }
     >
       <View style={styles.header}>
@@ -209,7 +215,7 @@ export default function OrganizerNotesScreen() {
           value={title}
           onChangeText={setTitle}
           placeholder={t('organizer.notes.noteTitle')}
-          placeholderTextColor={theme.colors.muted}
+          placeholderTextColor={eventStyles.colors.mutedOnCard}
           style={[styles.input, eventStyles.input]}
           maxLength={255}
         />
@@ -218,7 +224,7 @@ export default function OrganizerNotesScreen() {
           value={body}
           onChangeText={setBody}
           placeholder={t('organizer.notes.body')}
-          placeholderTextColor={theme.colors.muted}
+          placeholderTextColor={eventStyles.colors.mutedOnCard}
           style={[styles.input, eventStyles.input, styles.bodyInput]}
           multiline
           maxLength={5000}
@@ -267,7 +273,7 @@ export default function OrganizerNotesScreen() {
       ) : failed ? (
         <TouchableOpacity style={[styles.card, eventStyles.card]} onPress={() => void load()}>
           <ThemedText style={styles.error}>{t('common.loadFailed')}</ThemedText>
-          <ThemedText style={styles.retry}>{t('common.retry')}</ThemedText>
+          <ThemedText style={[styles.retry, eventStyles.muted]}>{t('common.retry')}</ThemedText>
         </TouchableOpacity>
       ) : (
         <>
@@ -342,7 +348,7 @@ function NoteSection({
     <View style={[styles.card, eventStyles.card]}>
       <ThemedText style={[styles.cardTitle, eventStyles.title]}>{title}</ThemedText>
       {notes.length === 0 ? (
-        <ThemedText style={styles.empty}>{emptyLabel}</ThemedText>
+        <ThemedText style={[styles.empty, eventStyles.muted]}>{emptyLabel}</ThemedText>
       ) : (
         notes.map((note) => (
           <View key={note.id} style={styles.noteRow}>
@@ -364,13 +370,19 @@ function NoteSection({
             )}
             <View style={styles.noteText}>
               <ThemedText
-                style={[styles.noteTitle, eventStyles.text, note.is_done && styles.noteDone]}
+                style={[
+                  styles.noteTitle,
+                  note.is_done ? eventStyles.muted : eventStyles.text,
+                  note.is_done && styles.noteDone,
+                ]}
               >
                 {note.title}
               </ThemedText>
-              {!!note.body && <ThemedText style={styles.noteBody}>{note.body}</ThemedText>}
+              {!!note.body && (
+                <ThemedText style={[styles.noteBody, eventStyles.muted]}>{note.body}</ThemedText>
+              )}
               {!!note.assignee_name && (
-                <ThemedText style={styles.meta}>
+                <ThemedText style={[styles.meta, eventStyles.muted]}>
                   {t('organizer.notes.assignee')}: {note.assignee_name}
                 </ThemedText>
               )}
@@ -465,7 +477,7 @@ const styles = StyleSheet.create({
   },
   noteText: { flex: 1 },
   noteTitle: { fontWeight: '600' },
-  noteDone: { color: theme.colors.muted, textDecorationLine: 'line-through' },
+  noteDone: { textDecorationLine: 'line-through' },
   noteBody: { color: theme.colors.muted, fontSize: 13, marginTop: 2 },
   meta: { color: theme.colors.muted, fontSize: 12, marginTop: theme.spacing.xs },
   empty: { color: theme.colors.muted },

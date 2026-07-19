@@ -58,6 +58,9 @@ export async function fetchPrivacyNotice(locale: string): Promise<PrivacyNotice>
     const res = await api.get<PrivacyNotice>('/api/legal/privacy', {
       params: { locale },
     });
+    // A 200 with no sections is unusable (would blank the screen); treat it like a
+    // failure so we fall through to a stale cache / the bundled fallback instead.
+    if (!res.data?.sections?.length) throw new Error('empty privacy sections');
     await SecureStore.setItemAsync(
       PRIVACY_CACHE_KEY_PREFIX + locale,
       JSON.stringify({ fetched_at: Date.now(), notice: res.data })
@@ -98,6 +101,9 @@ export async function fetchImprint(locale: string): Promise<ImprintNotice> {
     const res = await api.get<ImprintNotice>('/api/legal/imprint', {
       params: { locale },
     });
+    // A 200 with no sections is unusable (would blank the screen); treat it like a
+    // failure so we fall through to a stale cache / the bundled fallback instead.
+    if (!res.data?.sections?.length) throw new Error('empty imprint sections');
     await SecureStore.setItemAsync(
       IMPRINT_CACHE_KEY_PREFIX + locale,
       JSON.stringify({ fetched_at: Date.now(), notice: res.data })

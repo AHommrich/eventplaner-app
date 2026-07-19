@@ -25,9 +25,9 @@
  * All other errors bubble up to the caller unchanged.
  */
 import axios from 'axios';
-import * as SecureStore from 'expo-secure-store';
 import { router } from 'expo-router';
 import { API_BASE } from '../constants/env';
+import { getCached } from './sessionCache';
 import { deleteGuestSession, deleteManagementSession } from './sessionStorage';
 
 // `axios.create` is the officially blessed factory for a custom instance.
@@ -42,31 +42,44 @@ const api = axios.create({
   },
 });
 
+// Management reads whose event is resolved server-side from the PAT — these
+// must NOT carry an X-Event-ID header. Hoisted to module scope so it is not
+// re-allocated on every single request.
+const EVENT_HEADER_EXEMPT = new Set([
+  '/api/management/me',
+  '/api/management/me/events',
+  '/api/management/push/register',
+]);
+
+/** Resolve the single bearer token appropriate for the request's audience. */
+async function resolveBearer(isManagement: boolean, isLogout: boolean): Promise<string | null> {
+  if (isManagement) return getCached('management_token');
+  if (!isLogout) return getCached('guest_token');
+  // Logout may target either audience; prefer the organizer session. This is
+  // the one rare path that legitimately reads two keys.
+  return (await getCached('management_token')) ?? (await getCached('guest_token'));
+}
+
 // --- Request interceptor: bearer token + language ---
 api.interceptors.request.use(async (config) => {
+  const path = config.url?.split('?')[0];
   const isManagement = config.url?.startsWith('/api/management/') ?? false;
   const isLogout = config.url === '/api/auth/logout';
-  const [guestToken, managementToken, activeEventId, language] = await Promise.all([
-    SecureStore.getItemAsync('guest_token'),
-    SecureStore.getItemAsync('management_token'),
-    SecureStore.getItemAsync('management_active_event_id'),
-    SecureStore.getItemAsync('app_language'),
+  const needsEventHeader = isManagement && !EVENT_HEADER_EXEMPT.has(path ?? '');
+
+  // Read ONLY the credentials this request needs, via the in-memory session
+  // cache. After bootstrap `primeFromStore()` these are memory hits — no
+  // keychain round-trip per request (Checkpoint 1).
+  const [token, activeEventId, language] = await Promise.all([
+    resolveBearer(isManagement, isLogout),
+    needsEventHeader ? getCached('management_active_event_id') : Promise.resolve(null),
+    getCached('app_language'),
   ]);
-  const token = isManagement
-    ? managementToken
-    : isLogout
-      ? (managementToken ?? guestToken)
-      : guestToken;
+
   if (token && !config.headers.Authorization) {
     config.headers.Authorization = `Bearer ${token}`;
   }
-  const path = config.url?.split('?')[0];
-  const eventHeaderExempt = new Set([
-    '/api/management/me',
-    '/api/management/me/events',
-    '/api/management/push/register',
-  ]);
-  if (isManagement && activeEventId && !eventHeaderExempt.has(path ?? '')) {
+  if (needsEventHeader && activeEventId) {
     config.headers['X-Event-ID'] = activeEventId;
   }
   config.headers['Accept-Language'] = language ?? 'de';
@@ -88,6 +101,33 @@ function isLogoutRequest(error: any) {
   return error.config?.url === '/api/auth/logout';
 }
 
+/**
+ * Rejection for a response the interceptor already fully handled with a global
+ * side effect (app-blocked redirect, drinks-block handler, session-expiry
+ * cleanup + redirect). Unlike the old never-resolving swallow, this ALWAYS
+ * settles the promise so a TanStack Query `queryFn` can never hang forever.
+ * Direct callers and query functions must ignore it via `isHandledApiError`
+ * so they don't surface a duplicate Alert on top of the global effect.
+ */
+export class HandledApiError extends Error {
+  readonly handled = true;
+
+  constructor(public readonly kind: 'app_blocked' | 'drinks_blocked' | 'unauthorized') {
+    super(`Handled API error: ${kind}`);
+    this.name = 'HandledApiError';
+  }
+}
+
+/** True for a rejection the interceptor already handled globally — never alert on it. */
+export function isHandledApiError(error: unknown): boolean {
+  return (
+    error instanceof HandledApiError ||
+    (typeof error === 'object' &&
+      error !== null &&
+      (error as { handled?: unknown }).handled === true)
+  );
+}
+
 // --- Response interceptor: swallow app_blocked and drinks_blocked ---
 api.interceptors.response.use(
   (response) => response,
@@ -98,16 +138,16 @@ api.interceptors.response.use(
         _blocked = true;
         router.replace('/blocked');
       }
-      // Returning a never-resolving promise swallows the rejection so no
-      // downstream `.catch()` surfaces a duplicate Alert.
-      return new Promise(() => {});
+      // Reject with a handled marker (not a never-resolving promise) so a query
+      // settles instead of hanging; callers ignore it via `isHandledApiError`.
+      return Promise.reject(new HandledApiError('app_blocked'));
     }
     if (code === 'drinks_blocked') {
       if (!_drinksBlocked) {
         _drinksBlocked = true;
         _drinksBlockedHandler?.();
       }
-      return new Promise(() => {}); // same swallow-strategy as above
+      return Promise.reject(new HandledApiError('drinks_blocked'));
     }
     if (
       error.response?.status === 401 &&
@@ -118,11 +158,19 @@ api.interceptors.response.use(
         _unauthorized = true;
         const managementRequest = error.config?.url?.startsWith('/api/management/') ?? false;
         const cleanup = managementRequest ? deleteManagementSession() : deleteGuestSession();
-        cleanup.finally(() => {
-          router.replace('/');
-        });
+        cleanup
+          // Session expiry is a teardown too: purge the on-disk + in-memory
+          // query cache so no personal data survives an involuntary logout
+          // (same GDPR contract as the explicit logout/erasure paths). Lazy
+          // require avoids the api → queryPersistence → queryClient → api cycle.
+          // eslint-disable-next-line @typescript-eslint/no-require-imports
+          .then(() => require('./queryPersistence').purgePersistedCache())
+          .catch(() => {})
+          .finally(() => {
+            router.replace('/');
+          });
       }
-      return new Promise(() => {});
+      return Promise.reject(new HandledApiError('unauthorized'));
     }
     return Promise.reject(error);
   }

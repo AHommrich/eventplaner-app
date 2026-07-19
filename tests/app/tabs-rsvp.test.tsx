@@ -72,12 +72,18 @@ const familyGuest = {
 };
 
 describe('app/(tabs)/rsvp', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     mockFetchGuestMe.mockReset();
     mockFetchEventInfo.mockReset();
     mockPostRsvp.mockReset();
     mockPostGroupRsvp.mockReset();
     (router.replace as jest.Mock).mockClear();
+    // Seed a guest session scope so the `enabled: scope !== null` gate is
+    // actually exercised (not just the focus-refetch fallback).
+    const { setCached, mintSessionId } = require('../../lib/sessionCache');
+    await setCached('guest_token', 't');
+    await setCached('guest_id', '1');
+    await mintSessionId();
   });
 
   it('solo guest sees own accept + decline buttons', async () => {

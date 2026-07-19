@@ -16,10 +16,13 @@
  * `FONT_MAP` and exposes it as `colors.fontFamily` for `ThemedText` and the
  * tab-bar label style.
  */
-import { createContext, useContext, useState, useEffect, useRef, ReactNode } from 'react';
-import * as SecureStore from 'expo-secure-store';
+import { createContext, useContext, ReactNode } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { fetchEventInfo, EventInfo, EventThemePayload } from './guest';
 import { fetchManagementEvents } from './management';
+import { queryClient } from './queryClient';
+import { qk } from './queryKeys';
+import { useSessionScope } from './SessionContext';
 import { FONT_MAP, FontDefinition, FontKey } from '../constants/fonts';
 import {
   DESIGN_VARIANTS,
@@ -54,6 +57,13 @@ export type EventThemeColors = {
   screenBg: string;
   card: string;
   cardText: string;
+  /**
+   * Dimmed secondary text FOR USE ON CARDS — `cardText` at reduced opacity so it
+   * stays legible on every palette. Replaces the static `theme.colors.muted`
+   * (a warm grey tuned only for the beige guest theme), which was invisible on
+   * dark/olive event themes.
+   */
+  mutedOnCard: string;
   cardButton: string;
   cardButtonText: string;
   border: string;
@@ -75,10 +85,21 @@ type EventThemeContextValue = {
   /** Active design preset — the form-language layer (see DESIGN_VARIANTS). */
   variant: DesignVariant;
   loadTheme: () => Promise<void>;
+  /** Shared query state so consumers (e.g. Home) need no second event fetch. */
+  themeLoading: boolean;
+  themeError: boolean;
+  /** Whether the active event query is stale (for focus-gated revalidation). */
+  themeStale: boolean;
+  /** Refetch the active event query (used by `useRefetchOnFocus`). */
+  refetchTheme: () => Promise<unknown>;
 };
 
 const EventThemeContext = createContext<EventThemeContextValue>({
   eventInfo: null,
+  themeLoading: false,
+  themeError: false,
+  themeStale: false,
+  refetchTheme: async () => {},
   variant: DESIGN_VARIANTS[DEFAULT_DESIGN_VARIANT],
   colors: {
     primary: FALLBACK_PRIMARY,
@@ -87,6 +108,7 @@ const EventThemeContext = createContext<EventThemeContextValue>({
     screenBg: FALLBACK_SECONDARY,
     card: FALLBACK_TERTIARY,
     cardText: FALLBACK_PRIMARY,
+    mutedOnCard: FALLBACK_PRIMARY + 'B3',
     cardButton: FALLBACK_PRIMARY,
     cardButtonText: FALLBACK_TERTIARY,
     border: FALLBACK_PRIMARY,
@@ -102,57 +124,54 @@ const EventThemeContext = createContext<EventThemeContextValue>({
 });
 
 /**
- * Root-level theme provider. Fetches `EventInfo` when a session exists so a
- * logged-out cold start does not fire an unauthorised request. Consumers
- * re-trigger the fetch via `loadTheme()` on pull-to-refresh in each tab.
+ * Root-level theme provider. Event data is now cache-backed queries keyed on the
+ * session scope (CP3), so guests and organizers share ONE canonical fetch with
+ * the rest of the app instead of a second private request:
+ *   - guest scope → `qk.eventInfo` returns `EventInfo` (also the theme payload);
+ *   - management scope → `qk.managementEvents` returns `ManagementEvent[]` (the
+ *     canonical list organizer screens read too), theme = `events[0].theme`.
+ * Both hooks always run (rules of hooks) but only one is `enabled`. They use the
+ * module `queryClient` singleton explicitly (not React context) so every screen
+ * that already mounts this provider keeps working without a surrounding
+ * `QueryClientProvider`. `loadTheme()` revalidates the active query.
  */
 export function EventThemeProvider({ children }: { children: ReactNode }) {
-  const [eventInfo, setEventInfo] = useState<EventInfo | null>(null);
-  const [themeInfo, setThemeInfo] = useState<EventThemePayload | null>(null);
-  const requestId = useRef(0);
+  const scope = useSessionScope();
+  const isManagement = scope?.actor === 'management';
 
+  const guestQuery = useQuery(
+    {
+      queryKey: qk.eventInfo(scope),
+      queryFn: ({ signal }) => fetchEventInfo(signal),
+      enabled: scope !== null && !isManagement,
+    },
+    queryClient
+  );
+
+  const managementQuery = useQuery(
+    {
+      queryKey: qk.managementEvents(scope),
+      queryFn: ({ signal }) => fetchManagementEvents(signal),
+      enabled: isManagement,
+    },
+    queryClient
+  );
+
+  const activeQuery = isManagement ? managementQuery : guestQuery;
+  const eventInfo = isManagement ? null : (guestQuery.data ?? null);
+  const themeInfo: EventThemePayload | null = isManagement
+    ? (managementQuery.data?.[0]?.theme ?? null)
+    : (guestQuery.data ?? null);
+  const themeLoading = isManagement ? managementQuery.isLoading : guestQuery.isLoading;
+  const themeError = isManagement ? managementQuery.isError : guestQuery.isError;
+
+  /** Pull-to-refresh hook: revalidate the active scope's event query. */
   async function loadTheme() {
-    const currentRequest = ++requestId.current;
-    const [guestToken, managementToken] = await Promise.all([
-      SecureStore.getItemAsync('guest_token'),
-      SecureStore.getItemAsync('management_token'),
-    ]);
-    if (!guestToken && !managementToken) {
-      if (currentRequest === requestId.current) {
-        setEventInfo(null);
-        setThemeInfo(null);
-      }
-      return;
-    }
-    try {
-      if (managementToken) {
-        const events = await fetchManagementEvents();
-        if (events.length !== 1) throw new Error('Management theme requires one bound event.');
-        if (currentRequest === requestId.current) {
-          setEventInfo(null);
-          setThemeInfo(events[0].theme);
-        }
-        return;
-      }
-
-      const info = await fetchEventInfo();
-      if (currentRequest === requestId.current) {
-        setEventInfo(info);
-        setThemeInfo(info);
-      }
-    } catch (e) {
-      // Non-fatal: keep the fallback palette so the app is still usable.
-      console.warn('[EventTheme] theme fetch failed:', e);
-    }
+    if (scope === null) return;
+    await queryClient.invalidateQueries({
+      queryKey: isManagement ? qk.managementEvents(scope) : qk.eventInfo(scope),
+    });
   }
-
-  useEffect(() => {
-    // Bootstrap theme fetch → `setEventInfo`. The state update runs in the
-    // resolved-promise microtask, not synchronously in the effect body, so
-    // React 19's `set-state-in-effect` diagnostic is a false positive.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    loadTheme();
-  }, []);
 
   // --- Font resolution ---
   const fontKey = (themeInfo?.font_heading ?? null) as FontKey | null;
@@ -167,6 +186,8 @@ export function EventThemeProvider({ children }: { children: ReactNode }) {
     screenBg: themeInfo?.color_screen_bg ?? FALLBACK_SECONDARY,
     card: themeInfo?.color_card ?? FALLBACK_TERTIARY,
     cardText: themeInfo?.color_card_text ?? FALLBACK_PRIMARY,
+    // Secondary/hint text on cards = cardText at ~70% opacity → always legible.
+    mutedOnCard: (themeInfo?.color_card_text ?? FALLBACK_PRIMARY) + 'B3',
     cardButton: themeInfo?.color_card_button ?? FALLBACK_PRIMARY,
     cardButtonText: themeInfo?.color_card_button_text ?? FALLBACK_TERTIARY,
     border: themeInfo?.color_border ?? FALLBACK_PRIMARY,
@@ -182,7 +203,18 @@ export function EventThemeProvider({ children }: { children: ReactNode }) {
   const variant = resolveVariant(themeInfo);
 
   return (
-    <EventThemeContext.Provider value={{ eventInfo, colors, variant, loadTheme }}>
+    <EventThemeContext.Provider
+      value={{
+        eventInfo,
+        colors,
+        variant,
+        loadTheme,
+        themeLoading,
+        themeError,
+        themeStale: activeQuery.isStale,
+        refetchTheme: activeQuery.refetch,
+      }}
+    >
       {children}
     </EventThemeContext.Provider>
   );

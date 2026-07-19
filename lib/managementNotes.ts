@@ -35,8 +35,8 @@ export type CreateManagementNote = {
   assignee_user_id?: number | null;
 };
 
-export async function fetchManagementNotes(): Promise<ManagementNotesPayload> {
-  const response = await api.get<ManagementNotesPayload>('/api/management/notes');
+export async function fetchManagementNotes(signal?: AbortSignal): Promise<ManagementNotesPayload> {
+  const response = await api.get<ManagementNotesPayload>('/api/management/notes', { signal });
   return response.data;
 }
 
