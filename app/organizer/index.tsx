@@ -30,6 +30,7 @@ import {
   ManagementSession,
 } from '../../lib/management';
 import {
+  MANAGEMENT_PUSH_FEATURE_ENABLED,
   getManagementPushEnabled,
   setManagementPushEnabled,
   syncManagementPushPreference,
@@ -74,14 +75,16 @@ export default function OrganizerHomeScreen() {
       return false;
     }
     setSession(current);
-    const currentPushEnabled = await getManagementPushEnabled();
-    setPushEnabled(currentPushEnabled);
-    if (currentPushEnabled) {
-      void syncManagementPushPreference()
-        .then(setPushEnabled)
-        .catch(() => {
-          // Keep the preference and retry on the next organizer focus.
-        });
+    if (MANAGEMENT_PUSH_FEATURE_ENABLED) {
+      const currentPushEnabled = await getManagementPushEnabled();
+      setPushEnabled(currentPushEnabled);
+      if (currentPushEnabled) {
+        void syncManagementPushPreference()
+          .then(setPushEnabled)
+          .catch(() => {
+            // Keep the preference and retry on the next organizer focus.
+          });
+      }
     }
     return true;
   }, [router]);
@@ -146,24 +149,26 @@ export default function OrganizerHomeScreen() {
         </View>
       </View>
 
-      <View
-        style={[styles.card, cardSurfaceStyle(variant, colors.card, colors.border), styles.pushRow]}
-      >
-        <View style={styles.pushText}>
-          <ThemedText style={[styles.cardTitleCompact, { color: colors.cardText }]}>
-            {t('organizer.pushTitle')}
-          </ThemedText>
-          <ThemedText style={[styles.pushHint, { color: colors.mutedOnCard }]}>
-            {t('organizer.pushHint')}
-          </ThemedText>
+      {MANAGEMENT_PUSH_FEATURE_ENABLED && (
+        <View
+          style={[styles.card, cardSurfaceStyle(variant, colors.card, colors.border), styles.pushRow]}
+        >
+          <View style={styles.pushText}>
+            <ThemedText style={[styles.cardTitleCompact, { color: colors.cardText }]}>
+              {t('organizer.pushTitle')}
+            </ThemedText>
+            <ThemedText style={[styles.pushHint, { color: colors.mutedOnCard }]}>
+              {t('organizer.pushHint')}
+            </ThemedText>
+          </View>
+          <Switch
+            accessibilityLabel={t('organizer.pushTitle')}
+            value={pushEnabled}
+            disabled={pushSaving}
+            onValueChange={(enabled) => void togglePush(enabled)}
+          />
         </View>
-        <Switch
-          accessibilityLabel={t('organizer.pushTitle')}
-          value={pushEnabled}
-          disabled={pushSaving}
-          onValueChange={(enabled) => void togglePush(enabled)}
-        />
-      </View>
+      )}
 
       <View style={[styles.card, cardSurfaceStyle(variant, colors.card, colors.border)]}>
         <ThemedText style={[styles.cardTitle, { color: colors.cardText }]}>

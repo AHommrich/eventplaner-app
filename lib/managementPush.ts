@@ -10,6 +10,15 @@ const PUSH_TOKEN_KEY = 'management_expo_push_token';
 const PUSH_ENABLED_KEY = 'management_push_enabled';
 const ANDROID_CHANNEL = 'organizer-tasks';
 
+/**
+ * Kill switch consumed by the two app entry points that actually run this
+ * module (`app/_layout.tsx`'s init effect and the organizer home toggle).
+ * Some builds hang on the native push registration round-trip; root cause
+ * isn't diagnosed yet. Flip back to `true` once it is — the functions below
+ * are untouched and still fully unit-tested.
+ */
+export const MANAGEMENT_PUSH_FEATURE_ENABLED = false;
+
 type AssignedNoteData = {
   type: 'assigned_note';
   event_id: number;

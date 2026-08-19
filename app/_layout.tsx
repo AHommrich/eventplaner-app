@@ -54,7 +54,7 @@ import { BlockedFeaturesProvider } from '../lib/BlockedFeaturesContext';
 import { ConsentGateProvider } from '../components/ConsentGate';
 import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
 import { initMonitoring } from '../lib/monitoring';
-import { initializeManagementPushNotifications } from '../lib/managementPush';
+import { MANAGEMENT_PUSH_FEATURE_ENABLED, initializeManagementPushNotifications } from '../lib/managementPush';
 import { primeFromStore } from '../lib/sessionCache';
 import { queryClient } from '../lib/queryClient';
 import { persistOptions } from '../lib/queryPersistence';
@@ -103,7 +103,10 @@ export default function RootLayout() {
     JosefinSans_700Bold,
   });
 
-  useEffect(() => initializeManagementPushNotifications(), []);
+  useEffect(() => {
+    if (!MANAGEMENT_PUSH_FEATURE_ENABLED) return;
+    return initializeManagementPushNotifications();
+  }, []);
 
   useEffect(() => {
     primeFromStore().then(() => setPrimed(true));

@@ -1,5 +1,5 @@
 import React from 'react';
-import { fireEvent, render, waitFor } from '@testing-library/react-native';
+import { render, waitFor } from '@testing-library/react-native';
 import { router } from 'expo-router';
 
 const mockGetManagementSession = jest.fn();
@@ -84,10 +84,11 @@ describe('app/organizer/index', () => {
     expect(mockFetchManagementEvents).not.toHaveBeenCalled();
   });
 
-  it('offers an explicit push opt-in toggle', async () => {
-    const { findByLabelText } = renderScreen();
-    fireEvent(await findByLabelText('Aufgaben-Benachrichtigungen'), 'valueChange', true);
+  it('hides the push opt-in toggle while the feature is kill-switched', async () => {
+    const { findByText, queryByLabelText } = renderScreen();
+    await findByText('Ada Admin');
 
-    await waitFor(() => expect(mockSetManagementPushEnabled).toHaveBeenCalledWith(true));
+    expect(queryByLabelText('Aufgaben-Benachrichtigungen')).toBeNull();
+    expect(mockGetManagementPushEnabled).not.toHaveBeenCalled();
   });
 });
