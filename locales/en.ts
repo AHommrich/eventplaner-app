@@ -283,6 +283,7 @@ const en = {
       'Your app access has been deactivated. We automatically check every 10 seconds whether your access has been restored.',
   },
   photos: {
+    unavailable: 'Image unavailable',
     empty: 'No photos yet',
     beFirst: 'Be the first!',
     addPhoto: 'Add photo',

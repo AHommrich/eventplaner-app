@@ -284,6 +284,7 @@ const de = {
       'Dein App-Zugang wurde deaktiviert. Wir prüfen automatisch alle 10 Sekunden, ob dein Zugang wiederhergestellt wurde.',
   },
   photos: {
+    unavailable: 'Bild nicht verfügbar',
     empty: 'Noch keine Fotos',
     beFirst: 'Sei der Erste!',
     addPhoto: 'Foto hinzufügen',

@@ -213,6 +213,7 @@ export default function OrganizerPhotosScreen() {
                         photo={photo}
                         size={TILE_SIZE}
                         radius={variant.radius.tile}
+                        unavailableLabel={t('photos.unavailable')}
                         onPress={() => setSelectedPhoto(photo)}
                       />
                     ))}
@@ -263,6 +264,7 @@ export default function OrganizerPhotosScreen() {
         onClose={() => setSelectedPhoto(null)}
         onPhotoChange={(photo) => setSelectedPhoto(photo)}
         closeLabel={t('a11y.closePhoto')}
+        unavailableLabel={t('photos.unavailable')}
         renderFooter={(photo) => (
           <>
             <ThemedText style={styles.detailText}>

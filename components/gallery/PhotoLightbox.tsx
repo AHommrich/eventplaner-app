@@ -50,6 +50,7 @@ export function PhotoLightbox<T extends GalleryPhotoItem>({
   onPhotoChange,
   gestureEnabled = true,
   closeLabel,
+  unavailableLabel,
   renderFooter,
 }: {
   visible: boolean;
@@ -59,6 +60,7 @@ export function PhotoLightbox<T extends GalleryPhotoItem>({
   onPhotoChange?: (photo: T) => void;
   gestureEnabled?: boolean;
   closeLabel?: string;
+  unavailableLabel?: string;
   renderFooter?: (photo: T) => ReactNode;
 }) {
   const insets = useSafeAreaInsets();
@@ -189,7 +191,11 @@ export function PhotoLightbox<T extends GalleryPhotoItem>({
                     }}
                     onScrollToIndexFailed={() => undefined}
                     renderItem={({ item }) => (
-                      <ZoomableGalleryImage uri={item.url} width={DETAIL_ITEM_W} />
+                      <ZoomableGalleryImage
+                        uri={item.url}
+                        width={DETAIL_ITEM_W}
+                        unavailableLabel={unavailableLabel}
+                      />
                     )}
                     style={{ width: SCREEN_W, height: SCREEN_H * 0.8, flexGrow: 0 }}
                   />

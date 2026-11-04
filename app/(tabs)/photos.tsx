@@ -496,6 +496,7 @@ export default function PhotosScreen() {
             photo={item}
             size={tileSize}
             radius={tileRadius}
+            unavailableLabel={t('photos.unavailable')}
             onPress={() => {
               setDetailMounted(true);
               setSelected(item);
@@ -571,7 +572,11 @@ export default function PhotosScreen() {
                       }}
                       onScrollToIndexFailed={() => undefined}
                       renderItem={({ item }) => (
-                        <ZoomableGalleryImage uri={item.url} width={DETAIL_ITEM_W} />
+                        <ZoomableGalleryImage
+                          uri={item.url}
+                          width={DETAIL_ITEM_W}
+                          unavailableLabel={t('photos.unavailable')}
+                        />
                       )}
                       style={{ width: SCREEN_W, height: SCREEN_H * 0.8, flexGrow: 0 }}
                     />
